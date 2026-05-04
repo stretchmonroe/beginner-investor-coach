@@ -82,9 +82,10 @@ interface Props {
   answers: QuizAnswers;
   onRestart: () => void;
   onExploreETFs: () => void;
+  onSimulate: () => void;
 }
 
-export default function QuizResults({ answers, onRestart, onExploreETFs }: Props) {
+export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate }: Props) {
   const profile = deriveProfile(answers);
   const colors = colorMap[profile.color];
 
@@ -128,6 +129,13 @@ export default function QuizResults({ answers, onRestart, onExploreETFs }: Props
             className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
           >
             Explore beginner ETFs
+          </button>
+
+          <button
+            onClick={onSimulate}
+            className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+          >
+            Try portfolio simulator
           </button>
 
           <button

@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Landing from "@/components/Landing";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
 import QuizResults from "@/components/QuizResults";
 import ETFExplorer from "@/components/ETFExplorer";
+import Watchlist from "@/components/Watchlist";
+import CompareETFs from "@/components/CompareETFs";
+import PortfolioSimulator from "@/components/PortfolioSimulator";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
+import type { Etf } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
+import {
+  fetchWatchlistTickers,
+  addWatchlistItem,
+  removeWatchlistItem,
+} from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "results" | "etfs";
+type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -25,15 +34,32 @@ function deriveProfileLabel(a: QuizAnswers): string {
   return "Conservative Beginner";
 }
 
+function getOrCreateSessionId(): string {
+  const stored = localStorage.getItem("bic_session_id");
+  if (stored) return stored;
+  const id = crypto.randomUUID();
+  localStorage.setItem("bic_session_id", id);
+  return id;
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [answers, setAnswers] = useState<QuizAnswers | null>(null);
-  const [sessionId] = useState<string>(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState<string>("");
+  const [watchedTickers, setWatchedTickers] = useState<Set<string>>(new Set());
+
+  // Initialise session ID and load watchlist from Supabase after mount
+  useEffect(() => {
+    const id = getOrCreateSessionId();
+    setSessionId(id);
+    fetchWatchlistTickers(id).then((tickers) => {
+      setWatchedTickers(new Set(tickers));
+    });
+  }, []);
 
   function handleQuizComplete(a: QuizAnswers) {
     setAnswers(a);
     setScreen("results");
-
     supabase.from("quiz_results").insert({
       session_id: sessionId,
       experience: a.experience,
@@ -47,6 +73,20 @@ export default function Home() {
     });
   }
 
+  function handleSave(etf: Etf) {
+    setWatchedTickers((prev) => new Set([...prev, etf.ticker]));
+    addWatchlistItem(sessionId, etf);
+  }
+
+  function handleRemove(ticker: string) {
+    setWatchedTickers((prev) => {
+      const next = new Set(prev);
+      next.delete(ticker);
+      return next;
+    });
+    removeWatchlistItem(sessionId, ticker);
+  }
+
   return (
     <>
       {screen === "landing" && <Landing onStart={() => setScreen("quiz")} />}
@@ -56,9 +96,43 @@ export default function Home() {
           answers={answers}
           onRestart={() => setScreen("landing")}
           onExploreETFs={() => setScreen("etfs")}
+          onSimulate={() => setScreen("simulator")}
         />
       )}
-      {screen === "etfs" && <ETFExplorer answers={answers} onBack={() => setScreen("results")} />}
-    </>
+      {screen === "etfs" && (
+        <ETFExplorer
+          answers={answers}
+          watchedTickers={watchedTickers}
+          onSave={handleSave}
+          onRemove={handleRemove}
+          onViewWatchlist={() => setScreen("watchlist")}
+          onCompare={() => setScreen("compare")}
+          onSimulate={() => setScreen("simulator")}
+          onBack={() => setScreen("results")}
+        />
+      )}
+      {screen === "watchlist" && (
+        <Watchlist
+          watchedTickers={watchedTickers}
+          answers={answers}
+          onRemove={handleRemove}
+          onCompare={() => setScreen("compare")}
+          onBack={() => setScreen("etfs")}
+        />
+      )}
+      {screen === "compare" && (
+        <CompareETFs
+          answers={answers}
+          watchedTickers={watchedTickers}
+          onBack={() => setScreen("etfs")}
+        />
+      )}
+      {screen === "simulator" && (
+        <PortfolioSimulator
+          answers={answers}
+          onBack={() => setScreen("etfs")}
+        />
+      )}
+</>
   );
 }

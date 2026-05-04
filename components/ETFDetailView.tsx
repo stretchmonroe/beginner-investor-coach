@@ -1,4 +1,4 @@
-import type { Etf } from "./ETFExplorer";
+import type { Etf } from "@/lib/etfs";
 
 type Profile = "Conservative Beginner" | "Balanced Beginner" | "Growth Beginner";
 type FitLabel = { label: string; style: string };
@@ -13,17 +13,26 @@ interface Props {
   etf: Etf;
   fitLabel: FitLabel;
   profile: Profile | null;
+  isSaved: boolean;
+  onSave: () => void;
+  onRemove: () => void;
   onClose: () => void;
 }
 
-export default function ETFDetailView({ etf, fitLabel, profile, onClose }: Props) {
+export default function ETFDetailView({
+  etf,
+  fitLabel,
+  profile,
+  isSaved,
+  onSave,
+  onRemove,
+  onClose,
+}: Props) {
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-0 sm:px-6 py-0 sm:py-10"
       onClick={onClose}
     >
-      {/* Panel — slides up on mobile, centered on desktop */}
       <div
         className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -66,7 +75,7 @@ export default function ETFDetailView({ etf, fitLabel, profile, onClose }: Props
             </p>
           </div>
 
-          {/* Personalized fit section */}
+          {/* Personalized fit */}
           {profile && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
@@ -84,7 +93,7 @@ export default function ETFDetailView({ etf, fitLabel, profile, onClose }: Props
             <p className="text-sm text-slate-700 leading-relaxed">{etf.watchOut}</p>
           </div>
 
-          {/* Questions to ask */}
+          {/* Questions */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
               Questions to ask before buying
@@ -98,6 +107,18 @@ export default function ETFDetailView({ etf, fitLabel, profile, onClose }: Props
               ))}
             </ul>
           </div>
+
+          {/* Save to watchlist */}
+          <button
+            onClick={isSaved ? onRemove : onSave}
+            className={`w-full py-3 rounded-xl text-sm font-semibold border transition-colors cursor-pointer
+              ${isSaved
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+              }`}
+          >
+            {isSaved ? "Saved to watchlist ✓ — tap to remove" : "Save to Watchlist"}
+          </button>
 
           {/* Disclaimer */}
           <div className="border-t border-slate-100 pt-4">
