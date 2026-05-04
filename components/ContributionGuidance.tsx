@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
+import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 
 type EmergencyStatus =
   | "Not started"
@@ -120,9 +121,10 @@ interface Props {
   answers: QuizAnswers | null;
   onBack: () => void;
   onUseInSimulator: (amount: number) => void;
+  onGuidanceResult?: (snapshot: ContributionGuidanceSnapshot) => void;
 }
 
-export default function ContributionGuidance({ answers, onBack, onUseInSimulator }: Props) {
+export default function ContributionGuidance({ answers, onBack, onUseInSimulator, onGuidanceResult }: Props) {
   const derivedProfile = deriveProfile(answers);
 
   const [takeHome, setTakeHome] = useState("");
@@ -346,7 +348,23 @@ export default function ContributionGuidance({ answers, onBack, onUseInSimulator
           {/* Use in simulator */}
           {hasRange ? (
             <button
-              onClick={() => onUseInSimulator(midpoint)}
+              onClick={() => {
+                onGuidanceResult?.({
+                  monthly_take_home_pay: takeHomeNum,
+                  monthly_bills: billsNum,
+                  monthly_debt_payments: debtNum,
+                  monthly_emergency_savings_contribution: emergencySavingsNum,
+                  emergency_fund_status: emergencyStatus,
+                  monthly_surplus: surplus,
+                  bills_percentage: billsPct,
+                  debt_percentage: debtPct,
+                  estimated_contribution_min: low,
+                  estimated_contribution_max: high,
+                  estimated_contribution_midpoint: midpoint,
+                  caution_notes: notes,
+                });
+                onUseInSimulator(midpoint);
+              }}
               className="w-full py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer"
             >
               Use {fmt(midpoint)}/month in Portfolio Simulator →

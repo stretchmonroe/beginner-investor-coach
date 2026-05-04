@@ -11,6 +11,7 @@ import PortfolioSimulator from "@/components/PortfolioSimulator";
 import AskCoach from "@/components/AskCoach";
 import ContributionGuidance from "@/components/ContributionGuidance";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
+import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { Etf } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
 import {
@@ -51,6 +52,7 @@ export default function Home() {
   const [watchedTickers, setWatchedTickers] = useState<Set<string>>(new Set());
   const [prefillMonthly, setPrefillMonthly] = useState<number | null>(null);
   const [contributionOrigin, setContributionOrigin] = useState<Screen>("results");
+  const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -143,6 +145,8 @@ export default function Home() {
         <PortfolioSimulator
           answers={answers}
           prefillMonthly={prefillMonthly}
+          sessionId={sessionId}
+          guidanceSnapshot={guidanceSnapshot}
           onBack={() => setScreen("etfs")}
           onContributionGuidance={() => { setContributionOrigin("simulator"); setScreen("contribution"); }}
         />
@@ -159,6 +163,7 @@ export default function Home() {
         <ContributionGuidance
           answers={answers}
           onBack={() => setScreen(contributionOrigin)}
+          onGuidanceResult={setGuidanceSnapshot}
           onUseInSimulator={(amount) => { setPrefillMonthly(amount); setScreen("simulator"); }}
         />
       )}

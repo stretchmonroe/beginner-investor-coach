@@ -6,6 +6,9 @@ import type { QuizAnswers } from "./OnboardingQuiz";
 import type { Profile } from "@/lib/etfs";
 import CoachExplanation from "./CoachExplanation";
 import { profileSimulatorExplanations } from "@/lib/coachExplanations";
+import { saveLearningPlan } from "@/lib/learningPlans";
+import type { ContributionGuidanceSnapshot, LearningPlan, AllocationSnapshot } from "@/lib/learningPlans";
+import SavedLearningPlans from "./SavedLearningPlans";
 
 interface AllocationItem {
   ticker: string;
@@ -135,9 +138,11 @@ interface Props {
   onBack: () => void;
   prefillMonthly?: number | null;
   onContributionGuidance: () => void;
+  sessionId: string;
+  guidanceSnapshot?: ContributionGuidanceSnapshot | null;
 }
 
-export default function PortfolioSimulator({ answers, onBack, prefillMonthly, onContributionGuidance }: Props) {
+export default function PortfolioSimulator({ answers, onBack, prefillMonthly, onContributionGuidance, sessionId, guidanceSnapshot }: Props) {
   const derivedProfile = deriveProfile(answers);
   const initialProfile = derivedProfile ?? "Balanced Beginner";
   const initialTimeline = (answers?.timeline as Timeline) ?? "10+ years";
@@ -158,6 +163,10 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
   );
   const [withdrawalRate, setWithdrawalRate] = useState("4");
 
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedRefreshTrigger, setSavedRefreshTrigger] = useState(0);
+  const [loadedGuidance, setLoadedGuidance] = useState<ContributionGuidanceSnapshot | null>(null);
+
   const starting = clamp(startingAmount);
   const monthly = clamp(monthlyContribution);
   const items = allocations[profile];
@@ -167,6 +176,72 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
   const wRate = Math.min(Math.max(clamp(withdrawalRate), 0), 20);
 
   const projection = calculateProjectionResults(starting, monthly, projYears, annReturn, wRate);
+
+  const displayedGuidance = loadedGuidance ?? guidanceSnapshot ?? null;
+
+  async function handleSave() {
+    if (!sessionId) return;
+    setSaveStatus("saving");
+    const allocationData: AllocationSnapshot[] = items.map((item) => {
+      const etf = ETFs.find((e) => e.ticker === item.ticker);
+      return {
+        ticker: item.ticker,
+        etf_name: etf?.name ?? item.ticker,
+        allocation_percent: item.pct,
+        starting_amount_allocation: starting > 0 ? Math.round(starting * item.pct) / 100 : 0,
+        monthly_contribution_allocation: monthly > 0 ? Math.round(monthly * item.pct) / 100 : 0,
+        risk_level: etf?.riskLevel ?? "",
+        portfolio_role: item.role,
+      };
+    });
+    try {
+      await saveLearningPlan({
+        anonymous_session_id: sessionId,
+        investor_profile: profile,
+        contribution_guidance_json: displayedGuidance,
+        portfolio_inputs_json: {
+          starting_amount: starting,
+          monthly_contribution: monthly,
+          timeline,
+          investor_profile: profile,
+        },
+        allocation_json: allocationData,
+        projection_assumptions_json: {
+          projection_years: projYears,
+          annual_return_assumption: annReturn,
+          withdrawal_rate: wRate,
+        },
+        projection_results_json: {
+          total_contributed: projection.totalContributed,
+          estimated_future_value: projection.futureValue,
+          estimated_investment_growth: Math.max(0, projection.estimatedGrowth),
+          estimated_annual_income: projection.estimatedAnnualIncome,
+          estimated_monthly_income: projection.estimatedMonthlyIncome,
+        },
+      });
+      setSaveStatus("saved");
+      setSavedRefreshTrigger((t) => t + 1);
+      setTimeout(() => setSaveStatus("idle"), 3000);
+    } catch {
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 4000);
+    }
+  }
+
+  function handleViewPlan(plan: LearningPlan) {
+    const pi = plan.portfolio_inputs_json;
+    const pa = plan.projection_assumptions_json;
+    setStartingAmount(String(pi.starting_amount));
+    setMonthlyContribution(String(pi.monthly_contribution));
+    setTimeline(pi.timeline as Timeline);
+    setProfile(pi.investor_profile as Profile);
+    setProjectionYears(String(pa.projection_years));
+    setAnnualReturn(String(pa.annual_return_assumption));
+    setWithdrawalRate(String(pa.withdrawal_rate));
+    setLoadedGuidance(plan.contribution_guidance_json);
+    setShowCoach(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
     <main className="min-h-screen px-6 py-14 max-w-3xl mx-auto">
@@ -268,6 +343,53 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
           </div>
         </div>
       </div>
+
+      {/* Contribution guidance summary */}
+      {displayedGuidance && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-6">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+            Contribution Guidance Summary
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <p className="text-slate-500">Monthly surplus</p>
+              <p className="font-semibold text-slate-700">{fmt(displayedGuidance.monthly_surplus)}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Estimated range</p>
+              <p className="font-semibold text-emerald-700">
+                {fmt(displayedGuidance.estimated_contribution_min)} – {fmt(displayedGuidance.estimated_contribution_max)}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">Suggested midpoint</p>
+              <p className="font-semibold text-slate-700">{fmt(displayedGuidance.estimated_contribution_midpoint)}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Emergency fund</p>
+              <p className="font-semibold text-slate-700">{displayedGuidance.emergency_fund_status}</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Bills % of income</p>
+              <p className="font-semibold text-slate-700">{displayedGuidance.bills_percentage.toFixed(0)}%</p>
+            </div>
+            <div>
+              <p className="text-slate-500">Debt % of income</p>
+              <p className="font-semibold text-slate-700">{displayedGuidance.debt_percentage.toFixed(0)}%</p>
+            </div>
+          </div>
+          {displayedGuidance.caution_notes.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {displayedGuidance.caution_notes.map((note, i) => (
+                <div key={i} className="flex gap-2 items-start text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <span className="shrink-0 mt-0.5">⚠</span>
+                  <span>{note}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Timeline warning */}
       <div className={`rounded-xl border px-5 py-3.5 mb-8 text-sm leading-relaxed ${timelineWarnStyle[timeline]}`}>
@@ -545,6 +667,35 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
         </div>
       </div>
 
+      {/* Save learning plan */}
+      <div className="mb-6">
+        <button
+          onClick={handleSave}
+          disabled={saveStatus === "saving"}
+          className={`w-full py-3.5 rounded-xl text-sm font-semibold transition-colors
+            ${saveStatus === "saving"
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+              : saveStatus === "saved"
+              ? "bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer"
+              : saveStatus === "error"
+              ? "bg-red-50 text-red-700 border border-red-200 cursor-pointer"
+              : "bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"}`}
+        >
+          {saveStatus === "saving"
+            ? "Saving…"
+            : saveStatus === "saved"
+            ? "✓ Saved successfully"
+            : saveStatus === "error"
+            ? "Could not save — try again"
+            : "Save learning plan"}
+        </button>
+        {saveStatus === "idle" && (
+          <p className="text-xs text-slate-400 text-center mt-2">
+            Saves your current inputs, allocation, and projection to this session.
+          </p>
+        )}
+      </div>
+
       {/* Disclaimer */}
       <div className="rounded-xl bg-slate-100 border border-slate-200 px-5 py-4">
         <p className="text-xs text-slate-500 leading-relaxed">
@@ -552,6 +703,12 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
           This is a sample learning allocation and a what-if projection based on assumptions — not a prediction or guarantee. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions.
         </p>
       </div>
+
+      <SavedLearningPlans
+        sessionId={sessionId}
+        refreshTrigger={savedRefreshTrigger}
+        onView={handleViewPlan}
+      />
     </main>
   );
 }
