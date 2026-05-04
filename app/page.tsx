@@ -140,6 +140,7 @@ export default function Home() {
         <AskCoach
           answers={answers}
           watchedTickers={watchedTickers}
+          sessionId={sessionId}
           onBack={() => setScreen("etfs")}
         />
       )}

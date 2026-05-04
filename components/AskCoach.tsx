@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
+import {
+  saveCoachConversation,
+  getCoachConversations,
+  deleteCoachConversation,
+  type CoachConversation,
+} from "@/lib/coachHistory";
 
 const SUGGESTED_PROMPTS = [
   "What is an ETF?",
@@ -15,6 +21,7 @@ const SUGGESTED_PROMPTS = [
 interface Props {
   answers: QuizAnswers | null;
   watchedTickers: Set<string>;
+  sessionId: string;
   onBack: () => void;
 }
 
@@ -35,19 +42,36 @@ function formatAnswer(raw: string): React.ReactNode {
   return <>{nodes}</>;
 }
 
-export default function AskCoach({ answers, watchedTickers, onBack }: Props) {
+export default function AskCoach({ answers, watchedTickers, sessionId, onBack }: Props) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [saveError, setSaveError] = useState(false);
+  const [history, setHistory] = useState<CoachConversation[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [deleteErrorId, setDeleteErrorId] = useState<string | null>(null);
 
+  const answerRef = useRef<HTMLDivElement>(null);
   const profile = deriveProfile(answers);
   const canSubmit = question.trim().length > 0 && !loading;
+
+  async function loadHistory() {
+    if (!sessionId) return;
+    const items = await getCoachConversations(sessionId);
+    setHistory(items);
+    setHistoryLoaded(true);
+  }
+
+  useEffect(() => {
+    if (sessionId) loadHistory();
+  }, [sessionId]);
 
   async function handleSubmit() {
     if (!canSubmit) return;
     setLoading(true);
     setError("");
+    setSaveError(false);
 
     try {
       const res = await fetch("/api/coach", {
@@ -64,11 +88,33 @@ export default function AskCoach({ answers, watchedTickers, onBack }: Props) {
         setError(data.error ?? "Something went wrong. Please try again.");
       } else {
         setAnswer(data.answer);
+        answerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        saveCoachConversation(sessionId, question.trim(), data.answer, profile)
+          .then(() => loadHistory())
+          .catch(() => setSaveError(true));
       }
     } catch {
       setError("Could not reach the coach. Check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleViewHistory(item: CoachConversation) {
+    setQuestion(item.question);
+    setAnswer(item.answer);
+    answerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function handleDelete(id: string) {
+    const prev = history;
+    setHistory((h) => h.filter((item) => item.id !== id));
+    setDeleteErrorId(null);
+    try {
+      await deleteCoachConversation(id);
+    } catch {
+      setHistory(prev);
+      setDeleteErrorId(id);
     }
   }
 
@@ -143,15 +189,13 @@ export default function AskCoach({ answers, watchedTickers, onBack }: Props) {
 
       {/* Answer */}
       {(answer || loading) && (
-        <div className="relative rounded-2xl border border-emerald-200 bg-emerald-50 overflow-hidden">
-          {/* Header */}
+        <div ref={answerRef} className="relative rounded-2xl border border-emerald-200 bg-emerald-50 overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 bg-emerald-100 border-b border-emerald-200">
             <span className="text-emerald-600 text-sm">✦</span>
             <span className="text-xs font-semibold text-emerald-700 uppercase tracking-widest">
               Beginner Coach
             </span>
           </div>
-
           <div className="px-5 py-4">
             {loading ? (
               <div className="flex items-center gap-3 py-2">
@@ -167,6 +211,13 @@ export default function AskCoach({ answers, watchedTickers, onBack }: Props) {
         </div>
       )}
 
+      {/* Save error notice */}
+      {saveError && (
+        <p className="mt-3 text-xs text-amber-600">
+          Answer shown, but could not save to history.
+        </p>
+      )}
+
       {/* Disclaimer */}
       <div className="mt-8 rounded-xl bg-slate-100 border border-slate-200 px-5 py-4">
         <p className="text-xs text-slate-500 leading-relaxed">
@@ -174,6 +225,54 @@ export default function AskCoach({ answers, watchedTickers, onBack }: Props) {
           Not financial advice. Always consult a licensed financial advisor before making investment decisions.
         </p>
       </div>
+
+      {/* Recent questions */}
+      {historyLoaded && (
+        <div className="mt-10">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+            Recent questions
+          </h2>
+          {history.length === 0 ? (
+            <p className="text-sm text-slate-400">Your recent coach questions will appear here.</p>
+          ) : (
+            <div className="space-y-3">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm space-y-2"
+                >
+                  <p className="text-sm font-medium text-slate-800">{item.question}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {item.answer.replace(/\*\*/g, "").slice(0, 120)}…
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-slate-400">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleViewHistory(item)}
+                        className="text-xs font-medium text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {deleteErrorId === item.id && (
+                    <p className="text-xs text-red-500">Could not delete. Try again.</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
