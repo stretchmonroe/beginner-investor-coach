@@ -40,6 +40,15 @@ const profileExplanation: Record<Profile, string> = {
     "This sample allocation leans toward long-term growth. It may have higher upside over long periods, but it can also drop meaningfully during market downturns.",
 };
 
+const profileProjectionNote: Record<Profile, string> = {
+  "Conservative Beginner":
+    "This scenario uses lower return assumptions because cautious portfolios usually prioritize stability over maximum growth.",
+  "Balanced Beginner":
+    "This scenario uses a moderate return assumption to show a balance between long-term growth and risk.",
+  "Growth Beginner":
+    "This scenario uses a higher return assumption, but higher expected growth usually comes with larger temporary declines.",
+};
+
 type Timeline = "Less than 3 years" | "3–10 years" | "10+ years";
 
 const timelineWarning: Record<Timeline, string> = {
@@ -57,11 +66,7 @@ const timelineWarnStyle: Record<Timeline, string> = {
   "10+ years": "bg-emerald-50 border-emerald-200 text-emerald-700",
 };
 
-const PROFILES: Profile[] = [
-  "Conservative Beginner",
-  "Balanced Beginner",
-  "Growth Beginner",
-];
+const PROFILES: Profile[] = ["Conservative Beginner", "Balanced Beginner", "Growth Beginner"];
 const TIMELINES: Timeline[] = ["Less than 3 years", "3–10 years", "10+ years"];
 
 function fmt(n: number): string {
@@ -77,27 +82,91 @@ function clamp(val: string): number {
   return isNaN(n) || n < 0 ? 0 : n;
 }
 
+function getDefaultReturnForProfile(p: Profile): number {
+  if (p === "Conservative Beginner") return 4;
+  if (p === "Balanced Beginner") return 6;
+  return 8;
+}
+
+function getDefaultProjectionYearsForTimeline(t: Timeline): number {
+  if (t === "Less than 3 years") return 3;
+  if (t === "3–10 years") return 10;
+  return 20;
+}
+
+function calculateFutureValue(
+  starting: number,
+  monthly: number,
+  years: number,
+  annualReturnPct: number
+): number {
+  const months = Math.round(years * 12);
+  if (annualReturnPct === 0 || months === 0) return starting + monthly * months;
+  const r = annualReturnPct / 100 / 12;
+  return starting * Math.pow(1 + r, months) + monthly * ((Math.pow(1 + r, months) - 1) / r);
+}
+
+interface ProjectionResults {
+  futureValue: number;
+  totalContributed: number;
+  estimatedGrowth: number;
+  estimatedAnnualIncome: number;
+  estimatedMonthlyIncome: number;
+}
+
+function calculateProjectionResults(
+  starting: number,
+  monthly: number,
+  years: number,
+  annualReturnPct: number,
+  withdrawalRatePct: number
+): ProjectionResults {
+  const months = Math.round(years * 12);
+  const futureValue = calculateFutureValue(starting, monthly, years, annualReturnPct);
+  const totalContributed = starting + monthly * months;
+  const estimatedGrowth = futureValue - totalContributed;
+  const estimatedAnnualIncome = futureValue * (withdrawalRatePct / 100);
+  const estimatedMonthlyIncome = estimatedAnnualIncome / 12;
+  return { futureValue, totalContributed, estimatedGrowth, estimatedAnnualIncome, estimatedMonthlyIncome };
+}
+
 interface Props {
   answers: QuizAnswers | null;
   onBack: () => void;
+  prefillMonthly?: number | null;
+  onContributionGuidance: () => void;
 }
 
-export default function PortfolioSimulator({ answers, onBack }: Props) {
+export default function PortfolioSimulator({ answers, onBack, prefillMonthly, onContributionGuidance }: Props) {
   const derivedProfile = deriveProfile(answers);
+  const initialProfile = derivedProfile ?? "Balanced Beginner";
+  const initialTimeline = (answers?.timeline as Timeline) ?? "10+ years";
 
   const [startingAmount, setStartingAmount] = useState("0");
-  const [monthlyContribution, setMonthlyContribution] = useState("500");
-  const [timeline, setTimeline] = useState<Timeline>(
-    (answers?.timeline as Timeline) ?? "10+ years"
+  const [monthlyContribution, setMonthlyContribution] = useState(
+    prefillMonthly != null ? String(prefillMonthly) : "500"
   );
-  const [profile, setProfile] = useState<Profile>(
-    derivedProfile ?? "Balanced Beginner"
-  );
+  const [timeline, setTimeline] = useState<Timeline>(initialTimeline);
+  const [profile, setProfile] = useState<Profile>(initialProfile);
   const [showCoach, setShowCoach] = useState(false);
+
+  const [projectionYears, setProjectionYears] = useState(
+    String(getDefaultProjectionYearsForTimeline(initialTimeline))
+  );
+  const [annualReturn, setAnnualReturn] = useState(
+    String(getDefaultReturnForProfile(initialProfile))
+  );
+  const [withdrawalRate, setWithdrawalRate] = useState("4");
 
   const starting = clamp(startingAmount);
   const monthly = clamp(monthlyContribution);
   const items = allocations[profile];
+
+  const projYears = Math.min(Math.max(clamp(projectionYears), 1), 50);
+  const annReturn = Math.min(Math.max(clamp(annualReturn), 0), 30);
+  const wRate = Math.min(Math.max(clamp(withdrawalRate), 0), 20);
+
+  const projection = calculateProjectionResults(starting, monthly, projYears, annReturn, wRate);
 
   return (
     <main className="min-h-screen px-6 py-14 max-w-3xl mx-auto">
@@ -140,7 +209,15 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
 
           {/* Monthly contribution */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Monthly contribution</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700">Monthly contribution</label>
+              <button
+                onClick={onContributionGuidance}
+                className="text-xs text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer"
+              >
+                Help me estimate →
+              </button>
+            </div>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
               <input
@@ -152,6 +229,9 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
                 placeholder="500"
               />
             </div>
+            {prefillMonthly != null && (
+              <p className="text-xs text-emerald-600">Pre-filled from Contribution Guidance</p>
+            )}
           </div>
 
           {/* Timeline */}
@@ -221,34 +301,26 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
                     key={item.ticker}
                     className={`border-b border-slate-50 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}
                   >
-                    {/* Ticker + name */}
                     <td className="px-5 py-4 align-top">
                       <span className="font-bold text-emerald-700">{item.ticker}</span>
                       {etf && (
                         <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">{etf.name}</p>
                       )}
                     </td>
-                    {/* Allocation % */}
                     <td className="px-5 py-4 align-top">
                       <div className="flex items-center gap-2">
                         <div className="w-12 bg-slate-100 rounded-full h-1.5">
-                          <div
-                            className="bg-emerald-500 h-1.5 rounded-full"
-                            style={{ width: `${item.pct}%` }}
-                          />
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${item.pct}%` }} />
                         </div>
                         <span className="text-slate-700 font-medium">{item.pct}%</span>
                       </div>
                     </td>
-                    {/* Starting allocation */}
                     <td className="px-5 py-4 align-top text-right text-slate-700 font-medium">
                       {starting > 0 ? fmt(startAlloc) : "—"}
                     </td>
-                    {/* Monthly allocation */}
                     <td className="px-5 py-4 align-top text-right text-slate-700 font-medium">
                       {monthly > 0 ? fmt(monthlyAlloc) : "—"}
                     </td>
-                    {/* Risk */}
                     <td className="px-5 py-4 align-top hidden sm:table-cell">
                       {etf && (
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${riskBadge[etf.riskLevel]}`}>
@@ -256,7 +328,6 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
                         </span>
                       )}
                     </td>
-                    {/* Role */}
                     <td className="px-5 py-4 align-top text-slate-500 text-xs hidden sm:table-cell">
                       {item.role}
                     </td>
@@ -264,7 +335,6 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
                 );
               })}
             </tbody>
-            {/* Totals row */}
             <tfoot>
               <tr className="bg-slate-50 border-t border-slate-200 text-sm font-semibold text-slate-700">
                 <td className="px-5 py-3">Total</td>
@@ -284,9 +354,7 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
         <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
           What this sample allocation means
         </h2>
-        <p className="text-sm text-slate-700 leading-relaxed">
-          {profileExplanation[profile]}
-        </p>
+        <p className="text-sm text-slate-700 leading-relaxed">{profileExplanation[profile]}</p>
       </div>
 
       {/* Coach explanation */}
@@ -306,11 +374,182 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
         </div>
       )}
 
+      {/* ── What-if Projection Calculator ─────────────────────────────── */}
+      <div className="border-t border-slate-200 pt-8 mb-8">
+        <div className="mb-6 space-y-1">
+          <h2 className="text-xl font-bold text-slate-900">What-if Growth Projection</h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Adjust the assumptions below to see how different scenarios could play out over time.
+            These are estimates only — not predictions or guarantees.
+          </p>
+        </div>
+
+        {/* Projection inputs */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-5">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">
+            Projection assumptions
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {/* Projection years */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Timeline (years)</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={projectionYears}
+                onChange={(e) => setProjectionYears(e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                placeholder="20"
+              />
+            </div>
+
+            {/* Annual return */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Annual return assumption</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="30"
+                  step="0.5"
+                  value={annualReturn}
+                  onChange={(e) => setAnnualReturn(e.target.value)}
+                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="6"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+              </div>
+            </div>
+
+            {/* Withdrawal rate */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">Withdrawal rate</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.5"
+                  value={withdrawalRate}
+                  onChange={(e) => setWithdrawalRate(e.target.value)}
+                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="4"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Scenario buttons */}
+          <div className="mt-5 space-y-2">
+            <p className="text-xs text-slate-400 font-medium">Quick scenarios (assumptions only — not predictions)</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Conservative — 4%", value: "4" },
+                { label: "Moderate — 6%", value: "6" },
+                { label: "Growth — 8%", value: "8" },
+              ].map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => setAnnualReturn(s.value)}
+                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors cursor-pointer
+                    ${annualReturn === s.value
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700"
+                    }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Projection results */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-5 space-y-4">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            Projected results
+          </h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Starting amount</p>
+              <p className="text-sm font-semibold text-slate-700">{fmt(starting)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Monthly contribution</p>
+              <p className="text-sm font-semibold text-slate-700">{fmt(monthly)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Projection period</p>
+              <p className="text-sm font-semibold text-slate-700">{projYears} years</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Annual return assumption</p>
+              <p className="text-sm font-semibold text-slate-700">{annReturn}%</p>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4 grid grid-cols-2 gap-4">
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Total contributed</p>
+              <p className="text-sm font-semibold text-slate-700">{fmt(projection.totalContributed)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Estimated investment growth</p>
+              <p className="text-sm font-semibold text-emerald-700">{fmt(Math.max(0, projection.estimatedGrowth))}</p>
+            </div>
+          </div>
+
+          {/* Future value highlight */}
+          <div className="bg-white border border-emerald-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <p className="text-xs text-slate-400 mb-0.5">Estimated future value</p>
+              <p className="text-2xl font-bold text-emerald-700">{fmt(projection.futureValue)}</p>
+            </div>
+            <p className="text-xs text-slate-400 max-w-[180px] leading-relaxed text-right">
+              If contributions continue for {projYears} years at {annReturn}% annually
+            </p>
+          </div>
+
+          {/* Income estimate */}
+          <div className="border-t border-slate-200 pt-4 grid grid-cols-2 gap-4">
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Est. annual income at {wRate}% withdrawal</p>
+              <p className="text-sm font-semibold text-slate-700">{fmt(projection.estimatedAnnualIncome)}</p>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs text-slate-400">Est. monthly income at {wRate}% withdrawal</p>
+              <p className="text-sm font-semibold text-slate-700">{fmt(projection.estimatedMonthlyIncome)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile note */}
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5">
+          <p className="text-xs text-emerald-800 leading-relaxed">
+            <span className="font-semibold">For {profile}s: </span>
+            {profileProjectionNote[profile]}
+          </p>
+        </div>
+
+        {/* Plain-English explanations */}
+        <div className="space-y-3 mb-5">
+          <p className="text-xs text-slate-500 leading-relaxed">
+            This projection estimates what your portfolio could grow to if your starting amount, monthly contributions, timeline, and annual return assumption stayed consistent. Real investment returns will not be smooth and are not guaranteed.
+          </p>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Estimated income is based on a withdrawal-rate assumption. It does not mean the portfolio will produce guaranteed income or dividends.
+          </p>
+        </div>
+      </div>
+
       {/* Disclaimer */}
       <div className="rounded-xl bg-slate-100 border border-slate-200 px-5 py-4">
         <p className="text-xs text-slate-500 leading-relaxed">
           <span className="font-semibold text-slate-600">Educational only. Not financial advice. </span>
-          This is a sample learning allocation, not a recommendation to buy. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions.
+          This is a sample learning allocation and a what-if projection based on assumptions — not a prediction or guarantee. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions.
         </p>
       </div>
     </main>

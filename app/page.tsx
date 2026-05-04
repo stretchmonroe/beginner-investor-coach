@@ -9,6 +9,7 @@ import Watchlist from "@/components/Watchlist";
 import CompareETFs from "@/components/CompareETFs";
 import PortfolioSimulator from "@/components/PortfolioSimulator";
 import AskCoach from "@/components/AskCoach";
+import ContributionGuidance from "@/components/ContributionGuidance";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { Etf } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +19,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach";
+type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -48,6 +49,8 @@ export default function Home() {
   const [answers, setAnswers] = useState<QuizAnswers | null>(null);
   const [sessionId, setSessionId] = useState<string>("");
   const [watchedTickers, setWatchedTickers] = useState<Set<string>>(new Set());
+  const [prefillMonthly, setPrefillMonthly] = useState<number | null>(null);
+  const [contributionOrigin, setContributionOrigin] = useState<Screen>("results");
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -88,6 +91,11 @@ export default function Home() {
     removeWatchlistItem(sessionId, ticker);
   }
 
+  function goToSimulator() {
+    setPrefillMonthly(null);
+    setScreen("simulator");
+  }
+
   return (
     <>
       {screen === "landing" && <Landing onStart={() => setScreen("quiz")} />}
@@ -97,8 +105,9 @@ export default function Home() {
           answers={answers}
           onRestart={() => setScreen("landing")}
           onExploreETFs={() => setScreen("etfs")}
-          onSimulate={() => setScreen("simulator")}
+          onSimulate={goToSimulator}
           onAskCoach={() => setScreen("coach")}
+          onContributionGuidance={() => { setContributionOrigin("results"); setScreen("contribution"); }}
         />
       )}
       {screen === "etfs" && (
@@ -109,7 +118,7 @@ export default function Home() {
           onRemove={handleRemove}
           onViewWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
-          onSimulate={() => setScreen("simulator")}
+          onSimulate={goToSimulator}
           onAskCoach={() => setScreen("coach")}
           onBack={() => setScreen("results")}
         />
@@ -133,7 +142,9 @@ export default function Home() {
       {screen === "simulator" && (
         <PortfolioSimulator
           answers={answers}
+          prefillMonthly={prefillMonthly}
           onBack={() => setScreen("etfs")}
+          onContributionGuidance={() => { setContributionOrigin("simulator"); setScreen("contribution"); }}
         />
       )}
       {screen === "coach" && (
@@ -142,6 +153,13 @@ export default function Home() {
           watchedTickers={watchedTickers}
           sessionId={sessionId}
           onBack={() => setScreen("etfs")}
+        />
+      )}
+      {screen === "contribution" && (
+        <ContributionGuidance
+          answers={answers}
+          onBack={() => setScreen(contributionOrigin)}
+          onUseInSimulator={(amount) => { setPrefillMonthly(amount); setScreen("simulator"); }}
         />
       )}
 </>

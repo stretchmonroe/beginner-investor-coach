@@ -84,9 +84,10 @@ interface Props {
   onExploreETFs: () => void;
   onSimulate: () => void;
   onAskCoach: () => void;
+  onContributionGuidance: () => void;
 }
 
-export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate, onAskCoach }: Props) {
+export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate, onAskCoach, onContributionGuidance }: Props) {
   const profile = deriveProfile(answers);
   const colors = colorMap[profile.color];
 
@@ -144,6 +145,13 @@ export default function QuizResults({ answers, onRestart, onExploreETFs, onSimul
             className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
           >
             ✦ Ask the Coach
+          </button>
+
+          <button
+            onClick={onContributionGuidance}
+            className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+          >
+            $ How much should I invest?
           </button>
 
           <button
