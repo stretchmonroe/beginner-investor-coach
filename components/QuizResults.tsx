@@ -83,9 +83,10 @@ interface Props {
   onRestart: () => void;
   onExploreETFs: () => void;
   onSimulate: () => void;
+  onAskCoach: () => void;
 }
 
-export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate }: Props) {
+export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate, onAskCoach }: Props) {
   const profile = deriveProfile(answers);
   const colors = colorMap[profile.color];
 
@@ -136,6 +137,13 @@ export default function QuizResults({ answers, onRestart, onExploreETFs, onSimul
             className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
           >
             Try portfolio simulator
+          </button>
+
+          <button
+            onClick={onAskCoach}
+            className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+          >
+            ✦ Ask the Coach
           </button>
 
           <button

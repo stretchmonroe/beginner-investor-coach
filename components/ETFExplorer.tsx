@@ -27,6 +27,7 @@ interface Props {
   onViewWatchlist: () => void;
   onCompare: () => void;
   onSimulate: () => void;
+  onAskCoach: () => void;
   onBack: () => void;
 }
 
@@ -38,6 +39,7 @@ export default function ETFExplorer({
   onViewWatchlist,
   onCompare,
   onSimulate,
+  onAskCoach,
   onBack,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("All");
@@ -57,6 +59,12 @@ export default function ETFExplorer({
           ← Back to results
         </button>
         <div className="flex items-center gap-4">
+          <button
+            onClick={onAskCoach}
+            className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+          >
+            ✦ Ask Coach
+          </button>
           <button
             onClick={onSimulate}
             className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"

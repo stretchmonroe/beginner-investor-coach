@@ -8,6 +8,7 @@ import ETFExplorer from "@/components/ETFExplorer";
 import Watchlist from "@/components/Watchlist";
 import CompareETFs from "@/components/CompareETFs";
 import PortfolioSimulator from "@/components/PortfolioSimulator";
+import AskCoach from "@/components/AskCoach";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { Etf } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +18,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator";
+type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -97,6 +98,7 @@ export default function Home() {
           onRestart={() => setScreen("landing")}
           onExploreETFs={() => setScreen("etfs")}
           onSimulate={() => setScreen("simulator")}
+          onAskCoach={() => setScreen("coach")}
         />
       )}
       {screen === "etfs" && (
@@ -108,6 +110,7 @@ export default function Home() {
           onViewWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
           onSimulate={() => setScreen("simulator")}
+          onAskCoach={() => setScreen("coach")}
           onBack={() => setScreen("results")}
         />
       )}
@@ -130,6 +133,13 @@ export default function Home() {
       {screen === "simulator" && (
         <PortfolioSimulator
           answers={answers}
+          onBack={() => setScreen("etfs")}
+        />
+      )}
+      {screen === "coach" && (
+        <AskCoach
+          answers={answers}
+          watchedTickers={watchedTickers}
           onBack={() => setScreen("etfs")}
         />
       )}
