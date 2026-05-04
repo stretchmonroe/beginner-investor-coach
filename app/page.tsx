@@ -51,6 +51,7 @@ export default function Home() {
   const [sessionId, setSessionId] = useState<string>("");
   const [watchedTickers, setWatchedTickers] = useState<Set<string>>(new Set());
   const [prefillMonthly, setPrefillMonthly] = useState<number | null>(null);
+  const [prefillStarting, setPrefillStarting] = useState<number | null>(null);
   const [contributionOrigin, setContributionOrigin] = useState<Screen>("results");
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
 
@@ -95,6 +96,7 @@ export default function Home() {
 
   function goToSimulator() {
     setPrefillMonthly(null);
+    setPrefillStarting(null);
     setScreen("simulator");
   }
 
@@ -145,6 +147,7 @@ export default function Home() {
         <PortfolioSimulator
           answers={answers}
           prefillMonthly={prefillMonthly}
+          prefillStarting={prefillStarting}
           sessionId={sessionId}
           guidanceSnapshot={guidanceSnapshot}
           onBack={() => setScreen("etfs")}
@@ -164,7 +167,11 @@ export default function Home() {
           answers={answers}
           onBack={() => setScreen(contributionOrigin)}
           onGuidanceResult={setGuidanceSnapshot}
-          onUseInSimulator={(amount) => { setPrefillMonthly(amount); setScreen("simulator"); }}
+          onUseInSimulator={(monthly, starting) => {
+            if (monthly > 0) setPrefillMonthly(monthly);
+            if (starting > 0) setPrefillStarting(starting);
+            setScreen("simulator");
+          }}
         />
       )}
 </>

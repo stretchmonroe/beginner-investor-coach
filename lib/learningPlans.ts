@@ -13,6 +13,16 @@ export interface ContributionGuidanceSnapshot {
   estimated_contribution_max: number;
   estimated_contribution_midpoint: number;
   caution_notes: string[];
+  // money buckets
+  current_cash_savings: number;
+  emergency_fund_target: number;
+  short_term_savings_to_protect: number;
+  starting_investment_amount: number;
+  monthly_short_term_savings_contribution: number;
+  monthly_lifestyle_play_buffer: number;
+  protected_savings_target: number;
+  cash_available_above_protected_savings: number;
+  starting_investment_check_message: string;
 }
 
 export interface AllocationSnapshot {

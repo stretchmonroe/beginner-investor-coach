@@ -137,17 +137,20 @@ interface Props {
   answers: QuizAnswers | null;
   onBack: () => void;
   prefillMonthly?: number | null;
+  prefillStarting?: number | null;
   onContributionGuidance: () => void;
   sessionId: string;
   guidanceSnapshot?: ContributionGuidanceSnapshot | null;
 }
 
-export default function PortfolioSimulator({ answers, onBack, prefillMonthly, onContributionGuidance, sessionId, guidanceSnapshot }: Props) {
+export default function PortfolioSimulator({ answers, onBack, prefillMonthly, prefillStarting, onContributionGuidance, sessionId, guidanceSnapshot }: Props) {
   const derivedProfile = deriveProfile(answers);
   const initialProfile = derivedProfile ?? "Balanced Beginner";
   const initialTimeline = (answers?.timeline as Timeline) ?? "10+ years";
 
-  const [startingAmount, setStartingAmount] = useState("0");
+  const [startingAmount, setStartingAmount] = useState(
+    prefillStarting != null ? String(prefillStarting) : "0"
+  );
   const [monthlyContribution, setMonthlyContribution] = useState(
     prefillMonthly != null ? String(prefillMonthly) : "500"
   );
@@ -280,6 +283,9 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, on
                 placeholder="0"
               />
             </div>
+            {prefillStarting != null && (
+              <p className="text-xs text-emerald-600">Pre-filled from Contribution Guidance</p>
+            )}
           </div>
 
           {/* Monthly contribution */}
