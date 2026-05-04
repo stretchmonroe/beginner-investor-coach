@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Etf } from "@/lib/etfs";
 import CoachExplanation from "./CoachExplanation";
+import MarketSnapshot from "./MarketSnapshot";
 import { etfExplanations } from "@/lib/coachExplanations";
 
 type Profile = "Conservative Beginner" | "Balanced Beginner" | "Growth Beginner";
@@ -71,6 +72,9 @@ export default function ETFDetailView({
             <p className="text-base font-semibold text-slate-800">{etf.name}</p>
             <p className="text-xs text-slate-400">{etf.category} · Best for: {etf.bestFor}</p>
           </div>
+
+          {/* Market Snapshot */}
+          <MarketSnapshot ticker={etf.ticker} />
 
           {/* Explanation */}
           <p className="text-sm text-slate-600 leading-relaxed">{etf.explanation}</p>
