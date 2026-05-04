@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { Etf } from "@/lib/etfs";
+import CoachExplanation from "./CoachExplanation";
+import { etfExplanations } from "@/lib/coachExplanations";
 
 type Profile = "Conservative Beginner" | "Balanced Beginner" | "Growth Beginner";
 type FitLabel = { label: string; style: string };
@@ -28,6 +33,9 @@ export default function ETFDetailView({
   onRemove,
   onClose,
 }: Props) {
+  const [showCoach, setShowCoach] = useState(false);
+  const coachContent = etfExplanations[etf.ticker];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-0 sm:px-6 py-0 sm:py-10"
@@ -107,6 +115,22 @@ export default function ETFDetailView({
               ))}
             </ul>
           </div>
+
+          {/* Coach explanation */}
+          {coachContent && (
+            <div className="space-y-3">
+              {!showCoach ? (
+                <button
+                  onClick={() => setShowCoach(true)}
+                  className="w-full py-2.5 rounded-xl text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
+                >
+                  ✦ Explain this like I&apos;m new
+                </button>
+              ) : (
+                <CoachExplanation content={coachContent} onClose={() => setShowCoach(false)} />
+              )}
+            </div>
+          )}
 
           {/* Save to watchlist */}
           <button

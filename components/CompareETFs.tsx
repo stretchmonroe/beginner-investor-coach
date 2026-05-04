@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ETFs, getFit, riskBadge, deriveProfile } from "@/lib/etfs";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import type { Etf, Profile } from "@/lib/etfs";
+import CoachExplanation from "./CoachExplanation";
+import { comparisonExplanations, genericCoachContent } from "@/lib/coachExplanations";
 
 const compareSummaries: Record<string, string> = {
   "CASH-VBAL":
@@ -85,6 +87,7 @@ const rows: Row[] = [
 export default function CompareETFs({ answers, watchedTickers, onBack }: Props) {
   const [tickerA, setTickerA] = useState("");
   const [tickerB, setTickerB] = useState("");
+  const [showCoach, setShowCoach] = useState(false);
 
   const profile = deriveProfile(answers);
   const etfA = ETFs.find((e) => e.ticker === tickerA) ?? null;
@@ -92,6 +95,11 @@ export default function CompareETFs({ answers, watchedTickers, onBack }: Props) 
   const bothSelected = !!etfA && !!etfB;
   const sameSelected = bothSelected && tickerA === tickerB;
   const canCompare = bothSelected && !sameSelected;
+
+  function getCoachContent() {
+    const key = [tickerA, tickerB].sort().join("-");
+    return comparisonExplanations[key] ?? genericCoachContent;
+  }
 
   function optionLabel(etf: Etf) {
     return watchedTickers.has(etf.ticker) ? `${etf.ticker} — ${etf.name} ★ Saved` : `${etf.ticker} — ${etf.name}`;
@@ -130,7 +138,7 @@ export default function CompareETFs({ answers, watchedTickers, onBack }: Props) 
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest">ETF A</label>
           <select
             value={tickerA}
-            onChange={(e) => setTickerA(e.target.value)}
+            onChange={(e) => { setTickerA(e.target.value); setShowCoach(false); }}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="">Select an ETF…</option>
@@ -147,7 +155,7 @@ export default function CompareETFs({ answers, watchedTickers, onBack }: Props) 
           <label className="text-xs font-semibold text-slate-500 uppercase tracking-widest">ETF B</label>
           <select
             value={tickerB}
-            onChange={(e) => setTickerB(e.target.value)}
+            onChange={(e) => { setTickerB(e.target.value); setShowCoach(false); }}
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="">Select an ETF…</option>
@@ -223,6 +231,18 @@ export default function CompareETFs({ answers, watchedTickers, onBack }: Props) 
               {getSummary(tickerA, tickerB)}
             </p>
           </div>
+
+          {/* Coach explanation */}
+          {!showCoach ? (
+            <button
+              onClick={() => setShowCoach(true)}
+              className="w-full py-2.5 rounded-xl text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer"
+            >
+              ✦ Explain this comparison
+            </button>
+          ) : (
+            <CoachExplanation content={getCoachContent()} onClose={() => setShowCoach(false)} />
+          )}
 
           {/* Profile guidance */}
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-2">

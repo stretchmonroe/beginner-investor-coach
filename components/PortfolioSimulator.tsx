@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ETFs, riskBadge, deriveProfile } from "@/lib/etfs";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import type { Profile } from "@/lib/etfs";
+import CoachExplanation from "./CoachExplanation";
+import { profileSimulatorExplanations } from "@/lib/coachExplanations";
 
 interface AllocationItem {
   ticker: string;
@@ -91,6 +93,7 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
   const [profile, setProfile] = useState<Profile>(
     derivedProfile ?? "Balanced Beginner"
   );
+  const [showCoach, setShowCoach] = useState(false);
 
   const starting = clamp(startingAmount);
   const monthly = clamp(monthlyContribution);
@@ -175,7 +178,7 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
             </label>
             <select
               value={profile}
-              onChange={(e) => setProfile(e.target.value as Profile)}
+              onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); }}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer"
             >
               {PROFILES.map((p) => (
@@ -285,6 +288,23 @@ export default function PortfolioSimulator({ answers, onBack }: Props) {
           {profileExplanation[profile]}
         </p>
       </div>
+
+      {/* Coach explanation */}
+      {!showCoach ? (
+        <button
+          onClick={() => setShowCoach(true)}
+          className="w-full py-2.5 rounded-xl text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer mb-6"
+        >
+          ✦ Explain my sample allocation
+        </button>
+      ) : (
+        <div className="mb-6">
+          <CoachExplanation
+            content={profileSimulatorExplanations[profile]}
+            onClose={() => setShowCoach(false)}
+          />
+        </div>
+      )}
 
       {/* Disclaimer */}
       <div className="rounded-xl bg-slate-100 border border-slate-200 px-5 py-4">
