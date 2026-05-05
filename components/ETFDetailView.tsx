@@ -108,7 +108,7 @@ export default function ETFDetailView({
           {/* Questions */}
           <div className="space-y-3">
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-              Questions to ask before buying
+              Questions to consider before investing
             </h3>
             <ul className="space-y-2">
               {etf.questions.map((q) => (

@@ -80,19 +80,32 @@ const colorMap: Record<string, { bg: string; border: string; text: string; badge
 
 interface Props {
   answers: QuizAnswers;
+  quizSkipped?: boolean;
+  onBack?: () => void;
   onRestart: () => void;
   onExploreETFs: () => void;
   onSimulate: () => void;
   onAskCoach: () => void;
   onContributionGuidance: () => void;
+  onAssetClassExplorer: () => void;
 }
 
-export default function QuizResults({ answers, onRestart, onExploreETFs, onSimulate, onAskCoach, onContributionGuidance }: Props) {
+export default function QuizResults({ answers, quizSkipped, onBack, onRestart, onExploreETFs, onSimulate, onAskCoach, onContributionGuidance, onAssetClassExplorer }: Props) {
   const profile = deriveProfile(answers);
   const colors = colorMap[profile.color];
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-20">
+      {onBack && (
+        <div className="w-full max-w-lg mb-4">
+          <button
+            onClick={onBack}
+            className="text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            ← Back to dashboard
+          </button>
+        </div>
+      )}
       <div className="max-w-lg w-full space-y-6">
         {/* Header */}
         <div className="text-center space-y-1">
@@ -104,9 +117,16 @@ export default function QuizResults({ answers, onRestart, onExploreETFs, onSimul
 
         {/* Profile card */}
         <div className={`rounded-2xl border ${colors.bg} ${colors.border} p-8 space-y-4`}>
-          <div className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${colors.badge}`}>
-            <span>{profile.badge}</span>
-            <span>{profile.label}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${colors.badge}`}>
+              <span>{profile.badge}</span>
+              <span>{profile.label}</span>
+            </div>
+            {quizSkipped && (
+              <span className="text-xs text-slate-400 font-normal px-2 py-1 rounded-full bg-slate-100 border border-slate-200">
+                Profile selected manually
+              </span>
+            )}
           </div>
 
           <p className={`text-base leading-relaxed ${colors.text}`}>
@@ -134,6 +154,13 @@ export default function QuizResults({ answers, onRestart, onExploreETFs, onSimul
           </button>
 
           <button
+            onClick={onAssetClassExplorer}
+            className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+          >
+            What types of investments exist?
+          </button>
+
+          <button
             onClick={onSimulate}
             className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
           >
@@ -151,7 +178,7 @@ export default function QuizResults({ answers, onRestart, onExploreETFs, onSimul
             onClick={onContributionGuidance}
             className="w-full bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 font-semibold text-sm px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
           >
-            $ How much should I invest?
+            $ How much can I invest?
           </button>
 
           <button

@@ -10,9 +10,13 @@ import CompareETFs from "@/components/CompareETFs";
 import PortfolioSimulator from "@/components/PortfolioSimulator";
 import AskCoach from "@/components/AskCoach";
 import ContributionGuidance from "@/components/ContributionGuidance";
+import GoalPlanner from "@/components/GoalPlanner";
+import ProfileSelection from "@/components/ProfileSelection";
+import AssetClassExplorer from "@/components/AssetClassExplorer";
+import InvestorDashboard from "@/components/InvestorDashboard";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
-import type { Etf } from "@/lib/etfs";
+import type { Etf, Profile } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
 import {
   fetchWatchlistTickers,
@@ -20,7 +24,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -35,6 +39,17 @@ function deriveProfileLabel(a: QuizAnswers): string {
   if (score >= 3) return "Growth Beginner";
   if (score >= 1) return "Balanced Beginner";
   return "Conservative Beginner";
+}
+
+function syntheticAnswersForProfile(profile: Profile): QuizAnswers {
+  const base = { experience: "skipped", goal: "skipped", monthly: "skipped" };
+  if (profile === "Growth Beginner") {
+    return { ...base, risk: "I am comfortable with higher risk", timeline: "10+ years" };
+  }
+  if (profile === "Balanced Beginner") {
+    return { ...base, risk: "I can handle some ups and downs", timeline: "3–10 years" };
+  }
+  return { ...base, risk: "I prefer to avoid losses", timeline: "Less than 3 years" };
 }
 
 function getOrCreateSessionId(): string {
@@ -52,8 +67,18 @@ export default function Home() {
   const [watchedTickers, setWatchedTickers] = useState<Set<string>>(new Set());
   const [prefillMonthly, setPrefillMonthly] = useState<number | null>(null);
   const [prefillStarting, setPrefillStarting] = useState<number | null>(null);
-  const [contributionOrigin, setContributionOrigin] = useState<Screen>("results");
+  const [quizSkipped, setQuizSkipped] = useState(false);
+  const [assetClassOrigin, setAssetClassOrigin] = useState<Screen>("dashboard");
+  const [contributionOrigin, setContributionOrigin] = useState<Screen>("dashboard");
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
+  const [goalPlannerOrigin, setGoalPlannerOrigin] = useState<Screen>("dashboard");
+  const [hasVisitedETFs, setHasVisitedETFs] = useState(false);
+  const [hasVisitedAssetClasses, setHasVisitedAssetClasses] = useState(false);
+  const [hasVisitedGoalPlanner, setHasVisitedGoalPlanner] = useState(false);
+  const [hasAskedCoach, setHasAskedCoach] = useState(false);
+  const [hasVisitedSimulator, setHasVisitedSimulator] = useState(false);
+  const [goalPlannerPrefillMonthly, setGoalPlannerPrefillMonthly] = useState<number | null>(null);
+  const [goalPlannerPrefillStarting, setGoalPlannerPrefillStarting] = useState<number | null>(null);
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -65,8 +90,9 @@ export default function Home() {
   }, []);
 
   function handleQuizComplete(a: QuizAnswers) {
+    setQuizSkipped(false);
     setAnswers(a);
-    setScreen("results");
+    setScreen("dashboard");
     supabase.from("quiz_results").insert({
       session_id: sessionId,
       experience: a.experience,
@@ -77,6 +103,24 @@ export default function Home() {
       profile: deriveProfileLabel(a),
     }).then(({ error }) => {
       if (error) console.error("Failed to save quiz result:", error.message);
+    });
+  }
+
+  function handleProfileSelect(profile: Profile) {
+    const synthetic = syntheticAnswersForProfile(profile);
+    setQuizSkipped(true);
+    setAnswers(synthetic);
+    setScreen("dashboard");
+    supabase.from("quiz_results").insert({
+      session_id: sessionId,
+      profile,
+      experience: null,
+      goal: null,
+      timeline: null,
+      risk: null,
+      monthly: null,
+    }).then(({ error }) => {
+      if (error) console.error("Failed to save skipped profile:", error.message);
     });
   }
 
@@ -95,6 +139,7 @@ export default function Home() {
   }
 
   function goToSimulator() {
+    setHasVisitedSimulator(true);
     setPrefillMonthly(null);
     setPrefillStarting(null);
     setScreen("simulator");
@@ -102,16 +147,60 @@ export default function Home() {
 
   return (
     <>
-      {screen === "landing" && <Landing onStart={() => setScreen("quiz")} />}
+      {screen === "landing" && (
+        <Landing
+          onStart={() => { setQuizSkipped(false); setScreen("quiz"); }}
+          onSkipQuiz={() => setScreen("profileselection")}
+        />
+      )}
       {screen === "quiz" && <OnboardingQuiz onComplete={handleQuizComplete} />}
+      {screen === "profileselection" && (
+        <ProfileSelection
+          onSelect={handleProfileSelect}
+          onBack={() => setScreen("landing")}
+        />
+      )}
+      {screen === "dashboard" && answers && (
+        <InvestorDashboard
+          answers={answers}
+          quizSkipped={quizSkipped}
+          sessionId={sessionId}
+          watchedTickers={watchedTickers}
+          guidanceSnapshot={guidanceSnapshot}
+          hasVisitedETFs={hasVisitedETFs}
+          hasVisitedAssetClasses={hasVisitedAssetClasses}
+          hasVisitedGoalPlanner={hasVisitedGoalPlanner}
+          hasVisitedSimulator={hasVisitedSimulator}
+          hasAskedCoach={hasAskedCoach}
+          onExploreETFs={() => { setHasVisitedETFs(true); setScreen("etfs"); }}
+          onAssetClasses={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
+          onSimulator={goToSimulator}
+          onGoalPlanner={() => {
+            setHasVisitedGoalPlanner(true);
+            setGoalPlannerPrefillMonthly(null);
+            setGoalPlannerPrefillStarting(null);
+            setGoalPlannerOrigin("dashboard");
+            setScreen("goalplanner");
+          }}
+          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
+          onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
+          onWatchlist={() => setScreen("watchlist")}
+          onCompare={() => setScreen("compare")}
+          onViewProfile={() => setScreen("results")}
+          onRetakeQuiz={() => setScreen("landing")}
+        />
+      )}
       {screen === "results" && answers && (
         <QuizResults
           answers={answers}
+          quizSkipped={quizSkipped}
+          onBack={() => setScreen("dashboard")}
           onRestart={() => setScreen("landing")}
-          onExploreETFs={() => setScreen("etfs")}
+          onExploreETFs={() => { setHasVisitedETFs(true); setScreen("etfs"); }}
           onSimulate={goToSimulator}
-          onAskCoach={() => setScreen("coach")}
+          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
           onContributionGuidance={() => { setContributionOrigin("results"); setScreen("contribution"); }}
+          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("results"); setScreen("assetclasses"); }}
         />
       )}
       {screen === "etfs" && (
@@ -123,8 +212,9 @@ export default function Home() {
           onViewWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
           onSimulate={goToSimulator}
-          onAskCoach={() => setScreen("coach")}
-          onBack={() => setScreen("results")}
+          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
+          onBack={() => setScreen("dashboard")}
+          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("etfs"); setScreen("assetclasses"); }}
         />
       )}
       {screen === "watchlist" && (
@@ -133,14 +223,14 @@ export default function Home() {
           answers={answers}
           onRemove={handleRemove}
           onCompare={() => setScreen("compare")}
-          onBack={() => setScreen("etfs")}
+          onBack={() => setScreen("dashboard")}
         />
       )}
       {screen === "compare" && (
         <CompareETFs
           answers={answers}
           watchedTickers={watchedTickers}
-          onBack={() => setScreen("etfs")}
+          onBack={() => setScreen("dashboard")}
         />
       )}
       {screen === "simulator" && (
@@ -150,8 +240,16 @@ export default function Home() {
           prefillStarting={prefillStarting}
           sessionId={sessionId}
           guidanceSnapshot={guidanceSnapshot}
-          onBack={() => setScreen("etfs")}
+          onBack={() => setScreen("dashboard")}
           onContributionGuidance={() => { setContributionOrigin("simulator"); setScreen("contribution"); }}
+          onGoalPlanner={(starting, monthly) => {
+            setHasVisitedGoalPlanner(true);
+            setGoalPlannerPrefillStarting(starting > 0 ? starting : null);
+            setGoalPlannerPrefillMonthly(monthly > 0 ? monthly : null);
+            setGoalPlannerOrigin("simulator");
+            setScreen("goalplanner");
+          }}
+          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("simulator"); setScreen("assetclasses"); }}
         />
       )}
       {screen === "coach" && (
@@ -159,7 +257,7 @@ export default function Home() {
           answers={answers}
           watchedTickers={watchedTickers}
           sessionId={sessionId}
-          onBack={() => setScreen("etfs")}
+          onBack={() => setScreen("dashboard")}
         />
       )}
       {screen === "contribution" && (
@@ -168,11 +266,36 @@ export default function Home() {
           onBack={() => setScreen(contributionOrigin)}
           onGuidanceResult={setGuidanceSnapshot}
           onUseInSimulator={(monthly, starting) => {
+            setHasVisitedSimulator(true);
+            if (monthly > 0) setPrefillMonthly(monthly);
+            if (starting > 0) setPrefillStarting(starting);
+            setScreen("simulator");
+          }}
+          onGoalPlanner={() => {
+            setHasVisitedGoalPlanner(true);
+            setGoalPlannerPrefillMonthly(guidanceSnapshot?.estimated_contribution_midpoint ?? null);
+            setGoalPlannerPrefillStarting(null);
+            setGoalPlannerOrigin("contribution");
+            setScreen("goalplanner");
+          }}
+        />
+      )}
+      {screen === "goalplanner" && (
+        <GoalPlanner
+          answers={answers}
+          prefillMonthly={goalPlannerPrefillMonthly}
+          prefillStarting={goalPlannerPrefillStarting}
+          onBack={() => setScreen(goalPlannerOrigin)}
+          onUseInSimulator={(monthly, starting) => {
+            setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
             setScreen("simulator");
           }}
         />
+      )}
+      {screen === "assetclasses" && (
+        <AssetClassExplorer onBack={() => setScreen(assetClassOrigin)} />
       )}
 </>
   );

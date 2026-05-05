@@ -9,28 +9,97 @@ import { profileSimulatorExplanations } from "@/lib/coachExplanations";
 import { saveLearningPlan } from "@/lib/learningPlans";
 import type { ContributionGuidanceSnapshot, LearningPlan, AllocationSnapshot } from "@/lib/learningPlans";
 import SavedLearningPlans from "./SavedLearningPlans";
+import ProjectionChart from "./ProjectionChart";
+import ScenarioComparisonChart from "./ScenarioComparisonChart";
+import ProjectionMilestones from "./ProjectionMilestones";
 
-interface AllocationItem {
-  ticker: string;
-  pct: number;
-  role: string;
+interface AllocationRole {
+  role_id: string;
+  role_label: string;
+  allocation_percent: number;
+  default_ticker: string;
+  alternative_tickers: string[];
+  role_description: string;
 }
 
-const allocations: Record<Profile, AllocationItem[]> = {
+const allocationModels: Record<Profile, AllocationRole[]> = {
   "Conservative Beginner": [
-    { ticker: "VBAL", pct: 50, role: "Balanced stability and growth" },
-    { ticker: "CASH", pct: 30, role: "Short-term stability / cash parking" },
-    { ticker: "VGRO", pct: 20, role: "Growth with some stability" },
+    {
+      role_id: "balanced_stability",
+      role_label: "Balanced stability and growth",
+      allocation_percent: 50,
+      default_ticker: "VBAL",
+      alternative_tickers: [],
+      role_description: "Balanced ETF with a mix of stocks and bonds, emphasizing stability.",
+    },
+    {
+      role_id: "cash_stability",
+      role_label: "Cash / short-term stability",
+      allocation_percent: 30,
+      default_ticker: "CASH",
+      alternative_tickers: [],
+      role_description: "Lower-risk cash-like ETF for short-term stability.",
+    },
+    {
+      role_id: "balanced_growth",
+      role_label: "Growth with some stability",
+      allocation_percent: 20,
+      default_ticker: "VGRO",
+      alternative_tickers: [],
+      role_description: "Growth-oriented ETF with some bond exposure.",
+    },
   ],
   "Balanced Beginner": [
-    { ticker: "VGRO", pct: 50, role: "Growth with some stability" },
-    { ticker: "VBAL", pct: 30, role: "Balanced stability and growth" },
-    { ticker: "XEQT", pct: 20, role: "Long-term growth engine" },
+    {
+      role_id: "balanced_growth",
+      role_label: "Growth with some stability",
+      allocation_percent: 50,
+      default_ticker: "VGRO",
+      alternative_tickers: [],
+      role_description: "Growth-oriented ETF with some bond exposure.",
+    },
+    {
+      role_id: "balanced_stability",
+      role_label: "Balanced stability and growth",
+      allocation_percent: 30,
+      default_ticker: "VBAL",
+      alternative_tickers: [],
+      role_description: "Balanced ETF with a mix of stocks and bonds.",
+    },
+    {
+      role_id: "core_growth",
+      role_label: "Core long-term growth",
+      allocation_percent: 20,
+      default_ticker: "XEQT",
+      alternative_tickers: ["VEQT"],
+      role_description: "Broad all-equity ETF for long-term growth.",
+    },
   ],
   "Growth Beginner": [
-    { ticker: "XEQT", pct: 60, role: "Long-term growth engine" },
-    { ticker: "VGRO", pct: 30, role: "Growth with some stability" },
-    { ticker: "CASH", pct: 10, role: "Short-term stability / cash parking" },
+    {
+      role_id: "core_growth",
+      role_label: "Core long-term growth",
+      allocation_percent: 60,
+      default_ticker: "XEQT",
+      alternative_tickers: ["VEQT"],
+      role_description: "Broad all-equity ETF exposure for long-term growth.",
+    },
+    {
+      role_id: "balanced_growth",
+      role_label: "Growth with some stability",
+      allocation_percent: 30,
+      default_ticker: "VGRO",
+      alternative_tickers: [],
+      role_description: "Growth-oriented ETF with some bond exposure.",
+    },
+    {
+      role_id: "cash_stability",
+      role_label: "Cash / short-term stability",
+      allocation_percent: 10,
+      default_ticker: "CASH",
+      alternative_tickers: [],
+      role_description: "Lower-risk cash-like ETF for short-term stability.",
+    },
   ],
 };
 
@@ -139,11 +208,13 @@ interface Props {
   prefillMonthly?: number | null;
   prefillStarting?: number | null;
   onContributionGuidance: () => void;
+  onGoalPlanner: (starting: number, monthly: number) => void;
+  onAssetClassExplorer?: () => void;
   sessionId: string;
   guidanceSnapshot?: ContributionGuidanceSnapshot | null;
 }
 
-export default function PortfolioSimulator({ answers, onBack, prefillMonthly, prefillStarting, onContributionGuidance, sessionId, guidanceSnapshot }: Props) {
+export default function PortfolioSimulator({ answers, onBack, prefillMonthly, prefillStarting, onContributionGuidance, onGoalPlanner, onAssetClassExplorer, sessionId, guidanceSnapshot }: Props) {
   const derivedProfile = deriveProfile(answers);
   const initialProfile = derivedProfile ?? "Balanced Beginner";
   const initialTimeline = (answers?.timeline as Timeline) ?? "10+ years";
@@ -169,10 +240,19 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedRefreshTrigger, setSavedRefreshTrigger] = useState(0);
   const [loadedGuidance, setLoadedGuidance] = useState<ContributionGuidanceSnapshot | null>(null);
+  const [swappedTickers, setSwappedTickers] = useState<Record<string, string>>({});
 
   const starting = clamp(startingAmount);
   const monthly = clamp(monthlyContribution);
-  const items = allocations[profile];
+
+  const items = allocationModels[profile].map((role) => ({
+    ...role,
+    selected_ticker: swappedTickers[role.role_id] ?? role.default_ticker,
+  }));
+
+  function swapTicker(role_id: string, ticker: string) {
+    setSwappedTickers((prev) => ({ ...prev, [role_id]: ticker }));
+  }
 
   const projYears = Math.min(Math.max(clamp(projectionYears), 1), 50);
   const annReturn = Math.min(Math.max(clamp(annualReturn), 0), 30);
@@ -186,15 +266,18 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
     if (!sessionId) return;
     setSaveStatus("saving");
     const allocationData: AllocationSnapshot[] = items.map((item) => {
-      const etf = ETFs.find((e) => e.ticker === item.ticker);
+      const etf = ETFs.find((e) => e.ticker === item.selected_ticker);
       return {
-        ticker: item.ticker,
-        etf_name: etf?.name ?? item.ticker,
-        allocation_percent: item.pct,
-        starting_amount_allocation: starting > 0 ? Math.round(starting * item.pct) / 100 : 0,
-        monthly_contribution_allocation: monthly > 0 ? Math.round(monthly * item.pct) / 100 : 0,
+        ticker: item.selected_ticker,
+        etf_name: etf?.name ?? item.selected_ticker,
+        allocation_percent: item.allocation_percent,
+        starting_amount_allocation: starting > 0 ? Math.round(starting * item.allocation_percent) / 100 : 0,
+        monthly_contribution_allocation: monthly > 0 ? Math.round(monthly * item.allocation_percent) / 100 : 0,
         risk_level: etf?.riskLevel ?? "",
-        portfolio_role: item.role,
+        portfolio_role: item.role_label,
+        role_id: item.role_id,
+        role_label: item.role_label,
+        alternative_tickers: item.alternative_tickers,
       };
     });
     try {
@@ -243,6 +326,21 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
     setWithdrawalRate(String(pa.withdrawal_rate));
     setLoadedGuidance(plan.contribution_guidance_json);
     setShowCoach(false);
+
+    // Restore swapped tickers from the saved allocation
+    const savedProfile = pi.investor_profile as Profile;
+    const model = allocationModels[savedProfile];
+    const restoredSwaps: Record<string, string> = {};
+    for (const savedItem of plan.allocation_json) {
+      if (savedItem.role_id) {
+        const roleDefault = model.find((r) => r.role_id === savedItem.role_id);
+        if (roleDefault && savedItem.ticker !== roleDefault.default_ticker) {
+          restoredSwaps[savedItem.role_id] = savedItem.ticker;
+        }
+      }
+    }
+    setSwappedTickers(restoredSwaps);
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -339,7 +437,7 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
             </label>
             <select
               value={profile}
-              onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); }}
+              onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); setSwappedTickers({}); }}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer"
             >
               {PROFILES.map((p) => (
@@ -404,43 +502,76 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
 
       {/* Allocation table */}
       <div className="mb-8">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
           Sample learning allocation — {profile}
         </h2>
+        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+          These are sample ETF examples for each portfolio role. Some ETFs can serve a similar purpose, so you may see alternative examples where there is meaningful overlap.
+        </p>
         <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                <th className="text-left px-5 py-3">ETF</th>
+                <th className="text-left px-5 py-3">ETF example</th>
                 <th className="text-left px-5 py-3">%</th>
                 <th className="text-right px-5 py-3">Starting</th>
                 <th className="text-right px-5 py-3">Monthly</th>
                 <th className="text-left px-5 py-3 hidden sm:table-cell">Risk</th>
-                <th className="text-left px-5 py-3 hidden sm:table-cell">Role</th>
+                <th className="text-left px-5 py-3 hidden sm:table-cell">Portfolio role</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, i) => {
-                const etf = ETFs.find((e) => e.ticker === item.ticker);
-                const startAlloc = Math.round(starting * item.pct) / 100;
-                const monthlyAlloc = Math.round(monthly * item.pct) / 100;
+                const etf = ETFs.find((e) => e.ticker === item.selected_ticker);
+                const startAlloc = Math.round(starting * item.allocation_percent) / 100;
+                const monthlyAlloc = Math.round(monthly * item.allocation_percent) / 100;
+                const isSwapped = item.selected_ticker !== item.default_ticker;
                 return (
                   <tr
-                    key={item.ticker}
+                    key={item.role_id}
                     className={`border-b border-slate-50 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}
                   >
                     <td className="px-5 py-4 align-top">
-                      <span className="font-bold text-emerald-700">{item.ticker}</span>
+                      <span className="font-bold text-emerald-700">{item.selected_ticker}</span>
+                      {isSwapped && (
+                        <span className="ml-1.5 text-xs text-slate-400 font-normal">(swapped)</span>
+                      )}
                       {etf && (
                         <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">{etf.name}</p>
+                      )}
+                      {/* Alternative / swap controls */}
+                      {item.alternative_tickers.length > 0 && (
+                        <div className="mt-2">
+                          {isSwapped ? (
+                            <button
+                              onClick={() => swapTicker(item.role_id, item.default_ticker)}
+                              className="text-xs text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                            >
+                              ↩ Back to {item.default_ticker}
+                            </button>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 items-center">
+                              <span className="text-xs text-slate-400">Similar ETF example:</span>
+                              {item.alternative_tickers.map((alt) => (
+                                <button
+                                  key={alt}
+                                  onClick={() => swapTicker(item.role_id, alt)}
+                                  className="text-xs px-2 py-0.5 rounded border border-slate-200 bg-white text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-colors cursor-pointer font-medium"
+                                >
+                                  Swap to {alt}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-5 py-4 align-top">
                       <div className="flex items-center gap-2">
                         <div className="w-12 bg-slate-100 rounded-full h-1.5">
-                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${item.pct}%` }} />
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${item.allocation_percent}%` }} />
                         </div>
-                        <span className="text-slate-700 font-medium">{item.pct}%</span>
+                        <span className="text-slate-700 font-medium">{item.allocation_percent}%</span>
                       </div>
                     </td>
                     <td className="px-5 py-4 align-top text-right text-slate-700 font-medium">
@@ -456,8 +587,9 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-4 align-top text-slate-500 text-xs hidden sm:table-cell">
-                      {item.role}
+                    <td className="px-5 py-4 align-top hidden sm:table-cell">
+                      <p className="text-xs font-medium text-slate-600">{item.role_label}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{item.role_description}</p>
                     </td>
                   </tr>
                 );
@@ -475,13 +607,28 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
             </tfoot>
           </table>
         </div>
+        {items.some((item) => item.alternative_tickers.length > 0) && (
+          <p className="text-xs text-slate-400 leading-relaxed mt-3">
+            Similar does not mean identical. Compare fees, holdings, provider, and risk before making real investment decisions.
+          </p>
+        )}
       </div>
 
       {/* Plain-English explanation */}
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-6 space-y-2">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-          What this sample allocation means
-        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+            What this sample allocation means
+          </h2>
+          {onAssetClassExplorer && (
+            <button
+              onClick={onAssetClassExplorer}
+              className="text-xs text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer shrink-0"
+            >
+              Asset Class Explorer →
+            </button>
+          )}
+        </div>
         <p className="text-sm text-slate-700 leading-relaxed">{profileExplanation[profile]}</p>
       </div>
 
@@ -654,6 +801,11 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
           </div>
         </div>
 
+        {/* Charts and milestones */}
+        <ProjectionChart starting={starting} monthly={monthly} years={projYears} annualReturnPct={annReturn} />
+        <ScenarioComparisonChart starting={starting} monthly={monthly} years={projYears} />
+        <ProjectionMilestones starting={starting} monthly={monthly} years={projYears} annualReturnPct={annReturn} />
+
         {/* Profile note */}
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5">
           <p className="text-xs text-emerald-800 leading-relaxed">
@@ -670,6 +822,20 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
           <p className="text-xs text-slate-500 leading-relaxed">
             Estimated income is based on a withdrawal-rate assumption. It does not mean the portfolio will produce guaranteed income or dividends.
           </p>
+        </div>
+
+        {/* Goal Planner entry */}
+        <div className="border border-slate-200 rounded-xl px-4 py-3 mb-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-slate-700">Have a specific target in mind?</p>
+            <p className="text-xs text-slate-400 mt-0.5">Work backward from a goal amount to find the required monthly contribution.</p>
+          </div>
+          <button
+            onClick={() => onGoalPlanner(starting, monthly)}
+            className="text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors cursor-pointer whitespace-nowrap"
+          >
+            Goal Planner →
+          </button>
         </div>
       </div>
 

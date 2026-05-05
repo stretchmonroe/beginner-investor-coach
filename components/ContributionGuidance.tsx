@@ -174,9 +174,10 @@ interface Props {
   onBack: () => void;
   onUseInSimulator: (monthly: number, starting: number) => void;
   onGuidanceResult?: (snapshot: ContributionGuidanceSnapshot) => void;
+  onGoalPlanner?: () => void;
 }
 
-export default function ContributionGuidance({ answers, onBack, onUseInSimulator, onGuidanceResult }: Props) {
+export default function ContributionGuidance({ answers, onBack, onUseInSimulator, onGuidanceResult, onGoalPlanner }: Props) {
   const derivedProfile = deriveProfile(answers);
 
   // Monthly cash flow
@@ -553,6 +554,18 @@ export default function ContributionGuidance({ answers, onBack, onUseInSimulator
               <p className="text-sm text-slate-500">
                 Try adjusting your numbers or focus on building monthly surplus first before using the simulator.
               </p>
+            </div>
+          )}
+
+          {/* Goal Planner link */}
+          {onGoalPlanner && (
+            <div className="text-center">
+              <button
+                onClick={onGoalPlanner}
+                className="text-sm text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer"
+              >
+                Have a specific target amount in mind? → Goal Planner
+              </button>
             </div>
           )}
         </div>

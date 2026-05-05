@@ -33,6 +33,9 @@ export interface AllocationSnapshot {
   monthly_contribution_allocation: number;
   risk_level: string;
   portfolio_role: string;
+  role_id?: string;
+  role_label?: string;
+  alternative_tickers?: string[];
 }
 
 export interface LearningPlan {

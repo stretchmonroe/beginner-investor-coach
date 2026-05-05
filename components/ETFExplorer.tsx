@@ -29,6 +29,7 @@ interface Props {
   onSimulate: () => void;
   onAskCoach: () => void;
   onBack: () => void;
+  onAssetClassExplorer?: () => void;
 }
 
 export default function ETFExplorer({
@@ -41,6 +42,7 @@ export default function ETFExplorer({
   onSimulate,
   onAskCoach,
   onBack,
+  onAssetClassExplorer,
 }: Props) {
   const [filter, setFilter] = useState<Filter>("All");
   const [selected, setSelected] = useState<Etf | null>(null);
@@ -59,6 +61,14 @@ export default function ETFExplorer({
           ← Back to results
         </button>
         <div className="flex items-center gap-4">
+          {onAssetClassExplorer && (
+            <button
+              onClick={onAssetClassExplorer}
+              className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
+            >
+              ≡ Asset Classes
+            </button>
+          )}
           <button
             onClick={onAskCoach}
             className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
