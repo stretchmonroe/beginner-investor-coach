@@ -64,7 +64,7 @@ interface Props {
   onAssetClasses: () => void;
   onSimulator: () => void;
   onGoalPlanner: () => void;
-  onAskCoach: () => void;
+  onAskCoach: (question?: string) => void;
   onContribution: () => void;
   onWatchlist: () => void;
   onCompare: () => void;
@@ -156,7 +156,7 @@ export default function InvestorDashboard({
       label: "Ask the coach a question",
       desc: "Use the beginner coach to clarify anything you've learned so far.",
       actionLabel: "Ask the Coach",
-      action: onAskCoach,
+      action: () => onAskCoach(),
     };
     return null;
   }
@@ -210,7 +210,7 @@ export default function InvestorDashboard({
       label: "Ask the coach",
       desc: "Get plain-language answers to your investing questions.",
       done: hasAskedCoach,
-      action: onAskCoach,
+      action: () => onAskCoach(),
     },
   ];
 
@@ -232,8 +232,8 @@ export default function InvestorDashboard({
   ];
 
   const coachTools = [
-    { icon: "✦", title: "Ask the Coach", description: "Ask plain-language questions about investing concepts", action: onAskCoach },
-    { icon: "🕐", title: "Coach History", description: "Review your previous coach conversations", action: onAskCoach },
+    { icon: "✦", title: "Ask the Coach", description: "Ask plain-language questions about investing concepts", action: () => onAskCoach() },
+    { icon: "🕐", title: "Coach History", description: "Review your previous coach conversations", action: () => onAskCoach() },
   ];
 
   // suppress unused-var warning — hasVisitedETFs is received but checklist uses ETF watchlist count instead
@@ -400,6 +400,7 @@ export default function InvestorDashboard({
           sessionId={sessionId}
           onCountChange={setSavedReadinessPlansCount}
           onRestorePlan={onRestorePlan}
+          onAskCoach={onAskCoach}
         />
       </div>
 

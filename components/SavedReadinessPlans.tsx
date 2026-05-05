@@ -33,6 +33,24 @@ interface Props {
   sessionId: string;
   onCountChange?: (count: number) => void;
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
+  onAskCoach?: (question?: string) => void;
+}
+
+function buildCoachQuestion(plan: ReadinessPlanRow): string {
+  const pa = plan.projection_assumptions_json;
+  const pr = plan.projection_result_json;
+  const gp = plan.goal_plan_json;
+  const cg = plan.contribution_guidance_json;
+  const sa = plan.sample_allocation_json;
+  return [
+    "Explain this saved Readiness Plan in plain English.",
+    plan.investor_profile ? `Investor profile: ${plan.investor_profile}.` : "",
+    cg ? `Investing capacity range: ${formatCurrency(cg.estimatedContributionMin)} – ${formatCurrency(cg.estimatedContributionMax)}/month.` : "",
+    gp ? `Goal target: ${formatCurrency(gp.targetAmount)} over ${gp.timelineYears} years. Required monthly: ${formatCurrency(gp.requiredMonthlyContribution)}. Affordable: ${formatCurrency(gp.affordableMonthlyContribution)}. Feasibility: ${gp.feasibilityStatus}.` : "",
+    sa?.length ? `Sample allocation: ${sa.map((i) => `${i.selectedTicker} ${i.allocationPercent}%`).join(", ")}.` : "",
+    pa && pr ? `Projection: ${pa.projectionYears} years at ${pa.annualReturnAssumption}% return assumption. Estimated future value: ${formatCurrency(pr.estimatedFutureValue)}.` : "",
+    "Summarize the Money Snapshot, Goal Feasibility, Sample Learning Allocation, and What-if Projection. Highlight key assumptions and learning takeaways.",
+  ].filter(Boolean).join(" ");
 }
 
 function buildSharedInputs(plan: ReadinessPlanRow): SharedPlanInputs {
@@ -52,7 +70,7 @@ function buildSharedInputs(plan: ReadinessPlanRow): SharedPlanInputs {
   };
 }
 
-export default function SavedReadinessPlans({ sessionId, onCountChange, onRestorePlan }: Props) {
+export default function SavedReadinessPlans({ sessionId, onCountChange, onRestorePlan, onAskCoach }: Props) {
   const [plans, setPlans] = useState<ReadinessPlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -356,6 +374,17 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
                     className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
                   >
                     Use these values in planning tools →
+                  </button>
+                )}
+                {onAskCoach && (
+                  <button
+                    onClick={() => {
+                      onAskCoach(buildCoachQuestion(plan));
+                      setExpandedId(null);
+                    }}
+                    className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                  >
+                    ✦ Explain this readiness plan
                   </button>
                 )}
               </div>

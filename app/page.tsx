@@ -198,7 +198,7 @@ export default function Home() {
             setGoalPlannerOrigin("dashboard");
             setScreen("goalplanner");
           }}
-          onAskCoach={() => goToCoach()}
+          onAskCoach={(q) => goToCoach(q)}
           onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
           onWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
