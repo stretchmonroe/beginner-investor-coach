@@ -271,10 +271,10 @@ export default function Home() {
             if (starting > 0) setPrefillStarting(starting);
             setScreen("simulator");
           }}
-          onGoalPlanner={() => {
+          onGoalPlanner={(monthly, starting) => {
             setHasVisitedGoalPlanner(true);
-            setGoalPlannerPrefillMonthly(guidanceSnapshot?.estimated_contribution_midpoint ?? null);
-            setGoalPlannerPrefillStarting(null);
+            setGoalPlannerPrefillMonthly(monthly > 0 ? monthly : null);
+            setGoalPlannerPrefillStarting(starting > 0 ? starting : null);
             setGoalPlannerOrigin("contribution");
             setScreen("goalplanner");
           }}

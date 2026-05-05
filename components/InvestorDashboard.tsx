@@ -115,7 +115,7 @@ export default function InvestorDashboard({
       stepLabel: "Step 1 of 6",
       label: "Estimate your contribution capacity",
       desc: "Use your income, bills, savings buckets, and lifestyle buffer to estimate a monthly contribution range to consider.",
-      actionLabel: "Start Contribution Guidance",
+      actionLabel: "Open Money Snapshot",
       action: onContribution,
     };
     if (!hasVisitedGoalPlanner) return {
@@ -213,7 +213,7 @@ export default function InvestorDashboard({
   const showActivity = watchedTickers.size > 0 || savedPlansCount > 0;
 
   const planTools = [
-    { icon: "$", title: "Contribution Guidance", description: "Estimate your investing capacity from your budget", action: onContribution },
+    { icon: "$", title: "Money Snapshot", description: "Estimate your investing capacity from your budget", action: onContribution },
     { icon: "◎", title: "Goal Planner", description: "Work backwards from a target to find required monthly contributions", action: onGoalPlanner },
     { icon: "⊞", title: "Portfolio Simulator", description: "Build a sample learning allocation and review what-if projections", action: onSimulator },
     { icon: "📋", title: "Saved Plans", description: "Review your saved readiness plans and learning allocations", action: onSimulator },
