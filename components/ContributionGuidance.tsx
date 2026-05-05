@@ -21,6 +21,8 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Disclaimer from "@/components/ui/Disclaimer";
+import AutofillPanel from "@/components/AutofillPanel";
+import type { AutofillExtractedFields } from "@/types/autofill";
 
 const EMERGENCY_STATUSES: EmergencyFundStatus[] = [
   "Not started",
@@ -164,6 +166,39 @@ export default function ContributionGuidance({
   const hasOkStarting = startingCheck.type === "ok";
   const canUse = hasRange || hasOkStarting;
 
+  function handleAutofillApply(fields: AutofillExtractedFields) {
+    if (fields.monthlyTakeHomePay != null) setTakeHome(String(fields.monthlyTakeHomePay));
+    if (fields.monthlyBills != null) setBills(String(fields.monthlyBills));
+    if (fields.monthlyDebtPayments != null) setDebt(String(fields.monthlyDebtPayments));
+    if (fields.currentCashSavings != null) setCurrentCashSavings(String(fields.currentCashSavings));
+    if (fields.emergencyFundTarget != null) setEmergencyFundTarget(String(fields.emergencyFundTarget));
+    if (fields.shortTermSavingsToProtect != null) setShortTermSavingsToProtect(String(fields.shortTermSavingsToProtect));
+    if (fields.monthlyEmergencySavingsContribution != null) setEmergencySavings(String(fields.monthlyEmergencySavingsContribution));
+    if (fields.monthlyShortTermSavingsContribution != null) setMonthlyShortTermSavings(String(fields.monthlyShortTermSavingsContribution));
+    if (fields.monthlyLifestylePlayBuffer != null) setMonthlyLifestyleBuffer(String(fields.monthlyLifestylePlayBuffer));
+    if (fields.emergencyFundStatus != null) setEmergencyStatus(fields.emergencyFundStatus as EmergencyFundStatus);
+    if (fields.investorProfile != null) {
+      setProfile(fields.investorProfile as Profile);
+    }
+    if (fields.startingInvestmentAmount != null) {
+      setStartingInvestmentAmount(String(fields.startingInvestmentAmount));
+      onSharedInputsChange?.({ startingInvestmentAmount: fields.startingInvestmentAmount });
+    }
+    // Pass goal-feasibility fields to shared state so GoalPlanner can pick them up
+    const shared: Partial<SharedPlanInputs> = {};
+    if (fields.investorProfile != null) shared.investorProfile = fields.investorProfile;
+    if (fields.affordableMonthlyContribution != null) {
+      shared.affordableMonthlyContribution = fields.affordableMonthlyContribution;
+      shared.monthlyContribution = fields.affordableMonthlyContribution;
+    }
+    if (fields.timelineYears != null) {
+      shared.timelineYears = fields.timelineYears;
+      shared.timeline = fields.timelineYears >= 10 ? "10+ years" : fields.timelineYears >= 3 ? "3–10 years" : "Less than 3 years";
+    }
+    if (fields.annualReturnAssumption != null) shared.annualReturnAssumption = fields.annualReturnAssumption;
+    if (Object.keys(shared).length > 0) onSharedInputsChange?.(shared);
+  }
+
   function buildSnapshot(): ContributionGuidanceSnapshot {
     return {
       monthly_take_home_pay: takeHomeNum,
@@ -218,6 +253,8 @@ export default function ContributionGuidance({
           This helps you understand what may be realistic before building a sample allocation or setting a target goal.
         </p>
       </div>
+
+      <AutofillPanel onApply={handleAutofillApply} profile={profile} />
 
       {/* A: Monthly Cash Flow */}
       <div className="mb-5">

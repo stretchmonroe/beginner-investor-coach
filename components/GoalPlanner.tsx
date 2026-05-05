@@ -12,6 +12,8 @@ import {
   calculateGoalFeasibility,
 } from "@/lib/readinessCalculations";
 import { formatCurrency } from "@/lib/formatters";
+import AutofillPanel from "@/components/AutofillPanel";
+import type { AutofillExtractedFields } from "@/types/autofill";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -195,6 +197,34 @@ export default function GoalPlanner({
   const canUseAffordable = !hasTimelineError && (affordableNum > 0 || startingNum > 0);
   const canUseRequired = !hasTimelineError && requiredMonthly > 0;
 
+  function handleAutofillApply(fields: AutofillExtractedFields) {
+    if (fields.targetAmount != null) setTarget(String(fields.targetAmount));
+    if (fields.timelineYears != null) {
+      setYears(String(fields.timelineYears));
+      const tl = fields.timelineYears >= 10 ? "10+ years" : fields.timelineYears >= 3 ? "3–10 years" : "Less than 3 years";
+      onSharedInputsChange?.({ timelineYears: fields.timelineYears, timeline: tl });
+    }
+    if (fields.startingInvestmentAmount != null) {
+      setStarting(String(fields.startingInvestmentAmount));
+      onSharedInputsChange?.({ startingInvestmentAmount: fields.startingInvestmentAmount });
+    }
+    if (fields.affordableMonthlyContribution != null) {
+      setAffordable(String(fields.affordableMonthlyContribution));
+      onSharedInputsChange?.({
+        affordableMonthlyContribution: fields.affordableMonthlyContribution,
+        monthlyContribution: fields.affordableMonthlyContribution,
+      });
+    }
+    if (fields.annualReturnAssumption != null) {
+      setAnnualReturn(String(fields.annualReturnAssumption));
+      onSharedInputsChange?.({ annualReturnAssumption: fields.annualReturnAssumption });
+    }
+    if (fields.investorProfile != null) {
+      setProfile(fields.investorProfile as Profile);
+      onSharedInputsChange?.({ investorProfile: fields.investorProfile });
+    }
+  }
+
   return (
     <PageLayout maxWidth="md">
       <PageHeader
@@ -213,6 +243,8 @@ export default function GoalPlanner({
           This helps you understand whether a goal looks realistic based on your starting amount, estimated investing capacity, timeline, and return assumption.
         </p>
       </div>
+
+      <AutofillPanel onApply={handleAutofillApply} profile={profile} />
 
       {/* No Money Snapshot data hint */}
       {!hasMoneySnapshotData && (

@@ -346,7 +346,8 @@ export default function PortfolioSimulator({
       });
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 3000);
-    } catch {
+    } catch (err) {
+      console.error("Save readiness plan failed:", err);
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
