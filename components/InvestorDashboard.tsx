@@ -6,6 +6,7 @@ import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import { getLearningPlans } from "@/lib/learningPlans";
+import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -25,7 +26,7 @@ const profileMeta: Record<
     textColor: "text-violet-800",
     badgeColor: "bg-violet-100 text-violet-700",
     explanation:
-      "You may prefer a safer investing experience and want to reduce large swings where possible. Focus first on protected savings, contribution comfort, and lower-volatility investment types.",
+      "You may prefer a steadier investing experience and want to reduce large swings where possible. Start by understanding your protected savings, monthly investing capacity, and comfort with risk.",
   },
   "Balanced Beginner": {
     badge: "⚖️",
@@ -34,7 +35,7 @@ const profileMeta: Record<
     textColor: "text-blue-800",
     badgeColor: "bg-blue-100 text-blue-700",
     explanation:
-      "You may want a mix of growth and stability. Focus first on contribution consistency, goal feasibility, and understanding how much volatility you can realistically handle.",
+      "You may want a mix of growth and stability. Start by understanding your monthly investing capacity, goal feasibility, and how much volatility you can realistically handle.",
   },
   "Growth Beginner": {
     badge: "📈",
@@ -43,7 +44,7 @@ const profileMeta: Record<
     textColor: "text-teal-800",
     badgeColor: "bg-teal-100 text-teal-700",
     explanation:
-      "You may have a longer timeline and be more comfortable with market swings. Focus first on diversification, contribution habits, and staying invested through volatility.",
+      "You may have a longer timeline and more comfort with market swings. Start by understanding your investing capacity, goal feasibility, and the assumptions behind your plan.",
   },
 };
 
@@ -66,7 +67,7 @@ interface Props {
   onContribution: () => void;
   onWatchlist: () => void;
   onCompare: () => void;
-  onViewProfile: () => void;
+  onChangeProfile: () => void;
   onRetakeQuiz: () => void;
 }
 
@@ -97,10 +98,11 @@ export default function InvestorDashboard({
   onContribution,
   onWatchlist,
   onCompare,
-  onViewProfile,
+  onChangeProfile,
   onRetakeQuiz,
 }: Props) {
   const [savedPlansCount, setSavedPlansCount] = useState(0);
+  const [savedReadinessPlansCount, setSavedReadinessPlansCount] = useState(0);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -129,10 +131,10 @@ export default function InvestorDashboard({
       stepLabel: "Step 3 of 6",
       label: "Build a sample learning allocation",
       desc: "See how a sample portfolio could be split by role — growth, stability, and cash-like options.",
-      actionLabel: "Open Portfolio Simulator",
+      actionLabel: "Open Sample Learning Allocation",
       action: onSimulator,
     };
-    if (savedPlansCount === 0) return {
+    if (savedReadinessPlansCount === 0 && savedPlansCount === 0) return {
       stepLabel: "Step 4 of 6",
       label: "Save your readiness plan",
       desc: "Save your budget inputs, goal estimate, sample allocation, and projection so you can revisit them later.",
@@ -163,7 +165,7 @@ export default function InvestorDashboard({
       label: "Choose investor profile",
       desc: "Know your risk tolerance and investing timeline.",
       done: true,
-      action: onViewProfile,
+      action: onChangeProfile,
     },
     {
       label: "Estimate contribution capacity",
@@ -192,7 +194,7 @@ export default function InvestorDashboard({
     {
       label: "Save readiness plan",
       desc: "Save your inputs and estimates for future reference.",
-      done: savedPlansCount > 0,
+      done: savedReadinessPlansCount > 0 || savedPlansCount > 0,
       action: onSimulator,
     },
     {
@@ -237,17 +239,10 @@ export default function InvestorDashboard({
   return (
     <PageLayout maxWidth="lg">
       {/* Header */}
-      <PageHeader
-        title="Your Investor Dashboard"
-        action={
-          <Button variant="ghost" size="sm" onClick={onRetakeQuiz}>
-            ← Retake quiz
-          </Button>
-        }
-      />
+      <PageHeader title="Your Investor Dashboard" />
 
       {/* Profile summary card */}
-      <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-6 mb-4`}>
+      <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-6 mb-6`}>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${meta.badgeColor}`}>
             <span>{meta.badge}</span>
@@ -260,17 +255,20 @@ export default function InvestorDashboard({
           )}
         </div>
         <p className={`text-sm leading-relaxed ${meta.textColor} mb-3`}>{meta.explanation}</p>
-        <button
-          onClick={onViewProfile}
-          className={`text-xs font-medium ${meta.textColor} opacity-70 hover:opacity-100 transition-opacity cursor-pointer`}
-        >
-          View profile details →
-        </button>
-      </div>
-
-      {/* Compact disclaimer */}
-      <div className="mb-6">
-        <Disclaimer />
+        <p className="text-xs text-slate-400 leading-relaxed mb-4">
+          Educational only. Not financial advice. This profile is a learning starting point based on your quiz or manual selection. It does not account for your full financial situation.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="secondary" size="sm" onClick={onChangeProfile}>
+            Change profile
+          </Button>
+          <button
+            onClick={onRetakeQuiz}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            Retake quiz →
+          </button>
+        </div>
       </div>
 
       {/* Next best step */}
@@ -390,6 +388,15 @@ export default function InvestorDashboard({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Saved Readiness Plans */}
+      <div className="mb-6">
+        <SectionHeader title="Saved Readiness Plans" />
+        <SavedReadinessPlans
+          sessionId={sessionId}
+          onCountChange={setSavedReadinessPlansCount}
+        />
       </div>
 
       {/* Disclaimer */}

@@ -7,9 +7,15 @@ import type { Profile } from "@/lib/etfs";
 import type { GoalPlan } from "@/types/readinessPlan";
 import CoachExplanation from "./CoachExplanation";
 import { profileSimulatorExplanations } from "@/lib/coachExplanations";
-import { saveLearningPlan } from "@/lib/learningPlans";
-import type { ContributionGuidanceSnapshot, LearningPlan, AllocationSnapshot } from "@/lib/learningPlans";
-import SavedLearningPlans from "./SavedLearningPlans";
+import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
+import { saveReadinessPlan } from "@/lib/readinessPlans";
+import type {
+  MoneySnapshot,
+  ContributionGuidanceResult,
+  SampleAllocationItem,
+  ProjectionResult,
+  EmergencyFundStatus,
+} from "@/types/readinessPlan";
 import ProjectionChart from "./ProjectionChart";
 import ScenarioComparisonChart from "./ScenarioComparisonChart";
 import ProjectionMilestones from "./ProjectionMilestones";
@@ -215,8 +221,6 @@ export default function PortfolioSimulator({
   const [withdrawalRate, setWithdrawalRate] = useState("4");
 
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [savedRefreshTrigger, setSavedRefreshTrigger] = useState(0);
-  const [loadedGuidance, setLoadedGuidance] = useState<ContributionGuidanceSnapshot | null>(null);
   const [swappedTickers, setSwappedTickers] = useState<Record<string, string>>({});
 
   const starting = clampInput(startingAmount);
@@ -237,86 +241,91 @@ export default function PortfolioSimulator({
 
   const projection = calculateProjectionResults(starting, monthly, projYears, annReturn, wRate);
 
-  const displayedGuidance = loadedGuidance ?? guidanceSnapshot ?? null;
+  const displayedGuidance = guidanceSnapshot ?? null;
 
   async function handleSave() {
     if (!sessionId) return;
     setSaveStatus("saving");
-    const allocationData: AllocationSnapshot[] = items.map((item) => {
+
+    const sampleAllocation: SampleAllocationItem[] = items.map((item) => {
       const etf = ETFs.find((e) => e.ticker === item.selected_ticker);
       return {
-        ticker: item.selected_ticker,
-        etf_name: etf?.name ?? item.selected_ticker,
-        allocation_percent: item.allocation_percent,
-        starting_amount_allocation: starting > 0 ? Math.round(starting * item.allocation_percent) / 100 : 0,
-        monthly_contribution_allocation: monthly > 0 ? Math.round(monthly * item.allocation_percent) / 100 : 0,
-        risk_level: etf?.riskLevel ?? "",
-        portfolio_role: item.role_label,
-        role_id: item.role_id,
-        role_label: item.role_label,
-        alternative_tickers: item.alternative_tickers,
+        roleId: item.role_id,
+        roleLabel: item.role_label,
+        roleDescription: item.role_description,
+        selectedTicker: item.selected_ticker,
+        alternativeTickers: item.alternative_tickers,
+        allocationPercent: item.allocation_percent,
+        startingAmountAllocation: starting > 0 ? Math.round(starting * item.allocation_percent) / 100 : 0,
+        monthlyContributionAllocation: monthly > 0 ? Math.round(monthly * item.allocation_percent) / 100 : 0,
+        riskLevel: etf?.riskLevel ?? "",
+        portfolioRole: item.role_label,
       };
     });
+
+    let moneySnapshot: MoneySnapshot | null = null;
+    let contributionGuidance: ContributionGuidanceResult | null = null;
+    if (displayedGuidance) {
+      moneySnapshot = {
+        monthlyTakeHomePay: displayedGuidance.monthly_take_home_pay,
+        monthlyBills: displayedGuidance.monthly_bills,
+        monthlyDebtPayments: displayedGuidance.monthly_debt_payments,
+        monthlyEmergencySavingsContribution: displayedGuidance.monthly_emergency_savings_contribution,
+        monthlyShortTermSavingsContribution: displayedGuidance.monthly_short_term_savings_contribution,
+        monthlyLifestylePlayBuffer: displayedGuidance.monthly_lifestyle_play_buffer,
+        emergencyFundStatus: displayedGuidance.emergency_fund_status as EmergencyFundStatus,
+        currentCashSavings: displayedGuidance.current_cash_savings,
+        emergencyFundTarget: displayedGuidance.emergency_fund_target,
+        shortTermSavingsToProtect: displayedGuidance.short_term_savings_to_protect,
+        startingInvestmentAmount: displayedGuidance.starting_investment_amount,
+      };
+      contributionGuidance = {
+        monthlySurplus: displayedGuidance.monthly_surplus,
+        billsPercentage: displayedGuidance.bills_percentage,
+        debtPercentage: displayedGuidance.debt_percentage,
+        protectedSavingsTarget: displayedGuidance.protected_savings_target,
+        cashAvailableAboveProtectedSavings: displayedGuidance.cash_available_above_protected_savings,
+        estimatedContributionMin: displayedGuidance.estimated_contribution_min,
+        estimatedContributionMax: displayedGuidance.estimated_contribution_max,
+        estimatedContributionMidpoint: displayedGuidance.estimated_contribution_midpoint,
+        startingInvestmentCheckMessage: displayedGuidance.starting_investment_check_message,
+        startingInvestmentCheckType: "neutral",
+        cautionNotes: displayedGuidance.caution_notes,
+      };
+    }
+
+    const projectionResult: ProjectionResult = {
+      totalContributed: projection.totalContributed,
+      estimatedFutureValue: projection.futureValue,
+      estimatedInvestmentGrowth: Math.max(0, projection.estimatedGrowth),
+      estimatedAnnualIncome: projection.estimatedAnnualIncome,
+      estimatedMonthlyIncome: projection.estimatedMonthlyIncome,
+    };
+
     try {
-      await saveLearningPlan({
+      await saveReadinessPlan({
         anonymous_session_id: sessionId,
         investor_profile: profile,
-        contribution_guidance_json: displayedGuidance,
-        portfolio_inputs_json: {
-          starting_amount: starting,
-          monthly_contribution: monthly,
-          timeline,
-          investor_profile: profile,
-        },
-        allocation_json: allocationData,
+        money_snapshot_json: moneySnapshot,
+        contribution_guidance_json: contributionGuidance,
+        goal_plan_json: goalPlan ?? null,
+        sample_allocation_json: sampleAllocation,
         projection_assumptions_json: {
-          projection_years: projYears,
-          annual_return_assumption: annReturn,
-          withdrawal_rate: wRate,
+          projectionYears: projYears,
+          annualReturnAssumption: annReturn,
+          withdrawalRate: wRate,
+          startingAmount: starting,
+          monthlyContribution: monthly,
+          timeline,
         },
-        projection_results_json: {
-          total_contributed: projection.totalContributed,
-          estimated_future_value: projection.futureValue,
-          estimated_investment_growth: Math.max(0, projection.estimatedGrowth),
-          estimated_annual_income: projection.estimatedAnnualIncome,
-          estimated_monthly_income: projection.estimatedMonthlyIncome,
-        },
+        projection_result_json: projectionResult,
       });
       setSaveStatus("saved");
-      setSavedRefreshTrigger((t) => t + 1);
       setTimeout(() => setSaveStatus("idle"), 3000);
     } catch {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
-  }
-
-  function handleViewPlan(plan: LearningPlan) {
-    const pi = plan.portfolio_inputs_json;
-    const pa = plan.projection_assumptions_json;
-    setStartingAmount(String(pi.starting_amount));
-    setMonthlyContribution(String(pi.monthly_contribution));
-    setTimeline(pi.timeline as InvestingTimeline);
-    setProfile(pi.investor_profile as Profile);
-    setProjectionYears(String(pa.projection_years));
-    setAnnualReturn(String(pa.annual_return_assumption));
-    setWithdrawalRate(String(pa.withdrawal_rate));
-    setLoadedGuidance(plan.contribution_guidance_json);
-    setShowCoach(false);
-
-    const savedProfile = pi.investor_profile as Profile;
-    const model = allocationModels[savedProfile];
-    const restoredSwaps: Record<string, string> = {};
-    for (const savedItem of plan.allocation_json) {
-      if (savedItem.role_id) {
-        const roleDefault = model.find((r) => r.role_id === savedItem.role_id);
-        if (roleDefault && savedItem.ticker !== roleDefault.default_ticker) {
-          restoredSwaps[savedItem.role_id] = savedItem.ticker;
-        }
-      }
-    }
-    setSwappedTickers(restoredSwaps);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
@@ -871,12 +880,6 @@ export default function PortfolioSimulator({
       </div>
 
       <Disclaimer extended="This is a sample learning allocation and a what-if projection based on assumptions — not a prediction or guarantee. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions." />
-
-      <SavedLearningPlans
-        sessionId={sessionId}
-        refreshTrigger={savedRefreshTrigger}
-        onView={handleViewPlan}
-      />
     </PageLayout>
   );
 }

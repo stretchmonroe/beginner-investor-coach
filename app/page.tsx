@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Landing from "@/components/Landing";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
-import QuizResults from "@/components/QuizResults";
 import ETFExplorer from "@/components/ETFExplorer";
 import Watchlist from "@/components/Watchlist";
 import CompareETFs from "@/components/CompareETFs";
@@ -25,7 +24,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "results" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -69,6 +68,7 @@ export default function Home() {
   const [prefillMonthly, setPrefillMonthly] = useState<number | null>(null);
   const [prefillStarting, setPrefillStarting] = useState<number | null>(null);
   const [quizSkipped, setQuizSkipped] = useState(false);
+  const [profileSelectionOrigin, setProfileSelectionOrigin] = useState<"landing" | "dashboard">("landing");
   const [assetClassOrigin, setAssetClassOrigin] = useState<Screen>("dashboard");
   const [contributionOrigin, setContributionOrigin] = useState<Screen>("dashboard");
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
@@ -153,14 +153,14 @@ export default function Home() {
       {screen === "landing" && (
         <Landing
           onStart={() => { setQuizSkipped(false); setScreen("quiz"); }}
-          onSkipQuiz={() => setScreen("profileselection")}
+          onSkipQuiz={() => { setProfileSelectionOrigin("landing"); setScreen("profileselection"); }}
         />
       )}
       {screen === "quiz" && <OnboardingQuiz onComplete={handleQuizComplete} />}
       {screen === "profileselection" && (
         <ProfileSelection
           onSelect={handleProfileSelect}
-          onBack={() => setScreen("landing")}
+          onBack={() => setScreen(profileSelectionOrigin)}
         />
       )}
       {screen === "dashboard" && answers && (
@@ -189,21 +189,8 @@ export default function Home() {
           onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
           onWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
-          onViewProfile={() => setScreen("results")}
+          onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRetakeQuiz={() => setScreen("landing")}
-        />
-      )}
-      {screen === "results" && answers && (
-        <QuizResults
-          answers={answers}
-          quizSkipped={quizSkipped}
-          onBack={() => setScreen("dashboard")}
-          onRestart={() => setScreen("landing")}
-          onExploreETFs={() => { setHasVisitedETFs(true); setScreen("etfs"); }}
-          onSimulate={goToSimulator}
-          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
-          onContributionGuidance={() => { setContributionOrigin("results"); setScreen("contribution"); }}
-          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("results"); setScreen("assetclasses"); }}
         />
       )}
       {screen === "etfs" && (
