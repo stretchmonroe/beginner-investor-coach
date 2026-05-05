@@ -5,6 +5,7 @@ import { ETFs, riskBadge, deriveProfile } from "@/lib/etfs";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import type { Profile } from "@/lib/etfs";
 import type { GoalPlan } from "@/types/readinessPlan";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import CoachExplanation from "./CoachExplanation";
 import { profileSimulatorExplanations } from "@/lib/coachExplanations";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
@@ -181,9 +182,12 @@ interface Props {
   onContributionGuidance: () => void;
   onGoalPlanner: (starting: number, monthly: number) => void;
   onAssetClassExplorer?: () => void;
+  onAskCoach?: (question: string) => void;
   sessionId: string;
   guidanceSnapshot?: ContributionGuidanceSnapshot | null;
   goalPlan?: GoalPlan | null;
+  sharedPlanInputs?: SharedPlanInputs;
+  onSharedInputsChange?: (updates: Partial<SharedPlanInputs>) => void;
 }
 
 export default function PortfolioSimulator({
@@ -194,31 +198,50 @@ export default function PortfolioSimulator({
   onContributionGuidance,
   onGoalPlanner,
   onAssetClassExplorer,
+  onAskCoach,
   sessionId,
   guidanceSnapshot,
   goalPlan,
+  sharedPlanInputs,
+  onSharedInputsChange,
 }: Props) {
   const derivedProfile = deriveProfile(answers);
-  const initialProfile = derivedProfile ?? "Balanced Beginner";
-  const initialTimeline = (answers?.timeline as InvestingTimeline) ?? "10+ years";
+  const initialProfile = derivedProfile ?? (sharedPlanInputs?.investorProfile as Profile | undefined) ?? "Balanced Beginner";
+  const initialTimeline = (sharedPlanInputs?.timeline as InvestingTimeline | undefined)
+    ?? (answers?.timeline as InvestingTimeline)
+    ?? "10+ years";
 
   const [startingAmount, setStartingAmount] = useState(
-    prefillStarting != null ? String(prefillStarting) : "0"
+    prefillStarting != null ? String(prefillStarting)
+    : sharedPlanInputs?.startingInvestmentAmount != null ? String(sharedPlanInputs.startingInvestmentAmount)
+    : "0"
   );
   const [monthlyContribution, setMonthlyContribution] = useState(
-    prefillMonthly != null ? String(prefillMonthly) : "500"
+    prefillMonthly != null ? String(prefillMonthly)
+    : sharedPlanInputs?.monthlyContribution != null ? String(sharedPlanInputs.monthlyContribution)
+    : "500"
   );
   const [timeline, setTimeline] = useState<InvestingTimeline>(initialTimeline);
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [showCoach, setShowCoach] = useState(false);
 
   const [projectionYears, setProjectionYears] = useState(
-    String(getDefaultProjectionYearsForTimeline(initialTimeline))
+    sharedPlanInputs?.projectionYears != null
+      ? String(sharedPlanInputs.projectionYears)
+      : String(getDefaultProjectionYearsForTimeline(initialTimeline))
   );
   const [annualReturn, setAnnualReturn] = useState(
-    String(getDefaultReturnForProfile(initialProfile))
+    sharedPlanInputs?.annualReturnAssumption != null
+      ? String(sharedPlanInputs.annualReturnAssumption)
+      : String(getDefaultReturnForProfile(initialProfile))
   );
-  const [withdrawalRate, setWithdrawalRate] = useState("4");
+  const [withdrawalRate, setWithdrawalRate] = useState(
+    sharedPlanInputs?.withdrawalRate != null ? String(sharedPlanInputs.withdrawalRate) : "4"
+  );
+
+  // Track which inputs were pre-filled from shared state (not explicit props)
+  const [startingFromShared] = useState(prefillStarting == null && sharedPlanInputs?.startingInvestmentAmount != null);
+  const [monthlyFromShared] = useState(prefillMonthly == null && sharedPlanInputs?.monthlyContribution != null);
 
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [swappedTickers, setSwappedTickers] = useState<Record<string, string>>({});
@@ -306,6 +329,7 @@ export default function PortfolioSimulator({
       await saveReadinessPlan({
         anonymous_session_id: sessionId,
         investor_profile: profile,
+        shared_inputs_json: sharedPlanInputs ?? null,
         money_snapshot_json: moneySnapshot,
         contribution_guidance_json: contributionGuidance,
         goal_plan_json: goalPlan ?? null,
@@ -354,13 +378,19 @@ export default function PortfolioSimulator({
                   type="number"
                   min="0"
                   value={startingAmount}
-                  onChange={(e) => setStartingAmount(e.target.value)}
+                  onChange={(e) => {
+                    setStartingAmount(e.target.value);
+                    onSharedInputsChange?.({ startingInvestmentAmount: clampInput(e.target.value) });
+                  }}
                   placeholder="0"
                   className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               {prefillStarting != null && (
                 <p className="text-xs text-blue-600">Pre-filled from Money Snapshot</p>
+              )}
+              {startingFromShared && (
+                <p className="text-xs text-blue-600">Pre-filled from your previous step</p>
               )}
             </div>
 
@@ -381,13 +411,19 @@ export default function PortfolioSimulator({
                   type="number"
                   min="0"
                   value={monthlyContribution}
-                  onChange={(e) => setMonthlyContribution(e.target.value)}
+                  onChange={(e) => {
+                    setMonthlyContribution(e.target.value);
+                    onSharedInputsChange?.({ monthlyContribution: clampInput(e.target.value) });
+                  }}
                   placeholder="500"
                   className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               {prefillMonthly != null && (
                 <p className="text-xs text-blue-600">Pre-filled from Money Snapshot</p>
+              )}
+              {monthlyFromShared && (
+                <p className="text-xs text-blue-600">Pre-filled from your previous step</p>
               )}
             </div>
 
@@ -396,7 +432,11 @@ export default function PortfolioSimulator({
               <p className="text-sm font-medium text-slate-700">Timeline</p>
               <select
                 value={timeline}
-                onChange={(e) => setTimeline(e.target.value as InvestingTimeline)}
+                onChange={(e) => {
+                  const t = e.target.value as InvestingTimeline;
+                  setTimeline(t);
+                  onSharedInputsChange?.({ timeline: t });
+                }}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {TIMELINES.map((t) => (
@@ -415,7 +455,12 @@ export default function PortfolioSimulator({
               </p>
               <select
                 value={profile}
-                onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); setSwappedTickers({}); }}
+                onChange={(e) => {
+                  setProfile(e.target.value as Profile);
+                  setShowCoach(false);
+                  setSwappedTickers({});
+                  onSharedInputsChange?.({ investorProfile: e.target.value });
+                }}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {PROFILES.map((p) => (
@@ -664,6 +709,27 @@ export default function PortfolioSimulator({
         </div>
       )}
 
+      {/* Ask Readiness Coach about allocation */}
+      {onAskCoach && (
+        <button
+          onClick={() => {
+            const allocationStr = items.map((i) => `${i.selected_ticker} ${i.allocation_percent}% (${i.role_label})`).join(", ");
+            const q = [
+              `Explain my Sample Learning Allocation for a ${profile} investor profile in plain English.`,
+              `The allocation is: ${allocationStr}.`,
+              monthly > 0 ? `Monthly contribution: ${formatCurrency(monthly)}.` : "",
+              starting > 0 ? `Starting amount: ${formatCurrency(starting)}.` : "",
+              `Timeline: ${timeline}.`,
+              "Please explain the portfolio roles, what each ETF example represents, the risk levels involved, and why this is a sample learning allocation and not a real investment recommendation.",
+            ].filter(Boolean).join(" ");
+            onAskCoach(q);
+          }}
+          className="w-full py-2.5 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer mb-6"
+        >
+          ✦ Ask the Readiness Coach about this allocation
+        </button>
+      )}
+
       {/* What-if Growth Projection */}
       <div className="border-t border-slate-200 pt-8 mb-8">
         <div className="mb-5">
@@ -685,7 +751,10 @@ export default function PortfolioSimulator({
                   min="1"
                   max="50"
                   value={projectionYears}
-                  onChange={(e) => setProjectionYears(e.target.value)}
+                  onChange={(e) => {
+                    setProjectionYears(e.target.value);
+                    onSharedInputsChange?.({ projectionYears: clampInput(e.target.value) });
+                  }}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="20"
                 />
@@ -699,7 +768,10 @@ export default function PortfolioSimulator({
                     max="30"
                     step="0.5"
                     value={annualReturn}
-                    onChange={(e) => setAnnualReturn(e.target.value)}
+                    onChange={(e) => {
+                      setAnnualReturn(e.target.value);
+                      onSharedInputsChange?.({ annualReturnAssumption: clampInput(e.target.value) });
+                    }}
                     className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="6"
                   />
@@ -715,7 +787,10 @@ export default function PortfolioSimulator({
                     max="20"
                     step="0.5"
                     value={withdrawalRate}
-                    onChange={(e) => setWithdrawalRate(e.target.value)}
+                    onChange={(e) => {
+                      setWithdrawalRate(e.target.value);
+                      onSharedInputsChange?.({ withdrawalRate: clampInput(e.target.value) });
+                    }}
                     className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="4"
                   />
@@ -735,7 +810,10 @@ export default function PortfolioSimulator({
                 ].map((s) => (
                   <button
                     key={s.value}
-                    onClick={() => setAnnualReturn(s.value)}
+                    onClick={() => {
+                      setAnnualReturn(s.value);
+                      onSharedInputsChange?.({ annualReturnAssumption: parseFloat(s.value) });
+                    }}
                     className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors cursor-pointer
                       ${annualReturn === s.value
                         ? "bg-blue-600 text-white border-blue-600"
@@ -807,6 +885,30 @@ export default function PortfolioSimulator({
             </div>
           </div>
         </Card>
+
+        {/* Ask Readiness Coach about projection */}
+        {onAskCoach && (
+          <button
+            onClick={() => {
+              const q = [
+                "Explain my What-if Projection in plain English.",
+                `Starting amount: ${formatCurrency(starting)}.`,
+                `Monthly contribution: ${formatCurrency(monthly)}.`,
+                `Timeline: ${projYears} years.`,
+                `Annual return assumption: ${annReturn}%.`,
+                `Estimated future value: ${formatCurrency(projection.futureValue)}.`,
+                `Total contributed: ${formatCurrency(projection.totalContributed)}.`,
+                `Withdrawal rate: ${wRate}%.`,
+                `Estimated annual income at withdrawal: ${formatCurrency(projection.estimatedAnnualIncome)}.`,
+                "Please explain what these projections mean, what assumptions are involved, and why the estimated future value is not guaranteed.",
+              ].join(" ");
+              onAskCoach(q);
+            }}
+            className="w-full py-2.5 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer mb-5"
+          >
+            ✦ Ask the Readiness Coach about this projection
+          </button>
+        )}
 
         {/* Charts and milestones */}
         <ProjectionChart starting={starting} monthly={monthly} years={projYears} annualReturnPct={annReturn} />

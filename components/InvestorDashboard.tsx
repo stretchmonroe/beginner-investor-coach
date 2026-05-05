@@ -7,6 +7,7 @@ import type { Profile } from "@/lib/etfs";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import { getLearningPlans } from "@/lib/learningPlans";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -69,6 +70,7 @@ interface Props {
   onCompare: () => void;
   onChangeProfile: () => void;
   onRetakeQuiz: () => void;
+  onRestorePlan?: (inputs: SharedPlanInputs) => void;
 }
 
 interface NextStep {
@@ -100,6 +102,7 @@ export default function InvestorDashboard({
   onCompare,
   onChangeProfile,
   onRetakeQuiz,
+  onRestorePlan,
 }: Props) {
   const [savedPlansCount, setSavedPlansCount] = useState(0);
   const [savedReadinessPlansCount, setSavedReadinessPlansCount] = useState(0);
@@ -396,6 +399,7 @@ export default function InvestorDashboard({
         <SavedReadinessPlans
           sessionId={sessionId}
           onCountChange={setSavedReadinessPlansCount}
+          onRestorePlan={onRestorePlan}
         />
       </div>
 

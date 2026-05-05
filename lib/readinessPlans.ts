@@ -6,6 +6,7 @@ import type {
   SampleAllocationItem,
   ProjectionResult,
 } from "@/types/readinessPlan";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 
 // projection_assumptions_json stores extra display fields beyond the core type
 export interface StoredProjectionAssumptions {
@@ -21,6 +22,7 @@ export interface ReadinessPlanRow {
   id: string;
   anonymous_session_id: string;
   investor_profile: string | null;
+  shared_inputs_json: SharedPlanInputs | null;
   money_snapshot_json: MoneySnapshot | null;
   contribution_guidance_json: ContributionGuidanceResult | null;
   goal_plan_json: GoalPlan | null;

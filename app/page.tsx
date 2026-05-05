@@ -17,6 +17,7 @@ import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import { supabase } from "@/lib/supabase";
 import {
   fetchWatchlistTickers,
@@ -81,6 +82,8 @@ export default function Home() {
   const [hasVisitedSimulator, setHasVisitedSimulator] = useState(false);
   const [goalPlannerPrefillMonthly, setGoalPlannerPrefillMonthly] = useState<number | null>(null);
   const [goalPlannerPrefillStarting, setGoalPlannerPrefillStarting] = useState<number | null>(null);
+  const [coachPrefillQuestion, setCoachPrefillQuestion] = useState<string | null>(null);
+  const [sharedPlanInputs, setSharedPlanInputs] = useState<SharedPlanInputs>({});
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -148,6 +151,16 @@ export default function Home() {
     setScreen("simulator");
   }
 
+  function updateSharedPlan(updates: Partial<SharedPlanInputs>) {
+    setSharedPlanInputs((prev) => ({ ...prev, ...updates }));
+  }
+
+  function goToCoach(question?: string) {
+    setHasAskedCoach(true);
+    setCoachPrefillQuestion(question ?? null);
+    setScreen("coach");
+  }
+
   return (
     <>
       {screen === "landing" && (
@@ -185,12 +198,13 @@ export default function Home() {
             setGoalPlannerOrigin("dashboard");
             setScreen("goalplanner");
           }}
-          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
+          onAskCoach={() => goToCoach()}
           onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
           onWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
           onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRetakeQuiz={() => setScreen("landing")}
+          onRestorePlan={updateSharedPlan}
         />
       )}
       {screen === "etfs" && (
@@ -202,7 +216,7 @@ export default function Home() {
           onViewWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
           onSimulate={goToSimulator}
-          onAskCoach={() => { setHasAskedCoach(true); setScreen("coach"); }}
+          onAskCoach={() => goToCoach()}
           onBack={() => setScreen("dashboard")}
           onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("etfs"); setScreen("assetclasses"); }}
         />
@@ -241,6 +255,9 @@ export default function Home() {
             setScreen("goalplanner");
           }}
           onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("simulator"); setScreen("assetclasses"); }}
+          onAskCoach={goToCoach}
+          sharedPlanInputs={sharedPlanInputs}
+          onSharedInputsChange={updateSharedPlan}
         />
       )}
       {screen === "coach" && (
@@ -249,6 +266,7 @@ export default function Home() {
           watchedTickers={watchedTickers}
           sessionId={sessionId}
           onBack={() => setScreen("dashboard")}
+          prefillQuestion={coachPrefillQuestion ?? undefined}
         />
       )}
       {screen === "contribution" && (
@@ -260,6 +278,10 @@ export default function Home() {
             setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
+            updateSharedPlan({
+              monthlyContribution: monthly > 0 ? monthly : undefined,
+              startingInvestmentAmount: starting > 0 ? starting : undefined,
+            });
             setGoalPlan(null);
             setScreen("simulator");
           }}
@@ -267,9 +289,16 @@ export default function Home() {
             setHasVisitedGoalPlanner(true);
             setGoalPlannerPrefillMonthly(monthly > 0 ? monthly : null);
             setGoalPlannerPrefillStarting(starting > 0 ? starting : null);
+            updateSharedPlan({
+              monthlyContribution: monthly > 0 ? monthly : undefined,
+              startingInvestmentAmount: starting > 0 ? starting : undefined,
+            });
             setGoalPlannerOrigin("contribution");
             setScreen("goalplanner");
           }}
+          onAskCoach={goToCoach}
+          sharedPlanInputs={sharedPlanInputs}
+          onSharedInputsChange={updateSharedPlan}
         />
       )}
       {screen === "goalplanner" && (
@@ -282,9 +311,16 @@ export default function Home() {
             setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
+            updateSharedPlan({
+              monthlyContribution: monthly > 0 ? monthly : undefined,
+              startingInvestmentAmount: starting > 0 ? starting : undefined,
+            });
             setGoalPlan(plan ?? null);
             setScreen("simulator");
           }}
+          onAskCoach={goToCoach}
+          sharedPlanInputs={sharedPlanInputs}
+          onSharedInputsChange={updateSharedPlan}
         />
       )}
       {screen === "assetclasses" && (

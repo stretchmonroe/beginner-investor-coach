@@ -6,6 +6,7 @@ import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { EmergencyFundStatus, StartingCheckType } from "@/types/readinessPlan";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import {
   calculateMonthlySurplus,
   calculateProtectedSavingsTarget,
@@ -92,6 +93,9 @@ interface Props {
   onUseInSimulator: (monthly: number, starting: number) => void;
   onGuidanceResult?: (snapshot: ContributionGuidanceSnapshot) => void;
   onGoalPlanner?: (monthly: number, starting: number) => void;
+  onAskCoach?: (question: string) => void;
+  sharedPlanInputs?: SharedPlanInputs;
+  onSharedInputsChange?: (updates: Partial<SharedPlanInputs>) => void;
 }
 
 export default function ContributionGuidance({
@@ -100,6 +104,9 @@ export default function ContributionGuidance({
   onUseInSimulator,
   onGuidanceResult,
   onGoalPlanner,
+  onAskCoach,
+  sharedPlanInputs,
+  onSharedInputsChange,
 }: Props) {
   const derivedProfile = deriveProfile(answers);
 
@@ -112,7 +119,11 @@ export default function ContributionGuidance({
   const [currentCashSavings, setCurrentCashSavings] = useState("0");
   const [emergencyFundTarget, setEmergencyFundTarget] = useState("0");
   const [shortTermSavingsToProtect, setShortTermSavingsToProtect] = useState("0");
-  const [startingInvestmentAmount, setStartingInvestmentAmount] = useState("0");
+  const [startingInvestmentAmount, setStartingInvestmentAmount] = useState(
+    sharedPlanInputs?.startingInvestmentAmount != null
+      ? String(sharedPlanInputs.startingInvestmentAmount)
+      : "0"
+  );
 
   // C – Monthly Buffers
   const [emergencySavings, setEmergencySavings] = useState("0");
@@ -247,7 +258,13 @@ export default function ContributionGuidance({
               <DollarInput value={shortTermSavingsToProtect} onChange={setShortTermSavingsToProtect} />
             </Field>
             <Field label="Starting investment amount" hint="The lump sum you are considering moving into investments.">
-              <DollarInput value={startingInvestmentAmount} onChange={setStartingInvestmentAmount} />
+              <DollarInput
+                value={startingInvestmentAmount}
+                onChange={(v) => {
+                  setStartingInvestmentAmount(v);
+                  onSharedInputsChange?.({ startingInvestmentAmount: clamp(v) });
+                }}
+              />
             </Field>
           </div>
         </Card>
@@ -293,7 +310,10 @@ export default function ContributionGuidance({
             <Field label={derivedProfile ? "Investor profile (from your quiz)" : "Investor profile"}>
               <select
                 value={profile}
-                onChange={(e) => setProfile(e.target.value as Profile)}
+                onChange={(e) => {
+                  setProfile(e.target.value as Profile);
+                  onSharedInputsChange?.({ investorProfile: e.target.value });
+                }}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {PROFILES.map((p) => (
@@ -430,6 +450,32 @@ export default function ContributionGuidance({
               {profileGuidanceText[profile]}
             </p>
           </Card>
+
+          {/* Contextual coach */}
+          {onAskCoach && hasIncome && (
+            <button
+              onClick={() => {
+                const snap = buildSnapshot();
+                onGuidanceResult?.(snap);
+                const q = [
+                  "Explain my Money Snapshot and investing capacity estimate in plain English.",
+                  `Monthly take-home pay: ${formatCurrency(takeHomeNum)}.`,
+                  `Monthly bills: ${formatCurrency(billsNum)} (${billsPct.toFixed(0)}% of income).`,
+                  debtNum > 0 ? `Monthly debt payments: ${formatCurrency(debtNum)} (${debtPct.toFixed(0)}% of income).` : "",
+                  `Monthly surplus: ${formatCurrency(surplus)}.`,
+                  hasRange ? `Estimated investing capacity range: ${formatCurrency(low)} – ${formatCurrency(high)}/month (midpoint: ${formatCurrency(midpoint)}/month).` : "No investing capacity range — surplus may be too low.",
+                  `Emergency fund status: ${emergencyStatus}.`,
+                  startingInvestmentAmountNum > 0 ? `Starting investment amount considered: ${formatCurrency(startingInvestmentAmountNum)}.` : "",
+                  notes.length > 0 ? `Caution notes: ${notes.join(" ")}` : "",
+                  "Please explain what these numbers mean for a beginner, what to pay attention to, and what the contribution range represents.",
+                ].filter(Boolean).join(" ");
+                onAskCoach(q);
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              ✦ Explain my investing capacity
+            </button>
+          )}
 
           {/* CTAs */}
           {canUse ? (

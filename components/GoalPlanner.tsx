@@ -5,6 +5,7 @@ import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import type { FeasibilityStatus, GoalPlan } from "@/types/readinessPlan";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import {
   calculateRequiredMonthlyContribution,
   calculateFutureValue,
@@ -105,6 +106,9 @@ interface Props {
   prefillStarting?: number | null;
   onBack: () => void;
   onUseInSimulator: (monthly: number, starting: number, goalPlan?: GoalPlan) => void;
+  onAskCoach?: (question: string) => void;
+  sharedPlanInputs?: SharedPlanInputs;
+  onSharedInputsChange?: (updates: Partial<SharedPlanInputs>) => void;
 }
 
 export default function GoalPlanner({
@@ -113,19 +117,44 @@ export default function GoalPlanner({
   prefillStarting,
   onBack,
   onUseInSimulator,
+  onAskCoach,
+  sharedPlanInputs,
+  onSharedInputsChange,
 }: Props) {
   const derivedProfile = deriveProfile(answers) ?? "Balanced Beginner";
   const hasMoneySnapshotData = prefillMonthly != null || prefillStarting != null;
 
   // A — Your Goal
   const [target, setTarget] = useState("1000000");
-  const [years, setYears] = useState("15");
+  const [years, setYears] = useState(
+    sharedPlanInputs?.timelineYears != null ? String(sharedPlanInputs.timelineYears) : "15"
+  );
 
   // B — Your Current Plan
-  const [starting, setStarting] = useState(prefillStarting != null ? String(prefillStarting) : "0");
-  const [affordable, setAffordable] = useState(prefillMonthly != null ? String(prefillMonthly) : "500");
-  const [annualReturn, setAnnualReturn] = useState(String(getDefaultReturn(derivedProfile)));
+  const [starting, setStarting] = useState(
+    prefillStarting != null ? String(prefillStarting)
+    : sharedPlanInputs?.startingInvestmentAmount != null ? String(sharedPlanInputs.startingInvestmentAmount)
+    : "0"
+  );
+  const [affordable, setAffordable] = useState(
+    prefillMonthly != null ? String(prefillMonthly)
+    : sharedPlanInputs?.affordableMonthlyContribution != null ? String(sharedPlanInputs.affordableMonthlyContribution)
+    : sharedPlanInputs?.monthlyContribution != null ? String(sharedPlanInputs.monthlyContribution)
+    : "500"
+  );
+  const [annualReturn, setAnnualReturn] = useState(
+    sharedPlanInputs?.annualReturnAssumption != null
+      ? String(sharedPlanInputs.annualReturnAssumption)
+      : String(getDefaultReturn(derivedProfile))
+  );
   const [profile, setProfile] = useState<Profile>(derivedProfile);
+
+  // Track which fields were pre-filled from shared state (not explicit props)
+  const [startingFromShared] = useState(prefillStarting == null && sharedPlanInputs?.startingInvestmentAmount != null);
+  const [affordableFromShared] = useState(
+    prefillMonthly == null &&
+    (sharedPlanInputs?.affordableMonthlyContribution != null || sharedPlanInputs?.monthlyContribution != null)
+  );
 
   // Parsed values
   const targetNum = clamp(target);
@@ -208,7 +237,12 @@ export default function GoalPlanner({
                 min="1"
                 max="50"
                 value={years}
-                onChange={(e) => setYears(e.target.value)}
+                onChange={(e) => {
+                  setYears(e.target.value);
+                  const y = clamp(e.target.value);
+                  const tl = y < 3 ? "Less than 3 years" : y <= 10 ? "3–10 years" : "10+ years";
+                  onSharedInputsChange?.({ timelineYears: y, timeline: tl });
+                }}
                 placeholder="15"
                 className={`w-full px-4 py-2.5 border rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${hasTimelineError ? "border-red-300" : "border-slate-200"}`}
               />
@@ -226,16 +260,34 @@ export default function GoalPlanner({
         <Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Field label="Starting investment amount" hint={prefillStarting != null ? undefined : "Lump sum you are considering investing initially."}>
-              <DollarInput value={starting} onChange={setStarting} />
+              <DollarInput
+                value={starting}
+                onChange={(v) => {
+                  setStarting(v);
+                  onSharedInputsChange?.({ startingInvestmentAmount: clamp(v) });
+                }}
+              />
               {prefillStarting != null && (
                 <p className="text-xs text-blue-600 mt-1">Pre-filled from Money Snapshot</p>
+              )}
+              {startingFromShared && (
+                <p className="text-xs text-blue-600 mt-1">Pre-filled from your previous step</p>
               )}
             </Field>
 
             <Field label="Affordable monthly contribution" hint={prefillMonthly != null ? undefined : "What you could realistically contribute each month."}>
-              <DollarInput value={affordable} onChange={setAffordable} />
+              <DollarInput
+                value={affordable}
+                onChange={(v) => {
+                  setAffordable(v);
+                  onSharedInputsChange?.({ affordableMonthlyContribution: clamp(v), monthlyContribution: clamp(v) });
+                }}
+              />
               {prefillMonthly != null && (
                 <p className="text-xs text-blue-600 mt-1">Pre-filled from Money Snapshot</p>
+              )}
+              {affordableFromShared && (
+                <p className="text-xs text-blue-600 mt-1">Pre-filled from your previous step</p>
               )}
             </Field>
 
@@ -247,7 +299,10 @@ export default function GoalPlanner({
                   max="30"
                   step="0.5"
                   value={annualReturn}
-                  onChange={(e) => setAnnualReturn(e.target.value)}
+                  onChange={(e) => {
+                    setAnnualReturn(e.target.value);
+                    onSharedInputsChange?.({ annualReturnAssumption: clamp(e.target.value) });
+                  }}
                   placeholder="6"
                   className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
@@ -261,7 +316,9 @@ export default function GoalPlanner({
                 onChange={(e) => {
                   const p = e.target.value as Profile;
                   setProfile(p);
-                  setAnnualReturn(String(getDefaultReturn(p)));
+                  const defaultReturn = getDefaultReturn(p);
+                  setAnnualReturn(String(defaultReturn));
+                  onSharedInputsChange?.({ investorProfile: e.target.value, annualReturnAssumption: defaultReturn });
                 }}
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
@@ -283,7 +340,10 @@ export default function GoalPlanner({
               ].map((s) => (
                 <button
                   key={s.value}
-                  onClick={() => setAnnualReturn(s.value)}
+                  onClick={() => {
+                    setAnnualReturn(s.value);
+                    onSharedInputsChange?.({ annualReturnAssumption: parseFloat(s.value) });
+                  }}
                   className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors cursor-pointer ${
                     annualReturn === s.value
                       ? "bg-blue-600 text-white border-blue-600"
@@ -414,6 +474,31 @@ export default function GoalPlanner({
               {statusExplanations[status]}
             </p>
           </Card>
+
+          {/* Contextual coach */}
+          {onAskCoach && (
+            <button
+              onClick={() => {
+                const q = [
+                  "Explain my Goal Feasibility result in plain English.",
+                  `Target portfolio value: ${formatCurrency(targetNum)}.`,
+                  `Timeline: ${yearsNum} years.`,
+                  `Annual return assumption: ${annReturnNum}%.`,
+                  `Starting investment: ${formatCurrency(startingNum)}.`,
+                  `Affordable monthly contribution: ${formatCurrency(affordableNum)}.`,
+                  !targetCovered ? `Required monthly contribution: ${formatCurrency(requiredMonthly)}.` : "",
+                  !targetCovered ? `Monthly ${monthlyGap <= 0 ? "surplus" : "gap"}: ${formatCurrency(Math.abs(monthlyGap))}.` : "",
+                  `Estimated future value at affordable contribution: ${formatCurrency(fvAffordable)}.`,
+                  `Feasibility status: ${status}.`,
+                  "Please explain what this goal feasibility result means, what the monthly gap represents, and what tradeoffs to consider.",
+                ].filter(Boolean).join(" ");
+                onAskCoach(q);
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              ✦ Explain my goal gap
+            </button>
+          )}
 
           {/* Ways to explore the gap */}
           {monthlyGap > 0 && (

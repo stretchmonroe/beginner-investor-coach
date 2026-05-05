@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getReadinessPlans, deleteReadinessPlan } from "@/lib/readinessPlans";
 import type { ReadinessPlanRow } from "@/lib/readinessPlans";
+import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import Card from "@/components/ui/Card";
 import Disclaimer from "@/components/ui/Disclaimer";
@@ -31,9 +32,27 @@ function allocationSummary(items: ReadinessPlanRow["sample_allocation_json"]): s
 interface Props {
   sessionId: string;
   onCountChange?: (count: number) => void;
+  onRestorePlan?: (inputs: SharedPlanInputs) => void;
 }
 
-export default function SavedReadinessPlans({ sessionId, onCountChange }: Props) {
+function buildSharedInputs(plan: ReadinessPlanRow): SharedPlanInputs {
+  const pa = plan.projection_assumptions_json;
+  const gp = plan.goal_plan_json;
+  const cg = plan.contribution_guidance_json;
+  return {
+    investorProfile: plan.investor_profile ?? undefined,
+    startingInvestmentAmount: pa?.startingAmount ?? undefined,
+    monthlyContribution: pa?.monthlyContribution ?? undefined,
+    affordableMonthlyContribution: gp?.affordableMonthlyContribution ?? cg?.estimatedContributionMidpoint ?? undefined,
+    timeline: pa?.timeline ?? undefined,
+    timelineYears: gp?.timelineYears ?? pa?.projectionYears ?? undefined,
+    annualReturnAssumption: pa?.annualReturnAssumption ?? undefined,
+    projectionYears: pa?.projectionYears ?? undefined,
+    withdrawalRate: pa?.withdrawalRate ?? undefined,
+  };
+}
+
+export default function SavedReadinessPlans({ sessionId, onCountChange, onRestorePlan }: Props) {
   const [plans, setPlans] = useState<ReadinessPlanRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -327,6 +346,18 @@ export default function SavedReadinessPlans({ sessionId, onCountChange }: Props)
                 <p className="text-xs text-slate-400 leading-relaxed pt-2">
                   These are educational estimates based on the numbers entered at the time of saving. They do not reflect current market conditions or guarantee any future outcome.
                 </p>
+
+                {onRestorePlan && (
+                  <button
+                    onClick={() => {
+                      onRestorePlan(buildSharedInputs(plan));
+                      setExpandedId(null);
+                    }}
+                    className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                  >
+                    Use these values in planning tools →
+                  </button>
+                )}
               </div>
             )}
 
