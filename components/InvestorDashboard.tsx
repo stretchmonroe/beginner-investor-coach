@@ -120,9 +120,9 @@ export default function InvestorDashboard({
     };
     if (!hasVisitedGoalPlanner) return {
       stepLabel: "Step 2 of 6",
-      label: "Set a target goal",
+      label: "Check goal feasibility",
       desc: "Work backward from a target amount and timeline to estimate the monthly contribution needed.",
-      actionLabel: "Open Goal Planner",
+      actionLabel: "Open Goal Feasibility",
       action: onGoalPlanner,
     };
     if (!hasVisitedSimulator) return {
@@ -172,7 +172,7 @@ export default function InvestorDashboard({
       action: onContribution,
     },
     {
-      label: "Set a target goal",
+      label: "Check goal feasibility",
       desc: "Work backward from a target amount and timeline.",
       done: hasVisitedGoalPlanner,
       action: onGoalPlanner,
@@ -214,7 +214,7 @@ export default function InvestorDashboard({
 
   const planTools = [
     { icon: "$", title: "Money Snapshot", description: "Estimate your investing capacity from your budget", action: onContribution },
-    { icon: "◎", title: "Goal Planner", description: "Work backwards from a target to find required monthly contributions", action: onGoalPlanner },
+    { icon: "◎", title: "Goal Feasibility", description: "Work backwards from a target to estimate required monthly contributions", action: onGoalPlanner },
     { icon: "⊞", title: "Portfolio Simulator", description: "Build a sample learning allocation and review what-if projections", action: onSimulator },
     { icon: "📋", title: "Saved Plans", description: "Review your saved readiness plans and learning allocations", action: onSimulator },
   ];
