@@ -16,6 +16,7 @@ import AssetClassExplorer from "@/components/AssetClassExplorer";
 import InvestorDashboard from "@/components/InvestorDashboard";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
+import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
 import { supabase } from "@/lib/supabase";
 import {
@@ -71,6 +72,7 @@ export default function Home() {
   const [assetClassOrigin, setAssetClassOrigin] = useState<Screen>("dashboard");
   const [contributionOrigin, setContributionOrigin] = useState<Screen>("dashboard");
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
+  const [goalPlan, setGoalPlan] = useState<GoalPlan | null>(null);
   const [goalPlannerOrigin, setGoalPlannerOrigin] = useState<Screen>("dashboard");
   const [hasVisitedETFs, setHasVisitedETFs] = useState(false);
   const [hasVisitedAssetClasses, setHasVisitedAssetClasses] = useState(false);
@@ -142,6 +144,7 @@ export default function Home() {
     setHasVisitedSimulator(true);
     setPrefillMonthly(null);
     setPrefillStarting(null);
+    setGoalPlan(null);
     setScreen("simulator");
   }
 
@@ -240,6 +243,7 @@ export default function Home() {
           prefillStarting={prefillStarting}
           sessionId={sessionId}
           guidanceSnapshot={guidanceSnapshot}
+          goalPlan={goalPlan}
           onBack={() => setScreen("dashboard")}
           onContributionGuidance={() => { setContributionOrigin("simulator"); setScreen("contribution"); }}
           onGoalPlanner={(starting, monthly) => {
@@ -269,6 +273,7 @@ export default function Home() {
             setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
+            setGoalPlan(null);
             setScreen("simulator");
           }}
           onGoalPlanner={(monthly, starting) => {
@@ -286,10 +291,11 @@ export default function Home() {
           prefillMonthly={goalPlannerPrefillMonthly}
           prefillStarting={goalPlannerPrefillStarting}
           onBack={() => setScreen(goalPlannerOrigin)}
-          onUseInSimulator={(monthly, starting) => {
+          onUseInSimulator={(monthly, starting, plan) => {
             setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
+            setGoalPlan(plan ?? null);
             setScreen("simulator");
           }}
         />

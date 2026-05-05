@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
-import type { FeasibilityStatus } from "@/types/readinessPlan";
+import type { FeasibilityStatus, GoalPlan } from "@/types/readinessPlan";
 import {
   calculateRequiredMonthlyContribution,
   calculateFutureValue,
@@ -104,7 +104,7 @@ interface Props {
   prefillMonthly?: number | null;
   prefillStarting?: number | null;
   onBack: () => void;
-  onUseInSimulator: (monthly: number, starting: number) => void;
+  onUseInSimulator: (monthly: number, starting: number, goalPlan?: GoalPlan) => void;
 }
 
 export default function GoalPlanner({
@@ -450,7 +450,21 @@ export default function GoalPlanner({
           {/* CTAs */}
           <div className="space-y-3 pt-1">
             {canUseAffordable ? (
-              <Button variant="primary" fullWidth size="lg" onClick={() => onUseInSimulator(affordableNum, startingNum)}>
+              <Button variant="primary" fullWidth size="lg" onClick={() => {
+                const plan: GoalPlan = {
+                  targetAmount: targetNum,
+                  timelineYears: yearsNum,
+                  annualReturnAssumption: annReturnNum,
+                  startingInvestmentAmount: startingNum,
+                  affordableMonthlyContribution: affordableNum,
+                  requiredMonthlyContribution: requiredMonthly,
+                  monthlyGap,
+                  estimatedFutureValueUsingAffordableContribution: fvAffordable,
+                  shortfallOrSurplus: targetNum - fvAffordable,
+                  feasibilityStatus: status,
+                };
+                onUseInSimulator(affordableNum, startingNum, plan);
+              }}>
                 Use this in Portfolio Simulator →
               </Button>
             ) : (
@@ -464,7 +478,21 @@ export default function GoalPlanner({
             )}
             {canUseRequired && (
               <button
-                onClick={() => onUseInSimulator(Math.round(requiredMonthly), startingNum)}
+                onClick={() => {
+                  const plan: GoalPlan = {
+                    targetAmount: targetNum,
+                    timelineYears: yearsNum,
+                    annualReturnAssumption: annReturnNum,
+                    startingInvestmentAmount: startingNum,
+                    affordableMonthlyContribution: affordableNum,
+                    requiredMonthlyContribution: requiredMonthly,
+                    monthlyGap,
+                    estimatedFutureValueUsingAffordableContribution: fvAffordable,
+                    shortfallOrSurplus: targetNum - fvAffordable,
+                    feasibilityStatus: status,
+                  };
+                  onUseInSimulator(Math.round(requiredMonthly), startingNum, plan);
+                }}
                 className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors cursor-pointer py-2 text-center"
               >
                 Test required contribution ({formatCurrency(Math.round(requiredMonthly))}/month) in Portfolio Simulator

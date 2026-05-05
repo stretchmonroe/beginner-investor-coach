@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ETFs, riskBadge, deriveProfile } from "@/lib/etfs";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import type { Profile } from "@/lib/etfs";
+import type { GoalPlan } from "@/types/readinessPlan";
 import CoachExplanation from "./CoachExplanation";
 import { profileSimulatorExplanations } from "@/lib/coachExplanations";
 import { saveLearningPlan } from "@/lib/learningPlans";
@@ -12,6 +13,19 @@ import SavedLearningPlans from "./SavedLearningPlans";
 import ProjectionChart from "./ProjectionChart";
 import ScenarioComparisonChart from "./ScenarioComparisonChart";
 import ProjectionMilestones from "./ProjectionMilestones";
+import {
+  calculateProjectionResults,
+  getDefaultReturnForProfile,
+  getDefaultProjectionYearsForTimeline,
+  type InvestingTimeline,
+} from "@/lib/readinessCalculations";
+import { formatCurrency, clampInput } from "@/lib/formatters";
+import PageLayout from "@/components/ui/PageLayout";
+import PageHeader from "@/components/ui/PageHeader";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import SectionHeader from "@/components/ui/SectionHeader";
+import Disclaimer from "@/components/ui/Disclaimer";
 
 interface AllocationRole {
   role_id: string;
@@ -121,9 +135,7 @@ const profileProjectionNote: Record<Profile, string> = {
     "This scenario uses a higher return assumption, but higher expected growth usually comes with larger temporary declines.",
 };
 
-type Timeline = "Less than 3 years" | "3–10 years" | "10+ years";
-
-const timelineWarning: Record<Timeline, string> = {
+const timelineWarning: Record<InvestingTimeline, string> = {
   "Less than 3 years":
     "For short timelines, stock-heavy ETFs may be too volatile. Money needed soon is usually better kept in lower-risk options.",
   "3–10 years":
@@ -132,75 +144,28 @@ const timelineWarning: Record<Timeline, string> = {
     "A longer timeline can make growth-oriented ETFs easier to hold, but you should still be prepared for significant declines along the way.",
 };
 
-const timelineWarnStyle: Record<Timeline, string> = {
+const timelineWarnStyle: Record<InvestingTimeline, string> = {
   "Less than 3 years": "bg-red-50 border-red-200 text-red-700",
   "3–10 years": "bg-amber-50 border-amber-200 text-amber-700",
-  "10+ years": "bg-emerald-50 border-emerald-200 text-emerald-700",
+  "10+ years": "bg-teal-50 border-teal-200 text-teal-700",
+};
+
+const feasibilityColors: Record<string, { text: string }> = {
+  covered:    { text: "text-blue-700" },
+  "on-track": { text: "text-teal-700" },
+  close:      { text: "text-amber-700" },
+  difficult:  { text: "text-rose-700" },
+};
+
+const feasibilityLabels: Record<string, string> = {
+  covered:    "Target already covered",
+  "on-track": "On track based on assumptions",
+  close:      "Close, may need adjustment",
+  difficult:  "Likely difficult at current contribution",
 };
 
 const PROFILES: Profile[] = ["Conservative Beginner", "Balanced Beginner", "Growth Beginner"];
-const TIMELINES: Timeline[] = ["Less than 3 years", "3–10 years", "10+ years"];
-
-function fmt(n: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function clamp(val: string): number {
-  const n = parseFloat(val);
-  return isNaN(n) || n < 0 ? 0 : n;
-}
-
-function getDefaultReturnForProfile(p: Profile): number {
-  if (p === "Conservative Beginner") return 4;
-  if (p === "Balanced Beginner") return 6;
-  return 8;
-}
-
-function getDefaultProjectionYearsForTimeline(t: Timeline): number {
-  if (t === "Less than 3 years") return 3;
-  if (t === "3–10 years") return 10;
-  return 20;
-}
-
-function calculateFutureValue(
-  starting: number,
-  monthly: number,
-  years: number,
-  annualReturnPct: number
-): number {
-  const months = Math.round(years * 12);
-  if (annualReturnPct === 0 || months === 0) return starting + monthly * months;
-  const r = annualReturnPct / 100 / 12;
-  return starting * Math.pow(1 + r, months) + monthly * ((Math.pow(1 + r, months) - 1) / r);
-}
-
-interface ProjectionResults {
-  futureValue: number;
-  totalContributed: number;
-  estimatedGrowth: number;
-  estimatedAnnualIncome: number;
-  estimatedMonthlyIncome: number;
-}
-
-function calculateProjectionResults(
-  starting: number,
-  monthly: number,
-  years: number,
-  annualReturnPct: number,
-  withdrawalRatePct: number
-): ProjectionResults {
-  const months = Math.round(years * 12);
-  const futureValue = calculateFutureValue(starting, monthly, years, annualReturnPct);
-  const totalContributed = starting + monthly * months;
-  const estimatedGrowth = futureValue - totalContributed;
-  const estimatedAnnualIncome = futureValue * (withdrawalRatePct / 100);
-  const estimatedMonthlyIncome = estimatedAnnualIncome / 12;
-  return { futureValue, totalContributed, estimatedGrowth, estimatedAnnualIncome, estimatedMonthlyIncome };
-}
+const TIMELINES: InvestingTimeline[] = ["Less than 3 years", "3–10 years", "10+ years"];
 
 interface Props {
   answers: QuizAnswers | null;
@@ -212,12 +177,24 @@ interface Props {
   onAssetClassExplorer?: () => void;
   sessionId: string;
   guidanceSnapshot?: ContributionGuidanceSnapshot | null;
+  goalPlan?: GoalPlan | null;
 }
 
-export default function PortfolioSimulator({ answers, onBack, prefillMonthly, prefillStarting, onContributionGuidance, onGoalPlanner, onAssetClassExplorer, sessionId, guidanceSnapshot }: Props) {
+export default function PortfolioSimulator({
+  answers,
+  onBack,
+  prefillMonthly,
+  prefillStarting,
+  onContributionGuidance,
+  onGoalPlanner,
+  onAssetClassExplorer,
+  sessionId,
+  guidanceSnapshot,
+  goalPlan,
+}: Props) {
   const derivedProfile = deriveProfile(answers);
   const initialProfile = derivedProfile ?? "Balanced Beginner";
-  const initialTimeline = (answers?.timeline as Timeline) ?? "10+ years";
+  const initialTimeline = (answers?.timeline as InvestingTimeline) ?? "10+ years";
 
   const [startingAmount, setStartingAmount] = useState(
     prefillStarting != null ? String(prefillStarting) : "0"
@@ -225,7 +202,7 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
   const [monthlyContribution, setMonthlyContribution] = useState(
     prefillMonthly != null ? String(prefillMonthly) : "500"
   );
-  const [timeline, setTimeline] = useState<Timeline>(initialTimeline);
+  const [timeline, setTimeline] = useState<InvestingTimeline>(initialTimeline);
   const [profile, setProfile] = useState<Profile>(initialProfile);
   const [showCoach, setShowCoach] = useState(false);
 
@@ -242,8 +219,8 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
   const [loadedGuidance, setLoadedGuidance] = useState<ContributionGuidanceSnapshot | null>(null);
   const [swappedTickers, setSwappedTickers] = useState<Record<string, string>>({});
 
-  const starting = clamp(startingAmount);
-  const monthly = clamp(monthlyContribution);
+  const starting = clampInput(startingAmount);
+  const monthly = clampInput(monthlyContribution);
 
   const items = allocationModels[profile].map((role) => ({
     ...role,
@@ -254,9 +231,9 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
     setSwappedTickers((prev) => ({ ...prev, [role_id]: ticker }));
   }
 
-  const projYears = Math.min(Math.max(clamp(projectionYears), 1), 50);
-  const annReturn = Math.min(Math.max(clamp(annualReturn), 0), 30);
-  const wRate = Math.min(Math.max(clamp(withdrawalRate), 0), 20);
+  const projYears = Math.min(Math.max(clampInput(projectionYears), 1), 50);
+  const annReturn = Math.min(Math.max(clampInput(annualReturn), 0), 30);
+  const wRate = Math.min(Math.max(clampInput(withdrawalRate), 0), 20);
 
   const projection = calculateProjectionResults(starting, monthly, projYears, annReturn, wRate);
 
@@ -319,7 +296,7 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
     const pa = plan.projection_assumptions_json;
     setStartingAmount(String(pi.starting_amount));
     setMonthlyContribution(String(pi.monthly_contribution));
-    setTimeline(pi.timeline as Timeline);
+    setTimeline(pi.timeline as InvestingTimeline);
     setProfile(pi.investor_profile as Profile);
     setProjectionYears(String(pa.projection_years));
     setAnnualReturn(String(pa.annual_return_assumption));
@@ -327,7 +304,6 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
     setLoadedGuidance(plan.contribution_guidance_json);
     setShowCoach(false);
 
-    // Restore swapped tickers from the saved allocation
     const savedProfile = pi.investor_profile as Profile;
     const model = allocationModels[savedProfile];
     const restoredSwaps: Record<string, string> = {};
@@ -340,303 +316,333 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
       }
     }
     setSwappedTickers(restoredSwaps);
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
-    <main className="min-h-screen px-6 py-14 max-w-3xl mx-auto">
-      {/* Back */}
-      <button
-        onClick={onBack}
-        className="text-sm text-slate-400 hover:text-slate-600 transition-colors cursor-pointer mb-8 inline-block"
-      >
-        ← Back
-      </button>
+    <PageLayout maxWidth="md">
+      <PageHeader
+        title="Sample Learning Allocation"
+        description="See how a sample portfolio could be divided across beginner-friendly ETFs. This is an educational exercise, not a recommendation to buy."
+        action={
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            ← Back
+          </Button>
+        }
+      />
 
-      {/* Header */}
-      <div className="mb-8 space-y-2">
-        <h1 className="text-3xl font-bold text-slate-900">Portfolio Simulator</h1>
-        <p className="text-slate-500 text-sm leading-relaxed max-w-xl">
-          See how a sample learning allocation might divide your contributions across beginner-friendly ETFs.
-          This is a sample educational exercise, not a recommendation to buy.
-        </p>
-      </div>
-
-      {/* Inputs */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-8">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Your inputs</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {/* Starting amount */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Starting amount</label>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-              <input
-                type="number"
-                min="0"
-                value={startingAmount}
-                onChange={(e) => setStartingAmount(e.target.value)}
-                className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                placeholder="0"
-              />
-            </div>
-            {prefillStarting != null && (
-              <p className="text-xs text-emerald-600">Pre-filled from Contribution Guidance</p>
-            )}
-          </div>
-
-          {/* Monthly contribution */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-slate-700">Monthly contribution</label>
-              <button
-                onClick={onContributionGuidance}
-                className="text-xs text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer"
-              >
-                Help me estimate →
-              </button>
-            </div>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-              <input
-                type="number"
-                min="0"
-                value={monthlyContribution}
-                onChange={(e) => setMonthlyContribution(e.target.value)}
-                className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                placeholder="500"
-              />
-            </div>
-            {prefillMonthly != null && (
-              <p className="text-xs text-emerald-600">Pre-filled from Contribution Guidance</p>
-            )}
-          </div>
-
-          {/* Timeline */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Timeline</label>
-            <select
-              value={timeline}
-              onChange={(e) => setTimeline(e.target.value as Timeline)}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer"
-            >
-              {TIMELINES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Profile */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">
-              Investor profile
-              {derivedProfile && (
-                <span className="ml-2 text-xs font-normal text-emerald-600">(from your quiz)</span>
+      {/* A. Inputs */}
+      <div className="mb-5">
+        <SectionHeader title="A. Your inputs" />
+        <Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Starting amount */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-slate-700">Starting amount</p>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={startingAmount}
+                  onChange={(e) => setStartingAmount(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              {prefillStarting != null && (
+                <p className="text-xs text-blue-600">Pre-filled from Money Snapshot</p>
               )}
-            </label>
-            <select
-              value={profile}
-              onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); setSwappedTickers({}); }}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer"
-            >
-              {PROFILES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            </div>
+
+            {/* Monthly contribution */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-700">Monthly contribution</p>
+                <button
+                  onClick={onContributionGuidance}
+                  className="text-xs text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                >
+                  Help me estimate →
+                </button>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={monthlyContribution}
+                  onChange={(e) => setMonthlyContribution(e.target.value)}
+                  placeholder="500"
+                  className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              {prefillMonthly != null && (
+                <p className="text-xs text-blue-600">Pre-filled from Money Snapshot</p>
+              )}
+            </div>
+
+            {/* Timeline */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-slate-700">Timeline</p>
+              <select
+                value={timeline}
+                onChange={(e) => setTimeline(e.target.value as InvestingTimeline)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              >
+                {TIMELINES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Profile */}
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-slate-700">
+                Investor profile
+                {derivedProfile && (
+                  <span className="ml-2 text-xs font-normal text-blue-600">(from your quiz)</span>
+                )}
+              </p>
+              <select
+                value={profile}
+                onChange={(e) => { setProfile(e.target.value as Profile); setShowCoach(false); setSwappedTickers({}); }}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              >
+                {PROFILES.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Contribution guidance summary */}
+      {/* Money Snapshot summary */}
       {displayedGuidance && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-6">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-            Contribution Guidance Summary
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <div>
-              <p className="text-slate-500">Monthly surplus</p>
-              <p className="font-semibold text-slate-700">{fmt(displayedGuidance.monthly_surplus)}</p>
+        <div className="mb-5">
+          <SectionHeader title="Money Snapshot Summary" />
+          <Card variant="highlighted">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="text-slate-500">Monthly surplus</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(displayedGuidance.monthly_surplus)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Estimated range</p>
+                <p className="font-semibold text-blue-700">
+                  {formatCurrency(displayedGuidance.estimated_contribution_min)} – {formatCurrency(displayedGuidance.estimated_contribution_max)}
+                </p>
+              </div>
+              <div>
+                <p className="text-slate-500">Suggested midpoint</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(displayedGuidance.estimated_contribution_midpoint)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Emergency fund</p>
+                <p className="font-semibold text-slate-700">{displayedGuidance.emergency_fund_status}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Bills % of income</p>
+                <p className="font-semibold text-slate-700">{displayedGuidance.bills_percentage.toFixed(0)}%</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Debt % of income</p>
+                <p className="font-semibold text-slate-700">{displayedGuidance.debt_percentage.toFixed(0)}%</p>
+              </div>
             </div>
-            <div>
-              <p className="text-slate-500">Estimated range</p>
-              <p className="font-semibold text-emerald-700">
-                {fmt(displayedGuidance.estimated_contribution_min)} – {fmt(displayedGuidance.estimated_contribution_max)}
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-500">Suggested midpoint</p>
-              <p className="font-semibold text-slate-700">{fmt(displayedGuidance.estimated_contribution_midpoint)}</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Emergency fund</p>
-              <p className="font-semibold text-slate-700">{displayedGuidance.emergency_fund_status}</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Bills % of income</p>
-              <p className="font-semibold text-slate-700">{displayedGuidance.bills_percentage.toFixed(0)}%</p>
-            </div>
-            <div>
-              <p className="text-slate-500">Debt % of income</p>
-              <p className="font-semibold text-slate-700">{displayedGuidance.debt_percentage.toFixed(0)}%</p>
-            </div>
-          </div>
-          {displayedGuidance.caution_notes.length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              {displayedGuidance.caution_notes.map((note, i) => (
-                <div key={i} className="flex gap-2 items-start text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  <span className="shrink-0 mt-0.5">⚠</span>
-                  <span>{note}</span>
-                </div>
-              ))}
-            </div>
-          )}
+            {displayedGuidance.caution_notes.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {displayedGuidance.caution_notes.map((note, i) => (
+                  <div key={i} className="flex gap-2 items-start text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <span className="shrink-0 mt-0.5">⚠</span>
+                    <span>{note}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
-      {/* Timeline warning */}
-      <div className={`rounded-xl border px-5 py-3.5 mb-8 text-sm leading-relaxed ${timelineWarnStyle[timeline]}`}>
+      {/* Goal Feasibility context */}
+      {goalPlan && (
+        <div className="mb-5">
+          <SectionHeader title="Goal Feasibility Context" />
+          <Card variant="highlighted">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="text-slate-500">Target portfolio value</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(goalPlan.targetAmount)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Timeline</p>
+                <p className="font-semibold text-slate-700">{goalPlan.timelineYears} years</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Required monthly</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(goalPlan.requiredMonthlyContribution)}/mo</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Affordable monthly</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(goalPlan.affordableMonthlyContribution)}/mo</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Est. value at affordable</p>
+                <p className="font-semibold text-slate-700">{formatCurrency(goalPlan.estimatedFutureValueUsingAffordableContribution)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Feasibility</p>
+                <p className={`font-semibold ${(feasibilityColors[goalPlan.feasibilityStatus] ?? feasibilityColors["on-track"]).text}`}>
+                  {feasibilityLabels[goalPlan.feasibilityStatus] ?? goalPlan.feasibilityStatus}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Timeline notice */}
+      <div className={`rounded-xl border px-5 py-3.5 mb-6 text-sm leading-relaxed ${timelineWarnStyle[timeline]}`}>
         {timelineWarning[timeline]}
       </div>
 
-      {/* Allocation table */}
-      <div className="mb-8">
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-          Sample learning allocation — {profile}
-        </h2>
-        <p className="text-xs text-slate-400 leading-relaxed mb-4">
-          These are sample ETF examples for each portfolio role. Some ETFs can serve a similar purpose, so you may see alternative examples where there is meaningful overlap.
-        </p>
-        <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                <th className="text-left px-5 py-3">ETF example</th>
-                <th className="text-left px-5 py-3">%</th>
-                <th className="text-right px-5 py-3">Starting</th>
-                <th className="text-right px-5 py-3">Monthly</th>
-                <th className="text-left px-5 py-3 hidden sm:table-cell">Risk</th>
-                <th className="text-left px-5 py-3 hidden sm:table-cell">Portfolio role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, i) => {
-                const etf = ETFs.find((e) => e.ticker === item.selected_ticker);
-                const startAlloc = Math.round(starting * item.allocation_percent) / 100;
-                const monthlyAlloc = Math.round(monthly * item.allocation_percent) / 100;
-                const isSwapped = item.selected_ticker !== item.default_ticker;
-                return (
-                  <tr
-                    key={item.role_id}
-                    className={`border-b border-slate-50 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}
-                  >
-                    <td className="px-5 py-4 align-top">
-                      <span className="font-bold text-emerald-700">{item.selected_ticker}</span>
-                      {isSwapped && (
-                        <span className="ml-1.5 text-xs text-slate-400 font-normal">(swapped)</span>
-                      )}
+      {/* Allocation section */}
+      <div className="mb-6">
+        <SectionHeader
+          title={`Sample learning allocation — ${profile}`}
+          description="These are sample ETF examples for each portfolio role. Some ETFs can serve a similar purpose, so you may see alternative examples where there is meaningful overlap."
+        />
+
+        <div className="space-y-3">
+          {items.map((item) => {
+            const etf = ETFs.find((e) => e.ticker === item.selected_ticker);
+            const startAlloc = Math.round(starting * item.allocation_percent) / 100;
+            const monthlyAlloc = Math.round(monthly * item.allocation_percent) / 100;
+            const isSwapped = item.selected_ticker !== item.default_ticker;
+
+            return (
+              <Card key={item.role_id} padding="sm">
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-400 font-medium mb-0.5">{item.role_label}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-base font-bold text-slate-800">{item.selected_ticker}</span>
+                      {isSwapped && <span className="text-xs text-slate-400">(swapped)</span>}
                       {etf && (
-                        <p className="text-xs text-slate-400 mt-0.5 hidden sm:block">{etf.name}</p>
-                      )}
-                      {/* Alternative / swap controls */}
-                      {item.alternative_tickers.length > 0 && (
-                        <div className="mt-2">
-                          {isSwapped ? (
-                            <button
-                              onClick={() => swapTicker(item.role_id, item.default_ticker)}
-                              className="text-xs text-slate-500 hover:text-slate-700 underline cursor-pointer"
-                            >
-                              ↩ Back to {item.default_ticker}
-                            </button>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5 items-center">
-                              <span className="text-xs text-slate-400">Similar ETF example:</span>
-                              {item.alternative_tickers.map((alt) => (
-                                <button
-                                  key={alt}
-                                  onClick={() => swapTicker(item.role_id, alt)}
-                                  className="text-xs px-2 py-0.5 rounded border border-slate-200 bg-white text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-colors cursor-pointer font-medium"
-                                >
-                                  Swap to {alt}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 align-top">
-                      <div className="flex items-center gap-2">
-                        <div className="w-12 bg-slate-100 rounded-full h-1.5">
-                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${item.allocation_percent}%` }} />
-                        </div>
-                        <span className="text-slate-700 font-medium">{item.allocation_percent}%</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 align-top text-right text-slate-700 font-medium">
-                      {starting > 0 ? fmt(startAlloc) : "—"}
-                    </td>
-                    <td className="px-5 py-4 align-top text-right text-slate-700 font-medium">
-                      {monthly > 0 ? fmt(monthlyAlloc) : "—"}
-                    </td>
-                    <td className="px-5 py-4 align-top hidden sm:table-cell">
-                      {etf && (
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${riskBadge[etf.riskLevel]}`}>
-                          {etf.riskLevel}
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${riskBadge[etf.riskLevel]}`}>
+                          {etf.riskLevel} risk
                         </span>
                       )}
-                    </td>
-                    <td className="px-5 py-4 align-top hidden sm:table-cell">
-                      <p className="text-xs font-medium text-slate-600">{item.role_label}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{item.role_description}</p>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="bg-slate-50 border-t border-slate-200 text-sm font-semibold text-slate-700">
-                <td className="px-5 py-3">Total</td>
-                <td className="px-5 py-3">100%</td>
-                <td className="px-5 py-3 text-right">{starting > 0 ? fmt(starting) : "—"}</td>
-                <td className="px-5 py-3 text-right">{monthly > 0 ? fmt(monthly) : "—"}</td>
-                <td className="hidden sm:table-cell" />
-                <td className="hidden sm:table-cell" />
-              </tr>
-            </tfoot>
-          </table>
+                    </div>
+                    {etf && <p className="text-xs text-slate-400 mt-0.5">{etf.name}</p>}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xl font-bold text-slate-700">{item.allocation_percent}%</p>
+                  </div>
+                </div>
+
+                {/* % bar */}
+                <div className="w-full bg-slate-100 rounded-full h-1.5 mb-3">
+                  <div
+                    className="bg-blue-500 h-1.5 rounded-full"
+                    style={{ width: `${item.allocation_percent}%` }}
+                  />
+                </div>
+
+                {/* Role description */}
+                <p className="text-xs text-slate-500 leading-relaxed mb-3">{item.role_description}</p>
+
+                {/* Dollar amounts */}
+                {(starting > 0 || monthly > 0) && (
+                  <div className="flex gap-4 text-xs mb-3">
+                    {starting > 0 && (
+                      <div>
+                        <p className="text-slate-400">Starting</p>
+                        <p className="font-semibold text-slate-700">{formatCurrency(startAlloc)}</p>
+                      </div>
+                    )}
+                    {monthly > 0 && (
+                      <div>
+                        <p className="text-slate-400">Monthly</p>
+                        <p className="font-semibold text-slate-700">{formatCurrency(monthlyAlloc)}/mo</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Swap controls */}
+                {item.alternative_tickers.length > 0 && (
+                  <div className="pt-2 border-t border-slate-100">
+                    {isSwapped ? (
+                      <button
+                        onClick={() => swapTicker(item.role_id, item.default_ticker)}
+                        className="text-xs text-slate-500 hover:text-slate-700 underline cursor-pointer"
+                      >
+                        ↩ Back to {item.default_ticker}
+                      </button>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className="text-xs text-slate-400">Similar ETF example:</span>
+                        {item.alternative_tickers.map((alt) => (
+                          <button
+                            key={alt}
+                            onClick={() => swapTicker(item.role_id, alt)}
+                            className="text-xs px-2 py-0.5 rounded border border-slate-200 bg-white text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer font-medium"
+                          >
+                            Swap to {alt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
+
         {items.some((item) => item.alternative_tickers.length > 0) && (
           <p className="text-xs text-slate-400 leading-relaxed mt-3">
             Similar does not mean identical. Compare fees, holdings, provider, and risk before making real investment decisions.
           </p>
         )}
+
+        {/* Total row */}
+        <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+          <span className="font-semibold text-slate-700">Total</span>
+          <div className="flex gap-4 text-xs">
+            {starting > 0 && <span className="font-semibold text-slate-700">{formatCurrency(starting)} starting</span>}
+            {monthly > 0 && <span className="font-semibold text-slate-700">{formatCurrency(monthly)}/mo</span>}
+            <span className="font-semibold text-slate-700">100%</span>
+          </div>
+        </div>
       </div>
 
-      {/* Plain-English explanation */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-6 space-y-2">
-        <div className="flex items-start justify-between gap-4">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-            What this sample allocation means
-          </h2>
+      {/* What this means */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">What this sample allocation means</p>
           {onAssetClassExplorer && (
             <button
               onClick={onAssetClassExplorer}
-              className="text-xs text-emerald-600 hover:text-emerald-800 transition-colors cursor-pointer shrink-0"
+              className="text-xs text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
             >
               Asset Class Explorer →
             </button>
           )}
         </div>
-        <p className="text-sm text-slate-700 leading-relaxed">{profileExplanation[profile]}</p>
+        <Card variant="muted" padding="sm">
+          <p className="text-sm text-slate-700 leading-relaxed">{profileExplanation[profile]}</p>
+        </Card>
       </div>
 
-      {/* Coach explanation */}
+      {/* Coach explanation toggle */}
       {!showCoach ? (
         <button
           onClick={() => setShowCoach(true)}
-          className="w-full py-2.5 rounded-xl text-sm font-medium border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors cursor-pointer mb-6"
+          className="w-full py-2.5 rounded-xl text-sm font-medium border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer mb-6"
         >
           ✦ Explain my sample allocation
         </button>
@@ -649,112 +655,104 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
         </div>
       )}
 
-      {/* ── What-if Projection Calculator ─────────────────────────────── */}
+      {/* What-if Growth Projection */}
       <div className="border-t border-slate-200 pt-8 mb-8">
-        <div className="mb-6 space-y-1">
-          <h2 className="text-xl font-bold text-slate-900">What-if Growth Projection</h2>
-          <p className="text-sm text-slate-500 leading-relaxed">
-            Adjust the assumptions below to see how different scenarios could play out over time.
-            These are estimates only — not predictions or guarantees.
-          </p>
+        <div className="mb-5">
+          <SectionHeader
+            title="What-if Growth Projection"
+            description="Adjust the assumptions below to see how different scenarios could play out over time. These are estimates only — not predictions or guarantees."
+          />
         </div>
 
         {/* Projection inputs */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-5">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">
-            Projection assumptions
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {/* Projection years */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Timeline (years)</label>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={projectionYears}
-                onChange={(e) => setProjectionYears(e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                placeholder="20"
-              />
-            </div>
-
-            {/* Annual return */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Annual return assumption</label>
-              <div className="relative">
+        <div className="mb-5">
+          <Card>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-5">Projection assumptions</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-slate-700">Timeline (years)</p>
                 <input
                   type="number"
-                  min="0"
-                  max="30"
-                  step="0.5"
-                  value={annualReturn}
-                  onChange={(e) => setAnnualReturn(e.target.value)}
-                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="6"
+                  min="1"
+                  max="50"
+                  value={projectionYears}
+                  onChange={(e) => setProjectionYears(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="20"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-slate-700">Annual return assumption</p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    step="0.5"
+                    value={annualReturn}
+                    onChange={(e) => setAnnualReturn(e.target.value)}
+                    className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="6"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">%</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-slate-700">Withdrawal rate</p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    value={withdrawalRate}
+                    onChange={(e) => setWithdrawalRate(e.target.value)}
+                    className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="4"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">%</span>
+                </div>
               </div>
             </div>
 
-            {/* Withdrawal rate */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Withdrawal rate</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  step="0.5"
-                  value={withdrawalRate}
-                  onChange={(e) => setWithdrawalRate(e.target.value)}
-                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  placeholder="4"
-                />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
+            {/* Scenario buttons */}
+            <div className="mt-5 space-y-2">
+              <p className="text-xs text-slate-400 font-medium">Quick scenarios (assumptions only — not predictions)</p>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Conservative — 4%", value: "4" },
+                  { label: "Moderate — 6%", value: "6" },
+                  { label: "Growth — 8%", value: "8" },
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => setAnnualReturn(s.value)}
+                    className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors cursor-pointer
+                      ${annualReturn === s.value
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700"
+                      }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-
-          {/* Scenario buttons */}
-          <div className="mt-5 space-y-2">
-            <p className="text-xs text-slate-400 font-medium">Quick scenarios (assumptions only — not predictions)</p>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { label: "Conservative — 4%", value: "4" },
-                { label: "Moderate — 6%", value: "6" },
-                { label: "Growth — 8%", value: "8" },
-              ].map((s) => (
-                <button
-                  key={s.value}
-                  onClick={() => setAnnualReturn(s.value)}
-                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors cursor-pointer
-                    ${annualReturn === s.value
-                      ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700"
-                    }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          </Card>
         </div>
 
         {/* Projection results */}
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-5 space-y-4">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-            Projected results
-          </h3>
+        <Card variant="muted" className="mb-5">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Projected results</p>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Starting amount</p>
-              <p className="text-sm font-semibold text-slate-700">{fmt(starting)}</p>
+              <p className="text-sm font-semibold text-slate-700">{formatCurrency(starting)}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Monthly contribution</p>
-              <p className="text-sm font-semibold text-slate-700">{fmt(monthly)}</p>
+              <p className="text-sm font-semibold text-slate-700">{formatCurrency(monthly)}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Projection period</p>
@@ -766,22 +764,22 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
             </div>
           </div>
 
-          <div className="border-t border-slate-200 pt-4 grid grid-cols-2 gap-4">
+          <div className="border-t border-slate-200 pt-4 grid grid-cols-2 gap-4 mb-4">
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Total contributed</p>
-              <p className="text-sm font-semibold text-slate-700">{fmt(projection.totalContributed)}</p>
+              <p className="text-sm font-semibold text-slate-700">{formatCurrency(projection.totalContributed)}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Estimated investment growth</p>
-              <p className="text-sm font-semibold text-emerald-700">{fmt(Math.max(0, projection.estimatedGrowth))}</p>
+              <p className="text-sm font-semibold text-blue-700">{formatCurrency(Math.max(0, projection.estimatedGrowth))}</p>
             </div>
           </div>
 
           {/* Future value highlight */}
-          <div className="bg-white border border-emerald-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-2">
+          <div className="bg-white border border-blue-200 rounded-xl px-5 py-4 flex items-center justify-between flex-wrap gap-2 mb-4">
             <div>
               <p className="text-xs text-slate-400 mb-0.5">Estimated future value</p>
-              <p className="text-2xl font-bold text-emerald-700">{fmt(projection.futureValue)}</p>
+              <p className="text-2xl font-bold text-blue-700">{formatCurrency(projection.futureValue)}</p>
             </div>
             <p className="text-xs text-slate-400 max-w-[180px] leading-relaxed text-right">
               If contributions continue for {projYears} years at {annReturn}% annually
@@ -792,14 +790,14 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
           <div className="border-t border-slate-200 pt-4 grid grid-cols-2 gap-4">
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Est. annual income at {wRate}% withdrawal</p>
-              <p className="text-sm font-semibold text-slate-700">{fmt(projection.estimatedAnnualIncome)}</p>
+              <p className="text-sm font-semibold text-slate-700">{formatCurrency(projection.estimatedAnnualIncome)}</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-xs text-slate-400">Est. monthly income at {wRate}% withdrawal</p>
-              <p className="text-sm font-semibold text-slate-700">{fmt(projection.estimatedMonthlyIncome)}</p>
+              <p className="text-sm font-semibold text-slate-700">{formatCurrency(projection.estimatedMonthlyIncome)}</p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Charts and milestones */}
         <ProjectionChart starting={starting} monthly={monthly} years={projYears} annualReturnPct={annReturn} />
@@ -807,14 +805,14 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
         <ProjectionMilestones starting={starting} monthly={monthly} years={projYears} annualReturnPct={annReturn} />
 
         {/* Profile note */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-5">
-          <p className="text-xs text-emerald-800 leading-relaxed">
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-5">
+          <p className="text-xs text-blue-800 leading-relaxed">
             <span className="font-semibold">For {profile}s: </span>
             {profileProjectionNote[profile]}
           </p>
         </div>
 
-        {/* Plain-English explanations */}
+        {/* Explanatory notes */}
         <div className="space-y-3 mb-5">
           <p className="text-xs text-slate-500 leading-relaxed">
             This projection estimates what your portfolio could grow to if your starting amount, monthly contributions, timeline, and annual return assumption stayed consistent. Real investment returns will not be smooth and are not guaranteed.
@@ -824,34 +822,38 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
           </p>
         </div>
 
-        {/* Goal Planner entry */}
-        <div className="border border-slate-200 rounded-xl px-4 py-3 mb-5 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-slate-700">Have a specific target in mind?</p>
-            <p className="text-xs text-slate-400 mt-0.5">Work backward from a goal amount to find the required monthly contribution.</p>
+        {/* Goal Feasibility entry */}
+        <Card variant="muted" padding="sm" className="mb-5">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-slate-700">Have a specific target in mind?</p>
+              <p className="text-xs text-slate-400 mt-0.5">Work backward from a goal amount to find the required monthly contribution.</p>
+            </div>
+            <button
+              onClick={() => onGoalPlanner(starting, monthly)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Goal Feasibility →
+            </button>
           </div>
-          <button
-            onClick={() => onGoalPlanner(starting, monthly)}
-            className="text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors cursor-pointer whitespace-nowrap"
-          >
-            Goal Planner →
-          </button>
-        </div>
+        </Card>
       </div>
 
-      {/* Save learning plan */}
+      {/* Save plan */}
       <div className="mb-6">
-        <button
+        <Button
+          variant="primary"
+          fullWidth
+          size="lg"
           onClick={handleSave}
           disabled={saveStatus === "saving"}
-          className={`w-full py-3.5 rounded-xl text-sm font-semibold transition-colors
-            ${saveStatus === "saving"
-              ? "bg-slate-200 text-slate-400 cursor-not-allowed"
-              : saveStatus === "saved"
-              ? "bg-emerald-100 text-emerald-700 border border-emerald-200 cursor-pointer"
+          className={
+            saveStatus === "saved"
+              ? "!bg-teal-600 !border-teal-600"
               : saveStatus === "error"
-              ? "bg-red-50 text-red-700 border border-red-200 cursor-pointer"
-              : "bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"}`}
+              ? "!bg-rose-600 !border-rose-600"
+              : ""
+          }
         >
           {saveStatus === "saving"
             ? "Saving…"
@@ -859,8 +861,8 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
             ? "✓ Saved successfully"
             : saveStatus === "error"
             ? "Could not save — try again"
-            : "Save learning plan"}
-        </button>
+            : "Save readiness plan"}
+        </Button>
         {saveStatus === "idle" && (
           <p className="text-xs text-slate-400 text-center mt-2">
             Saves your current inputs, allocation, and projection to this session.
@@ -868,19 +870,13 @@ export default function PortfolioSimulator({ answers, onBack, prefillMonthly, pr
         )}
       </div>
 
-      {/* Disclaimer */}
-      <div className="rounded-xl bg-slate-100 border border-slate-200 px-5 py-4">
-        <p className="text-xs text-slate-500 leading-relaxed">
-          <span className="font-semibold text-slate-600">Educational only. Not financial advice. </span>
-          This is a sample learning allocation and a what-if projection based on assumptions — not a prediction or guarantee. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions.
-        </p>
-      </div>
+      <Disclaimer extended="This is a sample learning allocation and a what-if projection based on assumptions — not a prediction or guarantee. Past performance does not predict future results. Always consult a licensed financial advisor before making investment decisions." />
 
       <SavedLearningPlans
         sessionId={sessionId}
         refreshTrigger={savedRefreshTrigger}
         onView={handleViewPlan}
       />
-    </main>
+    </PageLayout>
   );
 }

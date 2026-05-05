@@ -215,7 +215,7 @@ export default function InvestorDashboard({
   const planTools = [
     { icon: "$", title: "Money Snapshot", description: "Estimate your investing capacity from your budget", action: onContribution },
     { icon: "◎", title: "Goal Feasibility", description: "Work backwards from a target to estimate required monthly contributions", action: onGoalPlanner },
-    { icon: "⊞", title: "Portfolio Simulator", description: "Build a sample learning allocation and review what-if projections", action: onSimulator },
+    { icon: "⊞", title: "Sample Learning Allocation", description: "Build a sample learning allocation and review what-if projections", action: onSimulator },
     { icon: "📋", title: "Saved Plans", description: "Review your saved readiness plans and learning allocations", action: onSimulator },
   ];
 
