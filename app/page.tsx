@@ -195,7 +195,10 @@ export default function Home() {
         />
       )}
       {screen === "portfolioxray" && (
-        <PortfolioXRay onBack={() => setScreen("dashboard")} />
+        <PortfolioXRay
+          onBack={() => setScreen("dashboard")}
+          monthlyContribution={sharedPlanInputs.monthlyContribution}
+        />
       )}
       {screen === "etfs" && (
         <ETFExplorer

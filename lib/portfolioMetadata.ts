@@ -295,6 +295,17 @@ const METADATA: Record<string, TickerMetadata> = {
     notes: "Canadian asset management company with global operations. Assumes TSX listing.",
     evidenceLabel: "BAM — Brookfield Asset Management Ltd.",
   },
+  PLTR: {
+    ticker: "PLTR",
+    name: "Palantir Technologies Inc.",
+    assetType: "Stock",
+    category: "Individual stock",
+    primarySector: "Technology",
+    geographyExposure: { "United States": 100 },
+    currencyExposure: { USD: 100 },
+    notes: "U.S.-listed data analytics and AI software company. Traded in USD on NYSE.",
+    evidenceLabel: "PLTR — Palantir Technologies Inc.",
+  },
 };
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
+// FMP fields are declared optional — real responses vary by plan and result type.
 interface FmpRaw {
-  symbol: string;
-  name: string;
-  currency: string;
-  stockExchange: string;
-  exchangeShortName: string;
+  symbol?: string;
+  name?: string;
+  currency?: string;
+  stockExchange?: string;
+  exchangeShortName?: string;
 }
 
 interface SearchResult {
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
   try {
     const res = await fetch(
       `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(q)}&limit=10&apikey=${apiKey}`,
-      { next: { revalidate: 0 } }
+      { cache: "no-store" }
     );
 
     if (!res.ok) {
@@ -56,17 +57,20 @@ export async function GET(req: Request) {
     const data: unknown = await res.json();
 
     if (!Array.isArray(data)) {
+      // FMP returns an object (e.g. {"Error Message": "..."}) on auth failure
       return NextResponse.json({ results: [] });
     }
 
-    const results: SearchResult[] = (data as FmpRaw[]).map((item) => ({
-      symbol: item.symbol,
-      name: item.name,
-      exchange: item.exchangeShortName || null,
-      currency: item.currency || null,
-      assetType: inferAssetType(item.name),
-      source: "fmp",
-    }));
+    const results: SearchResult[] = (data as FmpRaw[])
+      .filter((item) => item.symbol && item.name) // drop incomplete rows
+      .map((item) => ({
+        symbol: item.symbol!,
+        name: item.name!,
+        exchange: item.exchangeShortName || item.stockExchange || null,
+        currency: item.currency || null,
+        assetType: inferAssetType(item.name!),
+        source: "fmp",
+      }));
 
     return NextResponse.json({ results });
   } catch {

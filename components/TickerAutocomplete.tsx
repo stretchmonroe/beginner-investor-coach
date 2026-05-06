@@ -51,6 +51,19 @@ function fmpToSuggestion(r: FmpResult): AutocompleteSuggestion {
   return { ticker: r.symbol, name: r.name, assetType: r.assetType as AssetType | null, exchange: r.exchange, currency: r.currency, source: "fmp" };
 }
 
+// Score a suggestion against the current query so exact ticker matches always come first
+// regardless of whether they came from local metadata or FMP.
+function scoreSuggestion(s: AutocompleteSuggestion, q: string): number {
+  const qNorm = q.toUpperCase().replace(EXCHANGE_SUFFIX_RE, "");
+  const ticker = normalizeForDedup(s.ticker);
+  let score = 0;
+  if (ticker === qNorm) score += 1000;
+  else if (ticker.startsWith(qNorm)) score += 100;
+  if (s.source === "local") score += 500;
+  if (s.name.toLowerCase().includes(q.toLowerCase())) score += 20;
+  return score;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TickerAutocomplete({
@@ -75,7 +88,8 @@ export default function TickerAutocomplete({
     .filter((r) => !localKeys.has(normalizeForDedup(r.symbol)))
     .slice(0, Math.max(0, 10 - localSuggestions.length))
     .map(fmpToSuggestion);
-  const suggestions: AutocompleteSuggestion[] = [...localSuggestions, ...remoteSuggestions];
+  const suggestions: AutocompleteSuggestion[] = [...localSuggestions, ...remoteSuggestions]
+    .sort((a, b) => scoreSuggestion(b, trimmed) - scoreSuggestion(a, trimmed));
 
   const showNoMatch = trimmed.length >= 2 && suggestions.length === 0 && !remoteLoading;
   const showDropdown = isOpen && (suggestions.length > 0 || showNoMatch || (remoteLoading && trimmed.length >= 2));

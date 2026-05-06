@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
 import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
+import PortfolioScenarios from "@/components/PortfolioScenarios";
 import {
   computeSectorExposure,
   computeGeographyExposure,
@@ -224,9 +225,10 @@ const labelClass = "block text-xs font-medium text-slate-500 mb-1";
 
 interface Props {
   onBack: () => void;
+  monthlyContribution?: number;
 }
 
-export default function PortfolioXRay({ onBack }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution }: Props) {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -686,6 +688,14 @@ export default function PortfolioXRay({ onBack }: Props) {
           </Card>
         </div>
       )}
+
+      {/* ── E. Portfolio Scenarios ── */}
+      <PortfolioScenarios
+        holdings={holdings}
+        totalValue={totalValue}
+        sectorExposure={sectorExposure}
+        defaultMonthlyContribution={monthlyContribution}
+      />
 
       <Disclaimer extended="Educational only. Not financial advice. Exposure estimates use simplified static mappings and may not reflect current holdings, fees, or fund composition." />
     </PageLayout>
