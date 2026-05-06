@@ -149,6 +149,20 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 7 — Portfolio Coach Navigation Refocus
+
+**`9061c94` Refocus navigation around portfolio coach**
+- Dashboard rewritten: replaced readiness checklist, next-step card, and Plan/Learn/Coach tool groups with a 2×2 primary navigation grid
+- Four primary cards: Portfolio X-Ray, AI Portfolio Coach, Contribution Scenarios, Saved Reports
+- "More tools" collapsible list containing all secondary tools (Money Snapshot, Goal Feasibility, Sample Learning Allocation, Asset Class Explorer, ETF Explorer, Compare ETFs, Watchlist, Coach History, Change Profile, Retake Quiz)
+- "Saved Reports" card toggles inline `SavedReadinessPlans` panel
+- `components/PortfolioXRay.tsx`: new placeholder screen ("coming soon") with back navigation
+- Renamed "Ask the Readiness Coach" → "AI Portfolio Coach" in `AskCoach.tsx`
+- Renamed "No saved readiness plans" → "No saved reports" in `SavedReadinessPlans.tsx`
+- Removed unused `hasVisited*` / `hasAskedCoach` state from `app/page.tsx` (only fed the now-removed checklist)
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |
