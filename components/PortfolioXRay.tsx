@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
+import {
+  computeSectorExposure,
+  computeGeographyExposure,
+  computeCurrencyExposure,
+  computeOverlapInsights,
+  computeThemeInsights,
+  computeUnmappedWeight,
+  hasUnmappedHoldings,
+  METADATA_DISCLAIMER,
+} from "@/lib/portfolioMetadata";
+import type { ExposureItem } from "@/lib/portfolioMetadata";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -16,7 +27,7 @@ const ASSET_TYPES: AssetType[] = ["Stock", "ETF", "Mutual Fund", "Bond ETF", "Ca
 const ACCOUNT_TYPES: AccountType[] = ["TFSA", "RRSP", "FHSA", "Non-registered", "RESP", "Other", "Unknown"];
 const CURRENCIES: Currency[] = ["CAD", "USD"];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Formatting helpers ───────────────────────────────────────────────────────
 
 function fmt(value: number): string {
   return "$" + value.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -25,6 +36,8 @@ function fmt(value: number): string {
 function pct(value: number): string {
   return value.toFixed(1) + "%";
 }
+
+// ─── Local concentration analysis (v1, unchanged) ────────────────────────────
 
 interface AssetMixItem {
   assetType: AssetType;
@@ -43,12 +56,10 @@ function computeAssetMix(holdings: Holding[], totalValue: number): AssetMixItem[
     .sort((a, b) => b.weight - a.weight);
 }
 
-function computeInsights(holdings: Holding[], totalValue: number): PortfolioInsight[] {
+function computeConcentrationInsights(holdings: Holding[], totalValue: number): PortfolioInsight[] {
   if (holdings.length === 0 || totalValue === 0) return [];
-
   const sorted = [...holdings].sort((a, b) => b.marketValue - a.marketValue);
   const insights: PortfolioInsight[] = [];
-
   const largestWeight = (sorted[0].marketValue / totalValue) * 100;
   const top3Value = sorted.slice(0, 3).reduce((s, h) => s + h.marketValue, 0);
   const top3Weight = (top3Value / totalValue) * 100;
@@ -120,17 +131,64 @@ function computeInsights(holdings: Holding[], totalValue: number): PortfolioInsi
   return insights;
 }
 
+// ─── Shared UI helpers ────────────────────────────────────────────────────────
+
 const SEVERITY_BADGE: Record<string, "danger" | "caution" | "info"> = {
   warning: "danger",
   caution: "caution",
   info: "info",
 };
-
 const SEVERITY_LABEL: Record<string, string> = {
   warning: "Worth noting",
   caution: "Worth noting",
   info: "For context",
 };
+
+function InsightCard({ insight }: { insight: PortfolioInsight }) {
+  return (
+    <Card>
+      <div className="mb-2">
+        <Badge variant={SEVERITY_BADGE[insight.severity]}>
+          {SEVERITY_LABEL[insight.severity]}
+        </Badge>
+      </div>
+      <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
+      <p className="text-sm text-slate-600 leading-relaxed mb-4">{insight.description}</p>
+      <div className="border-t border-slate-100 pt-3">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Evidence</p>
+        <div className="space-y-1.5">
+          {insight.evidence.map((ev, i) => (
+            <div key={i} className="flex items-baseline gap-2 text-xs">
+              <span className="font-semibold text-slate-500 shrink-0">{ev.label}:</span>
+              <span className="text-slate-600">{ev.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ExposureRows({ items }: { items: ExposureItem[] }) {
+  return (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-3">
+          <span className="text-sm text-slate-700 w-32 shrink-0">{item.label}</span>
+          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-blue-400"
+              style={{ width: `${Math.min(item.weight, 100)}%` }}
+            />
+          </div>
+          <span className="text-sm font-semibold text-slate-600 w-10 text-right shrink-0">
+            {pct(item.weight)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ─── Form state ───────────────────────────────────────────────────────────────
 
@@ -178,14 +236,21 @@ export default function PortfolioXRay({ onBack }: Props) {
   const totalValue = holdings.reduce((s, h) => s + h.marketValue, 0);
   const sortedByValue = [...holdings].sort((a, b) => b.marketValue - a.marketValue);
   const assetMix = computeAssetMix(holdings, totalValue);
-  const insights = computeInsights(holdings, totalValue);
+  const concentrationInsights = computeConcentrationInsights(holdings, totalValue);
+
+  const sectorExposure = computeSectorExposure(holdings, totalValue);
+  const geographyExposure = computeGeographyExposure(holdings, totalValue);
+  const currencyExposure = computeCurrencyExposure(holdings, totalValue);
+  const unmappedWeightPct = computeUnmappedWeight(holdings, totalValue);
+  const overlapInsights = computeOverlapInsights(holdings);
+  const themeInsights = computeThemeInsights(sectorExposure, geographyExposure, unmappedWeightPct);
+  const hasUnmapped = hasUnmappedHoldings(holdings);
 
   const top3Weight =
     totalValue > 0
       ? (sortedByValue.slice(0, 3).reduce((s, h) => s + h.marketValue, 0) / totalValue) * 100
       : 0;
 
-  // If both qty and price are filled, auto-calculate market value
   const qtyNum = form.quantity !== "" ? parseFloat(form.quantity) : NaN;
   const priceNum = form.marketPrice !== "" ? parseFloat(form.marketPrice) : NaN;
   const computedMV = !isNaN(qtyNum) && !isNaN(priceNum) ? qtyNum * priceNum : null;
@@ -273,7 +338,7 @@ export default function PortfolioXRay({ onBack }: Props) {
     <PageLayout maxWidth="lg">
       <PageHeader
         title="Portfolio X-Ray"
-        description="Enter your holdings to see concentration, asset mix, and beginner-friendly insights."
+        description="Enter your holdings to see concentration, exposure, and beginner-friendly insights."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -287,7 +352,6 @@ export default function PortfolioXRay({ onBack }: Props) {
           <p className="text-sm font-semibold text-slate-800 mb-4">
             {editingId ? "Edit holding" : "Add holding"}
           </p>
-
           <div className="grid grid-cols-2 gap-x-4 gap-y-4 mb-4">
             <div>
               <label className={labelClass}>Ticker</label>
@@ -366,9 +430,7 @@ export default function PortfolioXRay({ onBack }: Props) {
                 type="number"
                 min="0"
                 value={computedMV !== null ? computedMV.toFixed(2) : form.marketValue}
-                onChange={(e) => {
-                  if (computedMV === null) setField("marketValue", e.target.value);
-                }}
+                onChange={(e) => { if (computedMV === null) setField("marketValue", e.target.value); }}
                 readOnly={computedMV !== null}
                 placeholder="e.g. 1255.00"
                 className={
@@ -390,14 +452,10 @@ export default function PortfolioXRay({ onBack }: Props) {
             </div>
           </div>
 
-          {formError && (
-            <p className="text-xs text-rose-500 mb-3">{formError}</p>
-          )}
+          {formError && <p className="text-xs text-rose-500 mb-3">{formError}</p>}
 
           <div className="flex items-center gap-3">
-            <Button onClick={submitForm}>
-              {editingId ? "Save holding" : "Add holding"}
-            </Button>
+            <Button onClick={submitForm}>{editingId ? "Save holding" : "Add holding"}</Button>
             <Button variant="ghost" onClick={cancelForm}>Cancel</Button>
           </div>
         </Card>
@@ -407,20 +465,18 @@ export default function PortfolioXRay({ onBack }: Props) {
       {holdings.length === 0 && !showForm && (
         <EmptyState
           title="Add your first holding to start your Portfolio X-Ray"
-          description="Enter your holdings manually to see concentration, asset mix, and beginner-friendly insights."
+          description="Enter your holdings manually to see concentration, exposure, and beginner-friendly insights."
           action={{ label: "Add holding", onClick: openAddForm }}
         />
       )}
 
-      {/* ── Holdings list ── */}
+      {/* ── A. Holdings list ── */}
       {holdings.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800">Holdings</h2>
             {!showForm && (
-              <Button variant="secondary" size="sm" onClick={openAddForm}>
-                + Add holding
-              </Button>
+              <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
             )}
           </div>
           <div className="space-y-3">
@@ -431,12 +487,8 @@ export default function PortfolioXRay({ onBack }: Props) {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        {h.ticker && (
-                          <span className="text-sm font-bold text-slate-800">{h.ticker}</span>
-                        )}
-                        {h.name && (
-                          <span className="text-sm text-slate-500">{h.name}</span>
-                        )}
+                        {h.ticker && <span className="text-sm font-bold text-slate-800">{h.ticker}</span>}
+                        {h.name && <span className="text-sm text-slate-500">{h.name}</span>}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <Badge variant="default">{h.assetType}</Badge>
@@ -460,16 +512,12 @@ export default function PortfolioXRay({ onBack }: Props) {
                     <button
                       onClick={() => openEditForm(h)}
                       className="text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                    >
-                      Edit
-                    </button>
+                    >Edit</button>
                     <span className="text-slate-200">·</span>
                     <button
                       onClick={() => deleteHolding(h.id)}
                       className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                    >
-                      Delete
-                    </button>
+                    >Delete</button>
                   </div>
                 </Card>
               );
@@ -494,8 +542,7 @@ export default function PortfolioXRay({ onBack }: Props) {
             <Card variant="muted" padding="sm" className="col-span-2">
               <p className="text-xs text-slate-400 mb-0.5">Largest holding</p>
               <p className="text-sm font-bold text-slate-800">
-                {sortedByValue[0].ticker || sortedByValue[0].name}
-                {" "}
+                {sortedByValue[0].ticker || sortedByValue[0].name}{" "}
                 <span className="text-slate-500 font-semibold">
                   — {pct((sortedByValue[0].marketValue / totalValue) * 100)} of portfolio
                 </span>
@@ -511,62 +558,100 @@ export default function PortfolioXRay({ onBack }: Props) {
         </div>
       )}
 
-      {/* ── Asset type mix ── */}
-      {assetMix.length > 0 && (
+      {/* ── B. Concentration insights ── */}
+      {concentrationInsights.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-3">Asset type mix</h2>
-          <Card>
-            <div className="space-y-3">
-              {assetMix.map((item) => (
-                <div key={item.assetType} className="flex items-center gap-3">
-                  <span className="text-sm text-slate-700 w-32 shrink-0">{item.assetType}</span>
-                  <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-blue-400"
-                      style={{ width: `${item.weight}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-semibold text-slate-600 w-10 text-right shrink-0">
-                    {pct(item.weight)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <h2 className="text-base font-semibold text-slate-800 mb-1">Concentration</h2>
+          <p className="text-sm text-slate-500 mb-3">Based on holding weights. Educational only.</p>
+          <div className="space-y-4">
+            {concentrationInsights.map((insight) => (
+              <InsightCard key={insight.id} insight={insight} />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* ── Insights ── */}
-      {insights.length > 0 && (
+      {/* ── C. Exposure breakdown ── */}
+      {holdings.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">Insights</h2>
+          <h2 className="text-base font-semibold text-slate-800 mb-1">Exposure</h2>
+          <p className="text-sm text-slate-500 mb-4">
+            Simplified estimates based on static metadata. {METADATA_DISCLAIMER}
+          </p>
+
+          {hasUnmapped && (
+            <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <p className="text-xs font-semibold text-amber-700">Some holdings are not mapped yet</p>
+              <p className="text-xs text-amber-600 mt-0.5">
+                Exposure estimates may be incomplete. Unmapped holdings are included in total value but not in sector, geography, or currency breakdowns.
+              </p>
+            </div>
+          )}
+
+          {/* Asset type mix */}
+          {assetMix.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Asset type</p>
+              <Card padding="sm">
+                <ExposureRows items={assetMix.map((i) => ({ label: i.assetType, value: i.value, weight: i.weight }))} />
+              </Card>
+            </div>
+          )}
+
+          {/* Sector */}
+          {sectorExposure.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Sector</p>
+              <Card padding="sm">
+                <ExposureRows items={sectorExposure} />
+              </Card>
+            </div>
+          )}
+
+          {/* Geography */}
+          {geographyExposure.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Geography</p>
+              <Card padding="sm">
+                <ExposureRows items={geographyExposure} />
+              </Card>
+            </div>
+          )}
+
+          {/* Currency */}
+          {currencyExposure.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Currency</p>
+              <Card padding="sm">
+                <ExposureRows items={currencyExposure} />
+                <p className="text-xs text-slate-400 mt-3">
+                  Currency exposure is simplified. A Canadian-listed ETF may still hold foreign assets.
+                </p>
+              </Card>
+            </div>
+          )}
+
+          {/* Theme insights */}
+          {themeInsights.length > 0 && (
+            <div className="space-y-4">
+              {themeInsights.map((insight) => (
+                <InsightCard key={insight.id} insight={insight} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── D. Overlap notes ── */}
+      {overlapInsights.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-slate-800 mb-1">Overlap notes</h2>
           <p className="text-sm text-slate-500 mb-3">
-            Based on the holdings you entered. Educational only — not financial advice.
+            Potential holding interactions based on simplified static mapping.
           </p>
           <div className="space-y-4">
-            {insights.map((insight) => (
-              <Card key={insight.id}>
-                <div className="mb-2">
-                  <Badge variant={SEVERITY_BADGE[insight.severity]}>
-                    {SEVERITY_LABEL[insight.severity]}
-                  </Badge>
-                </div>
-                <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
-                <p className="text-sm text-slate-600 leading-relaxed mb-4">{insight.description}</p>
-                <div className="border-t border-slate-100 pt-3">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                    Evidence
-                  </p>
-                  <div className="space-y-1.5">
-                    {insight.evidence.map((ev, i) => (
-                      <div key={i} className="flex items-baseline gap-2 text-xs">
-                        <span className="font-semibold text-slate-500 shrink-0">{ev.label}:</span>
-                        <span className="text-slate-600">{ev.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
+            {overlapInsights.map((insight) => (
+              <InsightCard key={insight.id} insight={insight} />
             ))}
           </div>
         </div>
@@ -576,19 +661,17 @@ export default function PortfolioXRay({ onBack }: Props) {
       {holdings.length > 0 && (
         <div className="mb-6">
           <Card variant="highlighted">
-            <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-2">
-              What this means
-            </p>
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-2">What this means</p>
             <p className="text-sm text-blue-900 leading-relaxed">
-              Portfolio X-Ray helps you understand concentration and asset mix based on the holdings
-              you enter. It does not decide whether your portfolio is good or bad. It highlights areas
-              worth understanding before making future decisions.
+              Portfolio X-Ray helps you understand concentration, asset mix, and estimated exposure based
+              on the holdings you enter. It does not decide whether your portfolio is good or bad.
+              It highlights areas worth understanding before making future decisions.
             </p>
           </Card>
         </div>
       )}
 
-      <Disclaimer extended="Educational only. Based on the holdings you enter and does not account for your full financial situation." />
+      <Disclaimer extended="Educational only. Not financial advice. Exposure estimates use simplified static mappings and may not reflect current holdings, fees, or fund composition." />
     </PageLayout>
   );
 }
