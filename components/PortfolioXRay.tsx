@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
+import TickerAutocomplete from "@/components/TickerAutocomplete";
+import type { TickerMetadata } from "@/lib/portfolioMetadata";
 import {
   computeSectorExposure,
   computeGeographyExposure,
@@ -332,6 +334,18 @@ export default function PortfolioXRay({ onBack }: Props) {
     setHoldings((prev) => prev.filter((h) => h.id !== id));
   }
 
+  function handleTickerSelect(meta: TickerMetadata) {
+    const currencyKey = Object.keys(meta.currencyExposure)[0] ?? "CAD";
+    const formCurrency: Currency = currencyKey === "USD" ? "USD" : "CAD";
+    setForm((prev) => ({
+      ...prev,
+      ticker: meta.ticker,
+      name: meta.name,
+      assetType: meta.assetType,
+      currency: formCurrency,
+    }));
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -355,12 +369,12 @@ export default function PortfolioXRay({ onBack }: Props) {
           <div className="grid grid-cols-2 gap-x-4 gap-y-4 mb-4">
             <div>
               <label className={labelClass}>Ticker</label>
-              <input
-                type="text"
+              <TickerAutocomplete
                 value={form.ticker}
-                onChange={(e) => setField("ticker", e.target.value)}
+                onChange={(v) => setField("ticker", v)}
+                onSelect={handleTickerSelect}
                 placeholder="e.g. VFV"
-                className={inputClass}
+                inputClassName={inputClass}
               />
             </div>
             <div>
@@ -372,6 +386,9 @@ export default function PortfolioXRay({ onBack }: Props) {
                 placeholder="e.g. Vanguard S&P 500 ETF"
                 className={inputClass}
               />
+            </div>
+            <div className="col-span-2">
+              <p className="text-xs text-slate-400">Search local examples by ticker or name. You can still add holdings that are not listed.</p>
             </div>
             <div>
               <label className={labelClass}>Asset type</label>

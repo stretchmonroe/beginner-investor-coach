@@ -88,14 +88,14 @@ const METADATA: Record<string, TickerMetadata> = {
   },
   CASH: {
     ticker: "CASH",
-    name: "Purpose High Interest Savings ETF",
+    name: "Global X High Interest Savings ETF",
     assetType: "ETF",
     category: "Cash-equivalent ETF",
     primarySector: "Cash / Short-term",
     geographyExposure: { Canada: 100 },
     currencyExposure: { CAD: 100 },
     notes: "High-interest savings ETF. Returns tied to Canadian short-term interest rates.",
-    evidenceLabel: "CASH — Purpose High Interest Savings ETF",
+    evidenceLabel: "CASH — Global X High Interest Savings ETF",
   },
   VFV: {
     ticker: "VFV",
@@ -286,14 +286,14 @@ const METADATA: Record<string, TickerMetadata> = {
   },
   BAM: {
     ticker: "BAM",
-    name: "Brookfield Asset Management",
+    name: "Brookfield Asset Management Ltd.",
     assetType: "Stock",
     category: "Individual stock",
     primarySector: "Financials",
     geographyExposure: { Canada: 100 },
     currencyExposure: { CAD: 100 },
     notes: "Canadian asset management company with global operations. Assumes TSX listing.",
-    evidenceLabel: "BAM — Brookfield Asset Management",
+    evidenceLabel: "BAM — Brookfield Asset Management Ltd.",
   },
 };
 
@@ -498,4 +498,36 @@ export function computeThemeInsights(
   }
 
   return insights;
+}
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+export function getAllMetadata(): TickerMetadata[] {
+  return Object.values(METADATA);
+}
+
+export function searchMetadata(query: string, limit = 8): TickerMetadata[] {
+  const q = query.trim().toLowerCase();
+  if (q.length === 0) return [];
+
+  const tickerPrefix: TickerMetadata[] = [];
+  const nameMatch: TickerMetadata[] = [];
+  const categoryMatch: TickerMetadata[] = [];
+
+  for (const meta of getAllMetadata()) {
+    const tickerL = meta.ticker.toLowerCase();
+    const nameL = meta.name.toLowerCase();
+    const catL = meta.category.toLowerCase();
+    const sectorL = meta.primarySector.toLowerCase();
+
+    if (tickerL.startsWith(q)) {
+      tickerPrefix.push(meta);
+    } else if (nameL.includes(q)) {
+      nameMatch.push(meta);
+    } else if (catL.includes(q) || sectorL.includes(q)) {
+      categoryMatch.push(meta);
+    }
+  }
+
+  return [...tickerPrefix, ...nameMatch, ...categoryMatch].slice(0, limit);
 }
