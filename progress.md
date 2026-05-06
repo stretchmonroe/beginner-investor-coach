@@ -213,6 +213,27 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 11 — Ticker Autocomplete Fixes + Portfolio Scenarios
+
+**`c5f4f96` Add portfolio scenario tools**
+
+*Ticker autocomplete fixes:*
+- Added PLTR (Palantir Technologies Inc.) to local metadata — Stock, Technology, US 100%, USD
+- `TickerAutocomplete.tsx`: added `scoreSuggestion` function; merged local + FMP list is now sorted by score (exact ticker match = 1000, local source = 500, ticker prefix = 100, name match = 20) so exact FMP matches surface before weaker local partial matches
+- `app/api/ticker-search/route.ts`: made `FmpRaw` fields optional; added `symbol && name` filter to drop incomplete rows; falls back to `stockExchange` if `exchangeShortName` is absent; switched to `cache: "no-store"`
+
+*Portfolio Scenarios (v3):*
+- `components/PortfolioScenarios.tsx`: new component with three educational what-if scenarios
+- **Scenario 1 — Monthly contribution**: inputs for amount, months, and contribution target (proportional / cash-like / broad ETF / manual holding); distributes contributions by market-value weight; shows new total, updated per-holding weights (before → after), updated asset-type mix, and biggest weight change; warns if target type has no matching holdings
+- **Scenario 2 — Holding drop**: select any holding + drop %; computes dollar loss, portfolio % decline, new holding value, new weight, whether it remains the largest holding; plain-English summary card ("would fall by approximately… based on the holdings entered")
+- **Scenario 3 — Sector drop**: select any mapped sector + drop %; uses `sectorExposure` already computed in PortfolioXRay; shows mapped sector value, dollar impact, portfolio % decline; warns that sector mapping is simplified
+- Every scenario has a "What this means" educational card and an Evidence panel (inputs, assumptions, source)
+- No expected returns applied; no buy/sell language; educational-only disclaimer
+- `PortfolioXRay.tsx`: imports and renders `PortfolioScenarios` after overlap notes; added `monthlyContribution?: number` prop
+- `app/page.tsx`: passes `sharedPlanInputs.monthlyContribution` to `PortfolioXRay` so Money Snapshot value pre-fills the contribution scenario
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |
