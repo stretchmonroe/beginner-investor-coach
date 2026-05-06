@@ -163,6 +163,23 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 8 — Portfolio X-Ray v1
+
+**`c372a5b` Add portfolio x-ray manual holdings**
+- `types/portfolio.ts`: `AssetType`, `AccountType`, `Currency`, `Holding`, `PortfolioSnapshot`, `PortfolioInsight`, `EvidenceSource`
+- `components/PortfolioXRay.tsx`: full manual holdings entry, X-Ray analysis, and insights — replaces placeholder
+- Manual holdings form: ticker, name, asset type, account type, quantity (optional), market price (optional), market value, currency (CAD/USD)
+- Auto-calculation: quantity × market price → market value (read-only when both filled)
+- Holdings list: each holding shows ticker, name, badges (asset type / account / currency), market value, portfolio weight %, edit and delete buttons
+- Summary cards: total portfolio value, holdings count, largest holding + weight, top-3 combined weight
+- Asset type mix: breakdown list with inline proportion bars (no charts)
+- Concentration insights (local, no AI): high single-holding concentration (>25%), top-3 concentration (>60%), limited holdings (1–3), no cash-like holdings
+- Each insight includes an evidence panel with labelled key/value pairs (holding name, weight, source)
+- "What this means" educational card and disclaimer
+- All holdings stored in local React state only — no Supabase, no AI calls
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |
