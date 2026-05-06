@@ -180,6 +180,39 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 9 — Portfolio X-Ray v2
+
+**`01b7184` Add portfolio x-ray exposure and overlap mapping**
+- `lib/portfolioMetadata.ts`: 23-ticker static metadata with sector, geography, and currency exposure mappings
+- `TickerMetadata` interface: `geographyExposure` (region → %), `currencyExposure` (label → %), `primarySector`, `category`, `notes`, `evidenceLabel`
+- Geography blending for allocation ETFs (VGRO/VBAL blend equity and bond geography allocations)
+- `computeSectorExposure`, `computeGeographyExposure`, `computeCurrencyExposure`: distribute holdings proportionally by metadata weights; unknown tickers fall back to "Unknown" bucket or holding `currency` field
+- `computeOverlapInsights`: XEQT+VEQT overlap rule; broad equity ETF ∩ mega-cap stock overlap rule
+- `computeThemeInsights`: tech >35%, US >70%, Canada >70%, unmapped weight >25%
+- `computeUnmappedWeight`, `hasUnmappedHoldings`: identify holdings with no local metadata
+- `PortfolioXRay.tsx` updated: sector, geography, currency exposure sections with inline proportion bars; overlap notes section; theme insights; unmapped holdings notice; `METADATA_DISCLAIMER`
+
+---
+
+### Phase 10 — Ticker Autocomplete
+
+**`0adc3f9` Add local ticker autocomplete**
+- `getAllMetadata()` and `searchMetadata(query, limit)` added to `portfolioMetadata.ts`
+- Search prioritises ticker-prefix matches, then name substring, then category/sector
+- `components/TickerAutocomplete.tsx`: input with dropdown, keyboard navigation (↑ ↓ Enter Escape), outside-click close, "No local match" fallback message
+- Integrated into Portfolio X-Ray holdings form: selecting a suggestion auto-fills ticker, name, asset type, and currency
+- Helper text: "Search local examples by ticker or name. You can still add holdings that are not listed."
+
+**`1473e31` Add FMP ticker search autocomplete**
+- `app/api/ticker-search/route.ts`: server-side proxy to Financial Modeling Prep `/api/v3/search`; reads `FMP_API_KEY` from env; infers asset type from name heuristics; returns empty results gracefully on missing key or API failure
+- `TickerAutocomplete.tsx` rewritten: hybrid local + remote model with new exported `AutocompleteSuggestion` type (`ticker`, `name`, `assetType`, `exchange`, `currency`, `source`)
+- Local suggestions (up to 6) appear instantly; FMP results fetched after 300ms debounce, deduplicated against local by normalised ticker, appended up to 10 total
+- FMP results show exchange, currency, and a `Live` pill; "Searching…" / "Searching for more…" loading states
+- `normalizeTicker` helper in `portfolioMetadata.ts` strips `.TO`, `.V`, `.CN`, `.NE` suffixes — `getMetadata`, `computeOverlapInsights`, and `searchMetadata` all normalise before lookup so "XEQT.TO" resolves to XEQT metadata
+- `PortfolioXRay.tsx` `handleTickerSelect` updated to accept `AutocompleteSuggestion`
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |
