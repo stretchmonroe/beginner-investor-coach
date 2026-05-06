@@ -152,7 +152,7 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
   return (
     <PageLayout maxWidth="sm">
       <PageHeader
-        title="Ask the Readiness Coach"
+        title="AI Portfolio Coach"
         description="Ask questions about your investing readiness, goal feasibility, sample allocation, or investment basics. Educational only — not financial advice."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>

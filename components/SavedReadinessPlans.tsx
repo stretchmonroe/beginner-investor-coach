@@ -114,8 +114,8 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
   if (plans.length === 0) {
     return (
       <EmptyState
-        title="No saved readiness plans"
-        description="Saved readiness plans will appear here after you complete the Sample Learning Allocation and click Save."
+        title="No saved reports"
+        description="Saved reports will appear here after you complete the Sample Learning Allocation and click Save."
       />
     );
   }

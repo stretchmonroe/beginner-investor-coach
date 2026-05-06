@@ -1,51 +1,38 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
-import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
-import { getLearningPlans } from "@/lib/learningPlans";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import ToolCard from "@/components/ui/ToolCard";
 import Disclaimer from "@/components/ui/Disclaimer";
-import SectionHeader from "@/components/ui/SectionHeader";
 
 const profileMeta: Record<
   Profile,
-  { badge: string; bgColor: string; borderColor: string; textColor: string; badgeColor: string; explanation: string }
+  { badge: string; bgColor: string; borderColor: string; badgeColor: string }
 > = {
   "Conservative Beginner": {
     badge: "🛡️",
     bgColor: "bg-violet-50",
     borderColor: "border-violet-200",
-    textColor: "text-violet-800",
     badgeColor: "bg-violet-100 text-violet-700",
-    explanation:
-      "You may prefer a steadier investing experience and want to reduce large swings where possible. Start by understanding your protected savings, monthly investing capacity, and comfort with risk.",
   },
   "Balanced Beginner": {
     badge: "⚖️",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
-    textColor: "text-blue-800",
     badgeColor: "bg-blue-100 text-blue-700",
-    explanation:
-      "You may want a mix of growth and stability. Start by understanding your monthly investing capacity, goal feasibility, and how much volatility you can realistically handle.",
   },
   "Growth Beginner": {
     badge: "📈",
     bgColor: "bg-teal-50",
     borderColor: "border-teal-200",
-    textColor: "text-teal-800",
     badgeColor: "bg-teal-100 text-teal-700",
-    explanation:
-      "You may have a longer timeline and more comfort with market swings. Start by understanding your investing capacity, goal feasibility, and the assumptions behind your plan.",
   },
 };
 
@@ -53,13 +40,7 @@ interface Props {
   answers: QuizAnswers;
   quizSkipped: boolean;
   sessionId: string;
-  watchedTickers: Set<string>;
-  guidanceSnapshot: ContributionGuidanceSnapshot | null;
-  hasVisitedETFs: boolean;
-  hasVisitedAssetClasses: boolean;
-  hasVisitedGoalPlanner: boolean;
-  hasVisitedSimulator: boolean;
-  hasAskedCoach: boolean;
+  onPortfolioXRay: () => void;
   onExploreETFs: () => void;
   onAssetClasses: () => void;
   onSimulator: () => void;
@@ -73,25 +54,11 @@ interface Props {
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
 }
 
-interface NextStep {
-  stepLabel: string;
-  label: string;
-  desc: string;
-  actionLabel: string;
-  action: () => void;
-}
-
 export default function InvestorDashboard({
   answers,
   quizSkipped,
   sessionId,
-  watchedTickers,
-  guidanceSnapshot,
-  hasVisitedETFs,
-  hasVisitedAssetClasses,
-  hasVisitedGoalPlanner,
-  hasVisitedSimulator,
-  hasAskedCoach,
+  onPortfolioXRay,
   onExploreETFs,
   onAssetClasses,
   onSimulator,
@@ -104,148 +71,32 @@ export default function InvestorDashboard({
   onRetakeQuiz,
   onRestorePlan,
 }: Props) {
-  const [savedPlansCount, setSavedPlansCount] = useState(0);
   const [savedReadinessPlansCount, setSavedReadinessPlansCount] = useState(0);
-
-  useEffect(() => {
-    if (!sessionId) return;
-    getLearningPlans(sessionId).then((plans) => setSavedPlansCount(plans.length));
-  }, [sessionId]);
+  const [showSavedReports, setShowSavedReports] = useState(false);
+  const [showMoreTools, setShowMoreTools] = useState(false);
 
   const profileLabel = deriveProfile(answers) ?? "Balanced Beginner";
   const meta = profileMeta[profileLabel];
 
-  function getNextStep(): NextStep | null {
-    if (!guidanceSnapshot) return {
-      stepLabel: "Step 1 of 6",
-      label: "Estimate your contribution capacity",
-      desc: "Use your income, bills, savings buckets, and lifestyle buffer to estimate a monthly contribution range to consider.",
-      actionLabel: "Open Money Snapshot",
-      action: onContribution,
-    };
-    if (!hasVisitedGoalPlanner) return {
-      stepLabel: "Step 2 of 6",
-      label: "Check goal feasibility",
-      desc: "Work backward from a target amount and timeline to estimate the monthly contribution needed.",
-      actionLabel: "Open Goal Feasibility",
-      action: onGoalPlanner,
-    };
-    if (!hasVisitedSimulator) return {
-      stepLabel: "Step 3 of 6",
-      label: "Build a sample learning allocation",
-      desc: "See how a sample portfolio could be split by role — growth, stability, and cash-like options.",
-      actionLabel: "Open Sample Learning Allocation",
-      action: onSimulator,
-    };
-    if (savedReadinessPlansCount === 0 && savedPlansCount === 0) return {
-      stepLabel: "Step 4 of 6",
-      label: "Save your readiness plan",
-      desc: "Save your budget inputs, goal estimate, sample allocation, and projection so you can revisit them later.",
-      actionLabel: "Review and Save Plan",
-      action: onSimulator,
-    };
-    if (!hasVisitedAssetClasses) return {
-      stepLabel: "Step 5 of 6",
-      label: "Learn about investment types",
-      desc: "Explore equity ETFs, bond ETFs, all-in-one ETFs, mutual funds, and cash-like investments.",
-      actionLabel: "Explore Asset Classes",
-      action: onAssetClasses,
-    };
-    if (!hasAskedCoach) return {
-      stepLabel: "Step 6 of 6",
-      label: "Ask the coach a question",
-      desc: "Use the beginner coach to clarify anything you've learned so far.",
-      actionLabel: "Ask the Coach",
-      action: () => onAskCoach(),
-    };
-    return null;
-  }
-
-  const nextStep = getNextStep();
-
-  const checklistItems = [
-    {
-      label: "Choose investor profile",
-      desc: "Know your risk tolerance and investing timeline.",
-      done: true,
-      action: onChangeProfile,
-    },
-    {
-      label: "Estimate contribution capacity",
-      desc: "Understand how much you may be able to invest monthly.",
-      done: guidanceSnapshot != null,
-      action: onContribution,
-    },
-    {
-      label: "Check goal feasibility",
-      desc: "Work backward from a target amount and timeline.",
-      done: hasVisitedGoalPlanner,
-      action: onGoalPlanner,
-    },
-    {
-      label: "Build a sample learning allocation",
-      desc: "See how a sample portfolio could be structured by role.",
-      done: hasVisitedSimulator,
-      action: onSimulator,
-    },
-    {
-      label: "Review what-if projection",
-      desc: "Understand how contributions may grow over time based on assumptions.",
-      done: hasVisitedSimulator,
-      action: onSimulator,
-    },
-    {
-      label: "Save readiness plan",
-      desc: "Save your inputs and estimates for future reference.",
-      done: savedReadinessPlansCount > 0 || savedPlansCount > 0,
-      action: onSimulator,
-    },
-    {
-      label: "Learn about investment types",
-      desc: "Understand equity ETFs, bond ETFs, mutual funds, and cash-like options.",
-      done: hasVisitedAssetClasses,
-      action: onAssetClasses,
-    },
-    {
-      label: "Ask the coach",
-      desc: "Get plain-language answers to your investing questions.",
-      done: hasAskedCoach,
-      action: () => onAskCoach(),
-    },
+  const moreTools = [
+    { label: "Money Snapshot", action: onContribution },
+    { label: "Goal Feasibility", action: onGoalPlanner },
+    { label: "Sample Learning Allocation", action: onSimulator },
+    { label: "Asset Class Explorer", action: onAssetClasses },
+    { label: "ETF Explorer", action: onExploreETFs },
+    { label: "Compare ETFs", action: onCompare },
+    { label: "Watchlist", action: onWatchlist },
+    { label: "Coach History", action: () => onAskCoach() },
+    { label: "Change Profile", action: onChangeProfile },
+    { label: "Retake Quiz", action: onRetakeQuiz },
   ];
-
-  const completedCount = checklistItems.filter((i) => i.done).length;
-  const showActivity = watchedTickers.size > 0 || savedPlansCount > 0;
-
-  const planTools = [
-    { icon: "$", title: "Money Snapshot", description: "Estimate your investing capacity from your budget", action: onContribution },
-    { icon: "◎", title: "Goal Feasibility", description: "Work backwards from a target to estimate required monthly contributions", action: onGoalPlanner },
-    { icon: "⊞", title: "Sample Learning Allocation", description: "Build a sample learning allocation and review what-if projections", action: onSimulator },
-    { icon: "📋", title: "Saved Plans", description: "Review your saved readiness plans and learning allocations", action: onSimulator },
-  ];
-
-  const learnTools = [
-    { icon: "≡", title: "Asset Class Explorer", description: "Learn about equity ETFs, bond ETFs, mutual funds, and cash options", action: onAssetClasses },
-    { icon: "★", title: "ETF Explorer", description: "Browse beginner-friendly ETF examples by risk level", action: onExploreETFs },
-    { icon: "☆", title: "Watchlist", description: "Track ETF examples you've saved for further learning", action: onWatchlist },
-    { icon: "⇄", title: "Compare ETFs", description: "Compare two ETF examples side by side", action: onCompare },
-  ];
-
-  const coachTools = [
-    { icon: "✦", title: "Ask the Coach", description: "Ask plain-language questions about investing concepts", action: () => onAskCoach() },
-    { icon: "🕐", title: "Coach History", description: "Review your previous coach conversations", action: () => onAskCoach() },
-  ];
-
-  // suppress unused-var warning — hasVisitedETFs is received but checklist uses ETF watchlist count instead
-  void hasVisitedETFs;
 
   return (
     <PageLayout maxWidth="lg">
-      {/* Header */}
-      <PageHeader title="Your Investor Dashboard" />
+      <PageHeader title="AI Portfolio Coach" />
 
-      {/* Profile summary card */}
-      <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-6 mb-6`}>
+      {/* Profile card */}
+      <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-5 mb-6`}>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${meta.badgeColor}`}>
             <span>{meta.badge}</span>
@@ -257,10 +108,6 @@ export default function InvestorDashboard({
             </span>
           )}
         </div>
-        <p className={`text-sm leading-relaxed ${meta.textColor} mb-3`}>{meta.explanation}</p>
-        <p className="text-xs text-slate-400 leading-relaxed mb-4">
-          Educational only. Not financial advice. This profile is a learning starting point based on your quiz or manual selection. It does not account for your full financial situation.
-        </p>
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="secondary" size="sm" onClick={onChangeProfile}>
             Change profile
@@ -274,137 +121,82 @@ export default function InvestorDashboard({
         </div>
       </div>
 
-      {/* Next best step */}
-      {nextStep ? (
-        <div className="rounded-2xl bg-blue-600 p-6 mb-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-widest text-blue-200 mb-1">{nextStep.stepLabel}</p>
-          <h2 className="text-lg font-bold mb-1">{nextStep.label}</h2>
-          <p className="text-sm text-blue-100 leading-relaxed mb-4">{nextStep.desc}</p>
-          <Button
-            variant="secondary"
-            onClick={nextStep.action}
-            className="text-blue-700 border-white/30 hover:bg-blue-50"
-          >
-            {nextStep.actionLabel}
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-2xl bg-teal-600 p-6 mb-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-200 mb-1">Journey complete</p>
-          <h2 className="text-lg font-bold mb-1">You&apos;ve completed the core readiness journey</h2>
-          <p className="text-sm text-teal-100 leading-relaxed">
-            You&apos;ve worked through all six steps. Use the tools below to continue learning and refining your plan.
-          </p>
-        </div>
-      )}
-
-      {/* Readiness journey checklist */}
-      <div className="mb-6">
-        <SectionHeader title="Your beginner investing readiness journey" />
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs text-slate-400">{completedCount} / {checklistItems.length} steps complete</span>
-          </div>
-          <div className="space-y-4">
-            {checklistItems.map((item) => (
-              <div key={item.label} className="flex items-start gap-3">
-                <span className={`shrink-0 text-sm font-bold mt-0.5 ${item.done ? "text-teal-500" : "text-slate-200"}`}>
-                  {item.done ? "✓" : "○"}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${item.done ? "text-slate-700" : "text-slate-400"}`}>
-                    {item.label}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-0.5">{item.desc}</p>
-                </div>
-                {!item.done && (
-                  <button
-                    onClick={item.action}
-                    className="shrink-0 text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors cursor-pointer whitespace-nowrap"
-                  >
-                    Open →
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
+      {/* Primary navigation grid */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <button
+          onClick={onPortfolioXRay}
+          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+        >
+          <span className="text-xl">🔍</span>
+          <span className="text-sm font-semibold text-slate-800">Portfolio X-Ray</span>
+          <span className="text-xs text-slate-500 leading-snug">Understand what you own</span>
+        </button>
+        <button
+          onClick={() => onAskCoach()}
+          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+        >
+          <span className="text-xl">✦</span>
+          <span className="text-sm font-semibold text-slate-800">AI Portfolio Coach</span>
+          <span className="text-xs text-slate-500 leading-snug">Ask anything about investing</span>
+        </button>
+        <button
+          onClick={onSimulator}
+          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+        >
+          <span className="text-xl">📊</span>
+          <span className="text-sm font-semibold text-slate-800">Contribution Scenarios</span>
+          <span className="text-xs text-slate-500 leading-snug">Model your monthly investing plan</span>
+        </button>
+        <button
+          onClick={() => setShowSavedReports((s) => !s)}
+          className={`flex flex-col gap-1.5 border rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer ${showSavedReports ? "bg-slate-50 border-slate-300" : "bg-white border-slate-200"}`}
+        >
+          <span className="text-xl">📋</span>
+          <span className="text-sm font-semibold text-slate-800">Saved Reports</span>
+          <span className="text-xs text-slate-500 leading-snug">
+            {savedReadinessPlansCount > 0 ? `${savedReadinessPlansCount} saved` : "Your saved snapshots"}
+          </span>
+        </button>
       </div>
 
-      {/* Activity summary */}
-      {showActivity && (
-        <div className="flex gap-4 mb-6">
-          {watchedTickers.size > 0 && (
-            <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
-              <p className="text-2xl font-bold text-slate-800">{watchedTickers.size}</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                ETF{watchedTickers.size !== 1 ? "s" : ""} in watchlist
-              </p>
-            </div>
-          )}
-          {savedPlansCount > 0 && (
-            <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
-              <p className="text-2xl font-bold text-slate-800">{savedPlansCount}</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                plan{savedPlansCount !== 1 ? "s" : ""} saved
-              </p>
-            </div>
-          )}
+      {/* Saved Reports inline panel */}
+      {showSavedReports && (
+        <div className="mb-6">
+          <SavedReadinessPlans
+            sessionId={sessionId}
+            onCountChange={setSavedReadinessPlansCount}
+            onRestorePlan={onRestorePlan}
+            onAskCoach={onAskCoach}
+          />
         </div>
       )}
 
-      {/* Tools section */}
+      {/* More tools */}
       <div className="mb-8">
-        <SectionHeader title="Tools" />
-
-        <div className="space-y-6">
-          {/* Plan */}
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Plan</p>
-            <p className="text-xs text-slate-400 mb-3">Understand your budget, set a goal, and build a sample allocation.</p>
-            <div className="grid grid-cols-2 gap-3">
-              {planTools.map((tool) => (
-                <ToolCard key={tool.title} icon={tool.icon} title={tool.title} description={tool.description} onClick={tool.action} />
+        <button
+          onClick={() => setShowMoreTools((s) => !s)}
+          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer mb-2"
+        >
+          More tools <span className="text-xs">{showMoreTools ? "▲" : "▼"}</span>
+        </button>
+        {showMoreTools && (
+          <Card>
+            <div className="divide-y divide-slate-100">
+              {moreTools.map((tool) => (
+                <button
+                  key={tool.label}
+                  onClick={tool.action}
+                  className="flex items-center justify-between w-full py-3 text-sm text-slate-700 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                >
+                  <span>{tool.label}</span>
+                  <span className="text-slate-300 text-xs">→</span>
+                </button>
               ))}
             </div>
-          </div>
-
-          {/* Learn */}
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Learn</p>
-            <p className="text-xs text-slate-400 mb-3">Explore investment types before making any decisions.</p>
-            <div className="grid grid-cols-2 gap-3">
-              {learnTools.map((tool) => (
-                <ToolCard key={tool.title} icon={tool.icon} title={tool.title} description={tool.description} onClick={tool.action} />
-              ))}
-            </div>
-          </div>
-
-          {/* Coach */}
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Coach</p>
-            <p className="text-xs text-slate-400 mb-3">Get plain-language answers to your investing questions.</p>
-            <div className="grid grid-cols-2 gap-3">
-              {coachTools.map((tool) => (
-                <ToolCard key={tool.title} icon={tool.icon} title={tool.title} description={tool.description} onClick={tool.action} />
-              ))}
-            </div>
-          </div>
-        </div>
+          </Card>
+        )}
       </div>
 
-      {/* Saved Readiness Plans */}
-      <div className="mb-6">
-        <SectionHeader title="Saved Readiness Plans" />
-        <SavedReadinessPlans
-          sessionId={sessionId}
-          onCountChange={setSavedReadinessPlansCount}
-          onRestorePlan={onRestorePlan}
-          onAskCoach={onAskCoach}
-        />
-      </div>
-
-      {/* Disclaimer */}
       <Disclaimer extended="Always consult a licensed financial advisor before making investment decisions." />
     </PageLayout>
   );

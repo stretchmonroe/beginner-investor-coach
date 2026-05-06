@@ -13,6 +13,7 @@ import GoalPlanner from "@/components/GoalPlanner";
 import ProfileSelection from "@/components/ProfileSelection";
 import AssetClassExplorer from "@/components/AssetClassExplorer";
 import InvestorDashboard from "@/components/InvestorDashboard";
+import PortfolioXRay from "@/components/PortfolioXRay";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
@@ -25,7 +26,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -75,11 +76,6 @@ export default function Home() {
   const [guidanceSnapshot, setGuidanceSnapshot] = useState<ContributionGuidanceSnapshot | null>(null);
   const [goalPlan, setGoalPlan] = useState<GoalPlan | null>(null);
   const [goalPlannerOrigin, setGoalPlannerOrigin] = useState<Screen>("dashboard");
-  const [hasVisitedETFs, setHasVisitedETFs] = useState(false);
-  const [hasVisitedAssetClasses, setHasVisitedAssetClasses] = useState(false);
-  const [hasVisitedGoalPlanner, setHasVisitedGoalPlanner] = useState(false);
-  const [hasAskedCoach, setHasAskedCoach] = useState(false);
-  const [hasVisitedSimulator, setHasVisitedSimulator] = useState(false);
   const [goalPlannerPrefillMonthly, setGoalPlannerPrefillMonthly] = useState<number | null>(null);
   const [goalPlannerPrefillStarting, setGoalPlannerPrefillStarting] = useState<number | null>(null);
   const [coachPrefillQuestion, setCoachPrefillQuestion] = useState<string | null>(null);
@@ -144,7 +140,6 @@ export default function Home() {
   }
 
   function goToSimulator() {
-    setHasVisitedSimulator(true);
     setPrefillMonthly(null);
     setPrefillStarting(null);
     setGoalPlan(null);
@@ -156,7 +151,6 @@ export default function Home() {
   }
 
   function goToCoach(question?: string) {
-    setHasAskedCoach(true);
     setCoachPrefillQuestion(question ?? null);
     setScreen("coach");
   }
@@ -181,18 +175,11 @@ export default function Home() {
           answers={answers}
           quizSkipped={quizSkipped}
           sessionId={sessionId}
-          watchedTickers={watchedTickers}
-          guidanceSnapshot={guidanceSnapshot}
-          hasVisitedETFs={hasVisitedETFs}
-          hasVisitedAssetClasses={hasVisitedAssetClasses}
-          hasVisitedGoalPlanner={hasVisitedGoalPlanner}
-          hasVisitedSimulator={hasVisitedSimulator}
-          hasAskedCoach={hasAskedCoach}
-          onExploreETFs={() => { setHasVisitedETFs(true); setScreen("etfs"); }}
-          onAssetClasses={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
+          onPortfolioXRay={() => setScreen("portfolioxray")}
+          onExploreETFs={() => setScreen("etfs")}
+          onAssetClasses={() => { setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
           onSimulator={goToSimulator}
           onGoalPlanner={() => {
-            setHasVisitedGoalPlanner(true);
             setGoalPlannerPrefillMonthly(null);
             setGoalPlannerPrefillStarting(null);
             setGoalPlannerOrigin("dashboard");
@@ -207,6 +194,9 @@ export default function Home() {
           onRestorePlan={updateSharedPlan}
         />
       )}
+      {screen === "portfolioxray" && (
+        <PortfolioXRay onBack={() => setScreen("dashboard")} />
+      )}
       {screen === "etfs" && (
         <ETFExplorer
           answers={answers}
@@ -218,7 +208,7 @@ export default function Home() {
           onSimulate={goToSimulator}
           onAskCoach={() => goToCoach()}
           onBack={() => setScreen("dashboard")}
-          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("etfs"); setScreen("assetclasses"); }}
+          onAssetClassExplorer={() => { setAssetClassOrigin("etfs"); setScreen("assetclasses"); }}
         />
       )}
       {screen === "watchlist" && (
@@ -248,13 +238,12 @@ export default function Home() {
           onBack={() => setScreen("dashboard")}
           onContributionGuidance={() => { setContributionOrigin("simulator"); setScreen("contribution"); }}
           onGoalPlanner={(starting, monthly) => {
-            setHasVisitedGoalPlanner(true);
             setGoalPlannerPrefillStarting(starting > 0 ? starting : null);
             setGoalPlannerPrefillMonthly(monthly > 0 ? monthly : null);
             setGoalPlannerOrigin("simulator");
             setScreen("goalplanner");
           }}
-          onAssetClassExplorer={() => { setHasVisitedAssetClasses(true); setAssetClassOrigin("simulator"); setScreen("assetclasses"); }}
+          onAssetClassExplorer={() => { setAssetClassOrigin("simulator"); setScreen("assetclasses"); }}
           onAskCoach={goToCoach}
           sharedPlanInputs={sharedPlanInputs}
           onSharedInputsChange={updateSharedPlan}
@@ -275,7 +264,6 @@ export default function Home() {
           onBack={() => setScreen(contributionOrigin)}
           onGuidanceResult={setGuidanceSnapshot}
           onUseInSimulator={(monthly, starting) => {
-            setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
             updateSharedPlan({
@@ -286,7 +274,6 @@ export default function Home() {
             setScreen("simulator");
           }}
           onGoalPlanner={(monthly, starting) => {
-            setHasVisitedGoalPlanner(true);
             setGoalPlannerPrefillMonthly(monthly > 0 ? monthly : null);
             setGoalPlannerPrefillStarting(starting > 0 ? starting : null);
             updateSharedPlan({
@@ -308,7 +295,6 @@ export default function Home() {
           prefillStarting={goalPlannerPrefillStarting}
           onBack={() => setScreen(goalPlannerOrigin)}
           onUseInSimulator={(monthly, starting, plan) => {
-            setHasVisitedSimulator(true);
             if (monthly > 0) setPrefillMonthly(monthly);
             if (starting > 0) setPrefillStarting(starting);
             updateSharedPlan({
