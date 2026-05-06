@@ -299,8 +299,13 @@ const METADATA: Record<string, TickerMetadata> = {
 
 // ─── Lookup ───────────────────────────────────────────────────────────────────
 
+// Strip exchange suffixes (.TO, .V, .CN, .NE) so "XEQT.TO" resolves to XEQT metadata.
+function normalizeTicker(ticker: string): string {
+  return ticker.toUpperCase().replace(/\.(TO|V|CN|NE)$/, "");
+}
+
 export function getMetadata(ticker: string): TickerMetadata | null {
-  return METADATA[ticker.toUpperCase()] ?? null;
+  return METADATA[normalizeTicker(ticker)] ?? null;
 }
 
 // ─── Exposure calculations ────────────────────────────────────────────────────
@@ -378,7 +383,7 @@ const MEGA_CAP_STOCKS = new Set(["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META"
 
 export function computeOverlapInsights(holdings: Holding[]): PortfolioInsight[] {
   const insights: PortfolioInsight[] = [];
-  const tickers = new Set(holdings.map((h) => h.ticker));
+  const tickers = new Set(holdings.map((h) => normalizeTicker(h.ticker)));
 
   // XEQT + VEQT both held
   if (tickers.has("XEQT") && tickers.has("VEQT")) {
@@ -507,7 +512,8 @@ export function getAllMetadata(): TickerMetadata[] {
 }
 
 export function searchMetadata(query: string, limit = 8): TickerMetadata[] {
-  const q = query.trim().toLowerCase();
+  // Strip exchange suffix from query so "XEQT.TO" matches the XEQT entry.
+  const q = query.trim().replace(/\.(TO|V|CN|NE)$/i, "").toLowerCase();
   if (q.length === 0) return [];
 
   const tickerPrefix: TickerMetadata[] = [];

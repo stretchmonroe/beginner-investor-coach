@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
-import type { TickerMetadata } from "@/lib/portfolioMetadata";
+import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
 import {
   computeSectorExposure,
   computeGeographyExposure,
@@ -334,14 +334,13 @@ export default function PortfolioXRay({ onBack }: Props) {
     setHoldings((prev) => prev.filter((h) => h.id !== id));
   }
 
-  function handleTickerSelect(meta: TickerMetadata) {
-    const currencyKey = Object.keys(meta.currencyExposure)[0] ?? "CAD";
-    const formCurrency: Currency = currencyKey === "USD" ? "USD" : "CAD";
+  function handleTickerSelect(suggestion: AutocompleteSuggestion) {
+    const formCurrency: Currency = suggestion.currency === "USD" ? "USD" : "CAD";
     setForm((prev) => ({
       ...prev,
-      ticker: meta.ticker,
-      name: meta.name,
-      assetType: meta.assetType,
+      ticker: suggestion.ticker,
+      name: suggestion.name,
+      assetType: suggestion.assetType !== null ? suggestion.assetType : prev.assetType,
       currency: formCurrency,
     }));
   }
