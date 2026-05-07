@@ -283,17 +283,79 @@ export default function CsvImport({ existingHoldings, onImport, onCancel }: Prop
         <p className="text-sm text-slate-500 mb-3 leading-relaxed">
           Upload a CSV from your brokerage or portfolio tracker to speed up Portfolio X-Ray.
         </p>
-        <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 mb-4 leading-relaxed">
-          CSV files are parsed in your browser. The raw file is not stored. Only the imported
-          holdings are used in your Portfolio X-Ray.
+
+        {/* Short helper copy */}
+        <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+          Your CSV only needs a ticker/symbol and market value to get started. Holding name,
+          quantity, price, currency, account type, and asset type are helpful but optional.
         </p>
+
+        {/* Expandable column guide */}
+        <details className="mb-4 group">
+          <summary className="text-xs font-medium text-blue-600 hover:text-blue-800 cursor-pointer list-none flex items-center gap-1 select-none">
+            <span className="transition-transform group-open:rotate-90 inline-block">▶</span>
+            CSV column guide
+          </summary>
+          <div className="mt-3 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 space-y-3 text-xs">
+            <div>
+              <p className="font-semibold text-slate-600 mb-1">Required</p>
+              <ul className="space-y-0.5 text-slate-500 list-disc list-inside">
+                <li>Ticker or Symbol</li>
+                <li>Market Value</li>
+              </ul>
+            </div>
+            <div className="border-t border-slate-200 pt-3">
+              <p className="font-semibold text-slate-600 mb-1">Optional but helpful</p>
+              <ul className="space-y-0.5 text-slate-500 list-disc list-inside">
+                <li>Holding Name or Description</li>
+                <li>Quantity</li>
+                <li>Market Price</li>
+                <li>Currency</li>
+                <li>Account Type</li>
+                <li>Asset Type</li>
+              </ul>
+            </div>
+            <div className="border-t border-slate-200 pt-3 space-y-1.5">
+              <p className="font-semibold text-slate-600 mb-1">Accepted column name examples</p>
+              {[
+                ["Ticker", "Symbol, Ticker, Ticker Symbol, Security, Instrument"],
+                ["Name", "Name, Description, Security Name, Holding, Instrument Name"],
+                ["Market Value", "Market Value, Value, Current Value, Amount, Total Value"],
+                ["Quantity", "Quantity, Shares, Units"],
+                ["Price", "Price, Market Price, Last Price, Current Price"],
+                ["Currency", "Currency, Currency Code"],
+                ["Account Type", "Account, Account Type, Account Name"],
+                ["Asset Type", "Asset Type, Type, Category, Security Type"],
+              ].map(([field, examples]) => (
+                <p key={field} className="text-slate-500">
+                  <span className="font-medium text-slate-600">{field}:</span> {examples}
+                </p>
+              ))}
+            </div>
+            <p className="border-t border-slate-200 pt-3 text-slate-400">
+              If your CSV uses different column names, you&apos;ll be able to map them before importing.
+            </p>
+          </div>
+        </details>
+
+        {/* Upload CTA */}
         <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
         <Button onClick={() => fileInputRef.current?.click()}>Choose CSV file</Button>
         {parseError && <p className="text-xs text-rose-500 mt-3">{parseError}</p>}
-        <p className="text-xs text-slate-400 mt-4">
-          Educational only. Not financial advice. Your uploaded file is used only to organise
-          the holdings you provide.
-        </p>
+
+        {/* Privacy + beginner note */}
+        <div className="mt-4 space-y-1.5">
+          <p className="text-xs text-slate-400">
+            CSV files are parsed in your browser. The raw file is not stored.
+          </p>
+          <p className="text-xs text-slate-400">
+            Not sure what to upload? Export your holdings or positions list from your brokerage
+            if available.
+          </p>
+          <p className="text-xs text-slate-400">
+            Educational only. Not financial advice.
+          </p>
+        </div>
       </Card>
     );
   }
