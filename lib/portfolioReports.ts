@@ -88,3 +88,11 @@ export async function deletePortfolioReport(id: string): Promise<void> {
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+export async function deleteAllPortfolioReports(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("anonymous_portfolio_reports")
+    .delete()
+    .eq("anonymous_session_id", sessionId);
+  if (error) throw new Error(error.message);
+}

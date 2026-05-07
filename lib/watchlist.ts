@@ -35,3 +35,11 @@ export async function removeWatchlistItem(
     .eq("ticker", ticker);
   if (error) console.error("Failed to remove from watchlist:", error.message);
 }
+
+export async function clearWatchlist(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("anonymous_watchlist_items")
+    .delete()
+    .eq("anonymous_session_id", sessionId);
+  if (error) throw new Error(error.message);
+}

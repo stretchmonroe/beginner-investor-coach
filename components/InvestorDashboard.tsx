@@ -57,6 +57,7 @@ interface Props {
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
   onViewReport?: (data: PortfolioReportData) => void;
+  onPrivacy?: () => void;
 }
 
 export default function InvestorDashboard({
@@ -77,6 +78,7 @@ export default function InvestorDashboard({
   onRestorePlan,
   onRestoreReport,
   onViewReport,
+  onPrivacy,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -96,6 +98,7 @@ export default function InvestorDashboard({
     { label: "Coach History", action: () => onAskCoach() },
     { label: "Change Profile", action: onChangeProfile },
     { label: "Retake Quiz", action: onRetakeQuiz },
+    { label: "Privacy & Data", action: () => onPrivacy?.() },
   ];
 
   return (

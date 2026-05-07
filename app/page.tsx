@@ -15,6 +15,7 @@ import AssetClassExplorer from "@/components/AssetClassExplorer";
 import InvestorDashboard from "@/components/InvestorDashboard";
 import PortfolioXRay from "@/components/PortfolioXRay";
 import PortfolioReportView from "@/components/PortfolioReportView";
+import PrivacyDataControls from "@/components/PrivacyDataControls";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
@@ -29,7 +30,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport" | "privacy";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -174,6 +175,16 @@ export default function Home() {
     setScreen("portfolioreport");
   }
 
+  function handleClearSession() {
+    localStorage.removeItem("bic_session_id");
+    const newId = crypto.randomUUID();
+    localStorage.setItem("bic_session_id", newId);
+    setSessionId(newId);
+    setWatchedTickers(new Set());
+    setAnswers(null);
+    setScreen("landing");
+  }
+
   return (
     <>
       {screen === "landing" && (
@@ -213,6 +224,15 @@ export default function Home() {
           onRestorePlan={updateSharedPlan}
           onRestoreReport={restorePortfolioReport}
           onViewReport={(data) => viewPortfolioReport(data, "dashboard")}
+          onPrivacy={() => setScreen("privacy")}
+        />
+      )}
+      {screen === "privacy" && (
+        <PrivacyDataControls
+          sessionId={sessionId}
+          onBack={() => setScreen("dashboard")}
+          onWatchlistCleared={() => setWatchedTickers(new Set())}
+          onSessionCleared={handleClearSession}
         />
       )}
       {screen === "portfolioxray" && (

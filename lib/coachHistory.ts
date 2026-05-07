@@ -46,3 +46,11 @@ export async function deleteCoachConversation(id: string): Promise<void> {
     .eq("id", id);
   if (error) console.error("Failed to delete coach conversation:", error.message);
 }
+
+export async function deleteAllCoachConversations(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("anonymous_coach_conversations")
+    .delete()
+    .eq("anonymous_session_id", sessionId);
+  if (error) throw new Error(error.message);
+}

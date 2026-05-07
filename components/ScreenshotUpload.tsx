@@ -141,6 +141,7 @@ export default function ScreenshotUpload({ onImport, onCancel }: Props) {
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [rows, setRows] = useState<ReviewRow[]>([]);
   const [importMode, setImportMode] = useState<ScreenshotImportMode>("add");
+  const [consentChecked, setConsentChecked] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -292,6 +293,7 @@ export default function ScreenshotUpload({ onImport, onCancel }: Props) {
     setRows([]);
     setIsSlow(false);
     setProgressMsg("Uploading image…");
+    setConsentChecked(false);
   }
 
   const importableCount = rows.filter((r) => {
@@ -365,13 +367,26 @@ export default function ScreenshotUpload({ onImport, onCancel }: Props) {
 
         <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
           <p className="text-xs text-amber-700 leading-relaxed">
-            Do not upload screenshots with account numbers, addresses, or personal information.
-            Your image is sent to an AI provider for extraction and is not stored by this app.
+            By extracting from this screenshot, you understand the image may be sent to the AI
+            provider to identify holdings. Do not upload screenshots with account numbers,
+            addresses, or other personal information.
           </p>
         </div>
 
+        <label className="flex items-start gap-2.5 cursor-pointer mb-4">
+          <input
+            type="checkbox"
+            checked={consentChecked}
+            onChange={(e) => setConsentChecked(e.target.checked)}
+            className="accent-blue-600 mt-0.5 shrink-0"
+          />
+          <span className="text-sm text-slate-700 leading-relaxed">
+            I understand and want to extract holdings from this image.
+          </span>
+        </label>
+
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleExtract}>Extract holdings</Button>
+          <Button onClick={handleExtract} disabled={!consentChecked}>Extract holdings</Button>
           <Button variant="ghost" onClick={reset}>Choose different image</Button>
         </div>
       </Card>
