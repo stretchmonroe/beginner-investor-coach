@@ -5,7 +5,7 @@ import {
   getPortfolioReports,
   deletePortfolioReport,
 } from "@/lib/portfolioReports";
-import type { PortfolioReportRow } from "@/lib/portfolioReports";
+import type { PortfolioReportRow, PortfolioReportData } from "@/lib/portfolioReports";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
 import { formatDate } from "@/lib/formatters";
 import Card from "@/components/ui/Card";
@@ -54,12 +54,31 @@ function ProportionBar({ weight }: { weight: number }) {
   );
 }
 
+// ─── Row → report data ────────────────────────────────────────────────────────
+
+function rowToReportData(row: PortfolioReportRow): PortfolioReportData {
+  return {
+    reportName: row.report_name,
+    reportDate: row.created_at,
+    totalValue: row.total_value ?? 0,
+    holdings: row.holdings_json ?? [],
+    assetMix: row.concentration_json?.assetMix ?? [],
+    concentrationInsights: row.concentration_json?.concentrationInsights ?? [],
+    sectorExposure: row.exposure_json?.sectorExposure ?? [],
+    geographyExposure: row.exposure_json?.geographyExposure ?? [],
+    currencyExposure: row.exposure_json?.currencyExposure ?? [],
+    overlapInsights: row.overlap_insights_json?.overlapInsights ?? [],
+    themeInsights: row.overlap_insights_json?.themeInsights ?? [],
+  };
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   sessionId: string;
   onCountChange?: (count: number) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
+  onViewReport?: (data: PortfolioReportData) => void;
   onAskCoach?: (question: string, context: PortfolioContext) => void;
 }
 
@@ -69,6 +88,7 @@ export default function SavedPortfolioReports({
   sessionId,
   onCountChange,
   onRestoreReport,
+  onViewReport,
   onAskCoach,
 }: Props) {
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
@@ -144,10 +164,14 @@ export default function SavedPortfolioReports({
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : report.id)}
+                  onClick={() =>
+                    onViewReport
+                      ? onViewReport(rowToReportData(report))
+                      : setExpandedId(isExpanded ? null : report.id)
+                  }
                   className="text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                 >
-                  {isExpanded ? "Close" : "View"}
+                  {onViewReport ? "View Report" : isExpanded ? "Close" : "View"}
                 </button>
                 <button
                   onClick={() => handleDelete(report.id)}

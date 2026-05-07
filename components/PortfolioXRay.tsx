@@ -22,6 +22,7 @@ import {
 } from "@/lib/portfolioMetadata";
 import type { ExposureItem, TickerMetadata, EnrichedMetadataMap } from "@/lib/portfolioMetadata";
 import PortfolioCharts from "@/components/PortfolioCharts";
+import type { PortfolioReportData } from "@/lib/portfolioReports";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -261,9 +262,10 @@ interface Props {
   sessionId: string;
   initialHoldings?: Holding[];
   onAskCoach?: (question: string, context: PortfolioContext) => void;
+  onViewReport?: (data: PortfolioReportData) => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach, onViewReport }: Props) {
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -487,6 +489,23 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       assetType: suggestion.assetType !== null ? suggestion.assetType : prev.assetType,
       currency: formCurrency,
     }));
+  }
+
+  function handleViewReport() {
+    if (!onViewReport || holdings.length === 0) return;
+    onViewReport({
+      reportName: reportName.trim() || null,
+      reportDate: new Date().toISOString(),
+      totalValue,
+      holdings,
+      assetMix: assetMix.map((m) => ({ assetType: m.assetType, value: m.value, weight: m.weight })),
+      concentrationInsights,
+      sectorExposure,
+      geographyExposure,
+      currencyExposure,
+      overlapInsights,
+      themeInsights,
+    });
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -734,6 +753,15 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
               </Card>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── View Report ── */}
+      {holdings.length > 0 && onViewReport && !showForm && !showCsvImport && (
+        <div className="flex justify-end mb-4">
+          <Button variant="secondary" size="sm" onClick={handleViewReport}>
+            View Report
+          </Button>
         </div>
       )}
 

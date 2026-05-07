@@ -47,6 +47,22 @@ export type PortfolioReportInsert = Omit<
   "id" | "created_at" | "schema_version"
 >;
 
+// ─── Report view data (live or reconstructed from a saved row) ────────────────
+
+export interface PortfolioReportData {
+  reportName?: string | null;
+  reportDate: string;
+  totalValue: number;
+  holdings: Holding[];
+  assetMix: ReportAssetMixItem[];
+  concentrationInsights: PortfolioInsight[];
+  sectorExposure: ExposureItem[];
+  geographyExposure: ExposureItem[];
+  currencyExposure: ExposureItem[];
+  overlapInsights: PortfolioInsight[];
+  themeInsights: PortfolioInsight[];
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export async function savePortfolioReport(report: PortfolioReportInsert): Promise<void> {

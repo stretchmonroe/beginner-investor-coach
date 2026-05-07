@@ -14,12 +14,14 @@ import ProfileSelection from "@/components/ProfileSelection";
 import AssetClassExplorer from "@/components/AssetClassExplorer";
 import InvestorDashboard from "@/components/InvestorDashboard";
 import PortfolioXRay from "@/components/PortfolioXRay";
+import PortfolioReportView from "@/components/PortfolioReportView";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
+import type { PortfolioReportData } from "@/lib/portfolioReports";
 import { supabase } from "@/lib/supabase";
 import {
   fetchWatchlistTickers,
@@ -27,7 +29,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -83,6 +85,8 @@ export default function Home() {
   const [coachPortfolioContext, setCoachPortfolioContext] = useState<PortfolioContext | null>(null);
   const [sharedPlanInputs, setSharedPlanInputs] = useState<SharedPlanInputs>({});
   const [xrayInitialHoldings, setXrayInitialHoldings] = useState<Holding[]>([]);
+  const [reportViewData, setReportViewData] = useState<PortfolioReportData | null>(null);
+  const [reportViewOrigin, setReportViewOrigin] = useState<"portfolioxray" | "dashboard">("dashboard");
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -164,6 +168,12 @@ export default function Home() {
     setScreen("portfolioxray");
   }
 
+  function viewPortfolioReport(data: PortfolioReportData, origin: "portfolioxray" | "dashboard") {
+    setReportViewData(data);
+    setReportViewOrigin(origin);
+    setScreen("portfolioreport");
+  }
+
   return (
     <>
       {screen === "landing" && (
@@ -202,6 +212,7 @@ export default function Home() {
           onRetakeQuiz={() => setScreen("landing")}
           onRestorePlan={updateSharedPlan}
           onRestoreReport={restorePortfolioReport}
+          onViewReport={(data) => viewPortfolioReport(data, "dashboard")}
         />
       )}
       {screen === "portfolioxray" && (
@@ -211,6 +222,14 @@ export default function Home() {
           sessionId={sessionId}
           initialHoldings={xrayInitialHoldings}
           onAskCoach={goToCoach}
+          onViewReport={(data) => viewPortfolioReport(data, "portfolioxray")}
+        />
+      )}
+      {screen === "portfolioreport" && reportViewData && (
+        <PortfolioReportView
+          data={reportViewData}
+          onBack={() => setScreen(reportViewOrigin)}
+          onAskCoach={(q) => goToCoach(q)}
         />
       )}
       {screen === "etfs" && (

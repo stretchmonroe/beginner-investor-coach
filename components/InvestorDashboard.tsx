@@ -8,6 +8,7 @@ import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import SavedPortfolioReports from "@/components/SavedPortfolioReports";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
+import type { PortfolioReportData } from "@/lib/portfolioReports";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -55,6 +56,7 @@ interface Props {
   onRetakeQuiz: () => void;
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
+  onViewReport?: (data: PortfolioReportData) => void;
 }
 
 export default function InvestorDashboard({
@@ -74,6 +76,7 @@ export default function InvestorDashboard({
   onRetakeQuiz,
   onRestorePlan,
   onRestoreReport,
+  onViewReport,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -172,6 +175,7 @@ export default function InvestorDashboard({
             sessionId={sessionId}
             onCountChange={setSavedPortfolioReportCount}
             onRestoreReport={onRestoreReport}
+            onViewReport={onViewReport}
             onAskCoach={onAskCoach}
           />
           <SavedReadinessPlans
