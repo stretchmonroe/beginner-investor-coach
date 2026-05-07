@@ -5,6 +5,8 @@ import type { Holding, AssetType, AccountType, Currency, PortfolioInsight, Portf
 import { savePortfolioReport } from "@/lib/portfolioReports";
 import CsvImport from "@/components/CsvImport";
 import type { ImportMode } from "@/components/CsvImport";
+import ScreenshotUpload from "@/components/ScreenshotUpload";
+import type { ScreenshotImportMode } from "@/components/ScreenshotUpload";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
 import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
 import PortfolioScenarios from "@/components/PortfolioScenarios";
@@ -274,6 +276,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const [reportName, setReportName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [showCsvImport, setShowCsvImport] = useState(false);
+  const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
   const [enrichedMetadata, setEnrichedMetadata] = useState<EnrichedMetadataMap>({});
   const [enrichmentStatus, setEnrichmentStatus] = useState<"idle" | "loading" | "done">("idle");
   const enrichingRef = useRef(false);
@@ -480,6 +483,11 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     setHoldings((prev) => mode === "replace" ? imported : [...prev, ...imported]);
   }
 
+  function handleScreenshotImport(imported: Holding[], mode: ScreenshotImportMode) {
+    setHoldings((prev) => mode === "replace" ? imported : [...prev, ...imported]);
+    setShowScreenshotUpload(false);
+  }
+
   function handleTickerSelect(suggestion: AutocompleteSuggestion) {
     const formCurrency: Currency = suggestion.currency === "USD" ? "USD" : "CAD";
     setForm((prev) => ({
@@ -651,8 +659,19 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </div>
       )}
 
+      {/* ── Screenshot upload panel ── */}
+      {showScreenshotUpload && (
+        <div className="mb-6">
+          <ScreenshotUpload
+            existingHoldings={holdings}
+            onImport={handleScreenshotImport}
+            onCancel={() => setShowScreenshotUpload(false)}
+          />
+        </div>
+      )}
+
       {/* ── Empty state ── */}
-      {holdings.length === 0 && !showForm && !showCsvImport && (
+      {holdings.length === 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
         <Card className="mb-6">
           <p className="text-sm font-semibold text-slate-800 mb-1">Add your holdings</p>
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
@@ -661,6 +680,13 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <div className="grid grid-cols-2 gap-3">
             <Button onClick={openAddForm}>+ Add manually</Button>
             <Button variant="secondary" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowScreenshotUpload(true)}
+              className="col-span-2"
+            >
+              Upload screenshot
+            </Button>
           </div>
         </Card>
       )}
@@ -670,10 +696,11 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800">Holdings</h2>
-            {!showForm && !showCsvImport && (
+            {!showForm && !showCsvImport && !showScreenshotUpload && (
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
                 <Button variant="ghost" size="sm" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowScreenshotUpload(true)}>Screenshot</Button>
               </div>
             )}
           </div>
