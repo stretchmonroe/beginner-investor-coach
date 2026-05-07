@@ -5,7 +5,9 @@ import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
+import SavedPortfolioReports from "@/components/SavedPortfolioReports";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
+import type { Holding } from "@/types/portfolio";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -52,6 +54,7 @@ interface Props {
   onChangeProfile: () => void;
   onRetakeQuiz: () => void;
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
+  onRestoreReport?: (holdings: Holding[]) => void;
 }
 
 export default function InvestorDashboard({
@@ -70,8 +73,9 @@ export default function InvestorDashboard({
   onChangeProfile,
   onRetakeQuiz,
   onRestorePlan,
+  onRestoreReport,
 }: Props) {
-  const [savedReadinessPlansCount, setSavedReadinessPlansCount] = useState(0);
+  const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
   const [showMoreTools, setShowMoreTools] = useState(false);
 
@@ -154,17 +158,23 @@ export default function InvestorDashboard({
           <span className="text-xl">📋</span>
           <span className="text-sm font-semibold text-slate-800">Saved Reports</span>
           <span className="text-xs text-slate-500 leading-snug">
-            {savedReadinessPlansCount > 0 ? `${savedReadinessPlansCount} saved` : "Your saved snapshots"}
+            {savedPortfolioReportCount > 0
+              ? `${savedPortfolioReportCount} portfolio report${savedPortfolioReportCount === 1 ? "" : "s"} saved`
+              : "Your saved snapshots"}
           </span>
         </button>
       </div>
 
       {/* Saved Reports inline panel */}
       {showSavedReports && (
-        <div className="mb-6">
+        <div className="mb-6 space-y-6">
+          <SavedPortfolioReports
+            sessionId={sessionId}
+            onCountChange={setSavedPortfolioReportCount}
+            onRestoreReport={onRestoreReport}
+          />
           <SavedReadinessPlans
             sessionId={sessionId}
-            onCountChange={setSavedReadinessPlansCount}
             onRestorePlan={onRestorePlan}
             onAskCoach={onAskCoach}
           />

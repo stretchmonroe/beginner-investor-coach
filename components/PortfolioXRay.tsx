@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
+import { savePortfolioReport } from "@/lib/portfolioReports";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
 import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
 import PortfolioScenarios from "@/components/PortfolioScenarios";
@@ -226,14 +227,18 @@ const labelClass = "block text-xs font-medium text-slate-500 mb-1";
 interface Props {
   onBack: () => void;
   monthlyContribution?: number;
+  sessionId: string;
+  initialHoldings?: Holding[];
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution }: Props) {
-  const [holdings, setHoldings] = useState<Holding[]>([]);
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings }: Props) {
+  const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  const [reportName, setReportName] = useState("");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
@@ -334,6 +339,29 @@ export default function PortfolioXRay({ onBack, monthlyContribution }: Props) {
 
   function deleteHolding(id: string) {
     setHoldings((prev) => prev.filter((h) => h.id !== id));
+  }
+
+  async function handleSave() {
+    if (!sessionId || holdings.length === 0) return;
+    setSaveState("saving");
+    try {
+      await savePortfolioReport({
+        anonymous_session_id: sessionId,
+        report_name: reportName.trim() || null,
+        total_value: totalValue,
+        currency: "CAD",
+        holdings_json: holdings,
+        concentration_json: {
+          concentrationInsights,
+          assetMix: assetMix.map((m) => ({ assetType: m.assetType, value: m.value, weight: m.weight })),
+        },
+        exposure_json: { sectorExposure, geographyExposure, currencyExposure },
+        overlap_insights_json: { overlapInsights, themeInsights },
+      });
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
   }
 
   function handleTickerSelect(suggestion: AutocompleteSuggestion) {
@@ -696,6 +724,41 @@ export default function PortfolioXRay({ onBack, monthlyContribution }: Props) {
         sectorExposure={sectorExposure}
         defaultMonthlyContribution={monthlyContribution}
       />
+
+      {/* ── Save report ── */}
+      {holdings.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-base font-semibold text-slate-800 mb-3">Save this report</h2>
+          <Card padding="sm">
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className={labelClass}>
+                  Report name <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={reportName}
+                  onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
+                  placeholder="Portfolio X-Ray"
+                  className={inputClass}
+                  maxLength={80}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={handleSave} disabled={saveState === "saving"}>
+                  {saveState === "saving" ? "Saving…" : "Save report"}
+                </Button>
+                {saveState === "saved" && (
+                  <p className="text-xs text-teal-600 font-medium">Saved. View it in Saved Reports on the dashboard.</p>
+                )}
+                {saveState === "error" && (
+                  <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       <Disclaimer extended="Educational only. Not financial advice. Exposure estimates use simplified static mappings and may not reflect current holdings, fees, or fund composition." />
     </PageLayout>

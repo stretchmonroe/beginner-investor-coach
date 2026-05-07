@@ -19,6 +19,7 @@ import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
+import type { Holding } from "@/types/portfolio";
 import { supabase } from "@/lib/supabase";
 import {
   fetchWatchlistTickers,
@@ -80,6 +81,7 @@ export default function Home() {
   const [goalPlannerPrefillStarting, setGoalPlannerPrefillStarting] = useState<number | null>(null);
   const [coachPrefillQuestion, setCoachPrefillQuestion] = useState<string | null>(null);
   const [sharedPlanInputs, setSharedPlanInputs] = useState<SharedPlanInputs>({});
+  const [xrayInitialHoldings, setXrayInitialHoldings] = useState<Holding[]>([]);
 
   // Initialise session ID and load watchlist from Supabase after mount
   useEffect(() => {
@@ -155,6 +157,11 @@ export default function Home() {
     setScreen("coach");
   }
 
+  function restorePortfolioReport(holdings: Holding[]) {
+    setXrayInitialHoldings(holdings);
+    setScreen("portfolioxray");
+  }
+
   return (
     <>
       {screen === "landing" && (
@@ -175,7 +182,7 @@ export default function Home() {
           answers={answers}
           quizSkipped={quizSkipped}
           sessionId={sessionId}
-          onPortfolioXRay={() => setScreen("portfolioxray")}
+          onPortfolioXRay={() => { setXrayInitialHoldings([]); setScreen("portfolioxray"); }}
           onExploreETFs={() => setScreen("etfs")}
           onAssetClasses={() => { setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
           onSimulator={goToSimulator}
@@ -192,12 +199,15 @@ export default function Home() {
           onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRetakeQuiz={() => setScreen("landing")}
           onRestorePlan={updateSharedPlan}
+          onRestoreReport={restorePortfolioReport}
         />
       )}
       {screen === "portfolioxray" && (
         <PortfolioXRay
-          onBack={() => setScreen("dashboard")}
+          onBack={() => { setXrayInitialHoldings([]); setScreen("dashboard"); }}
           monthlyContribution={sharedPlanInputs.monthlyContribution}
+          sessionId={sessionId}
+          initialHoldings={xrayInitialHoldings}
         />
       )}
       {screen === "etfs" && (
