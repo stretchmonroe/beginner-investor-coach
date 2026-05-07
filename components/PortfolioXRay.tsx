@@ -21,6 +21,7 @@ import {
   normalizeTicker,
 } from "@/lib/portfolioMetadata";
 import type { ExposureItem, TickerMetadata, EnrichedMetadataMap } from "@/lib/portfolioMetadata";
+import PortfolioCharts from "@/components/PortfolioCharts";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -744,6 +745,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           portfolioContext={portfolioContext}
         />
       )}
+
+      {/* ── Visual charts ── */}
+      <PortfolioCharts
+        holdings={holdings}
+        totalValue={totalValue}
+        assetTypeItems={assetMix.map((m) => ({ label: m.assetType, value: m.value, weight: m.weight }))}
+        sectorExposure={sectorExposure}
+        geographyExposure={geographyExposure}
+        currencyExposure={currencyExposure}
+        hasUnmapped={hasUnmapped}
+      />
 
       {/* ── B. Concentration insights ── */}
       {concentrationInsights.length > 0 && (
