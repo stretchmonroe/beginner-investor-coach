@@ -293,6 +293,7 @@ interface Props {
   totalValue: number;
   sectorExposure: ExposureItem[];
   defaultMonthlyContribution?: number;
+  onAskCoach?: (question: string) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -302,6 +303,7 @@ export default function PortfolioScenarios({
   totalValue,
   sectorExposure,
   defaultMonthlyContribution,
+  onAskCoach,
 }: Props) {
   const [contribAmount, setContribAmount] = useState(defaultMonthlyContribution ?? 1250);
   const [contribMonths, setContribMonths] = useState(12);
@@ -716,6 +718,15 @@ export default function PortfolioScenarios({
               </>
             )}
           </Card>
+
+          {onAskCoach && (
+            <button
+              onClick={() => onAskCoach("Explain this portfolio scenario in plain English. Focus on what changed, what the result means, and why this is a what-if estimate rather than a prediction.")}
+              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer mt-1 mb-4"
+            >
+              <span>✦</span> Explain this scenario
+            </button>
+          )}
 
           <Disclaimer extended="Educational only. Not financial advice. These are what-if scenarios based on the holdings entered. No expected returns are applied. Sector mapping uses simplified static metadata." />
         </>

@@ -6,7 +6,7 @@ import {
   deletePortfolioReport,
 } from "@/lib/portfolioReports";
 import type { PortfolioReportRow } from "@/lib/portfolioReports";
-import type { Holding } from "@/types/portfolio";
+import type { Holding, PortfolioContext } from "@/types/portfolio";
 import { formatDate } from "@/lib/formatters";
 import Card from "@/components/ui/Card";
 import Disclaimer from "@/components/ui/Disclaimer";
@@ -60,6 +60,7 @@ interface Props {
   sessionId: string;
   onCountChange?: (count: number) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
+  onAskCoach?: (question: string, context: PortfolioContext) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export default function SavedPortfolioReports({
   sessionId,
   onCountChange,
   onRestoreReport,
+  onAskCoach,
 }: Props) {
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -352,6 +354,46 @@ export default function SavedPortfolioReports({
                   entered and simplified exposure mappings. It may not reflect current fund
                   holdings, fees, or your full financial situation.
                 </p>
+
+                {onAskCoach && holdings.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const totalVal = report.total_value ?? 0;
+                      const ctx: PortfolioContext = {
+                        reportName: report.report_name ?? undefined,
+                        savedAt: report.created_at,
+                        totalValue: totalVal,
+                        currency: report.currency ?? "CAD",
+                        holdings: [...holdings]
+                          .sort((a, b) => b.marketValue - a.marketValue)
+                          .map((h) => ({
+                            ticker: h.ticker,
+                            name: h.name,
+                            assetType: h.assetType,
+                            marketValue: h.marketValue,
+                            weight: totalVal > 0 ? (h.marketValue / totalVal) * 100 : 0,
+                          })),
+                        largestHolding: (() => {
+                          const sorted = [...holdings].sort((a, b) => b.marketValue - a.marketValue);
+                          return sorted.length > 0 && totalVal > 0
+                            ? { label: sorted[0].ticker || sorted[0].name, weight: (sorted[0].marketValue / totalVal) * 100 }
+                            : undefined;
+                        })(),
+                        assetMix: concentration?.assetMix?.map((m) => ({ assetType: m.assetType, weight: m.weight })),
+                        sectorExposure: exposure?.sectorExposure,
+                        geographyExposure: exposure?.geographyExposure,
+                        currencyExposure: exposure?.currencyExposure,
+                        concentrationInsights: concentration?.concentrationInsights?.map((i) => ({ title: i.title, description: i.description })),
+                        overlapInsights: overlap?.overlapInsights?.map((i) => ({ title: i.title, description: i.description })),
+                        themeInsights: overlap?.themeInsights?.map((i) => ({ title: i.title, description: i.description })),
+                      };
+                      onAskCoach("Explain this saved Portfolio Report in plain English. Summarize the holdings, concentration, exposure, overlap, and what may be worth understanding. Keep it educational only.", ctx);
+                    }}
+                    className="w-full text-sm font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                  >
+                    ✦ Explain this saved report
+                  </button>
+                )}
 
                 {onRestoreReport && holdings.length > 0 && (
                   <button

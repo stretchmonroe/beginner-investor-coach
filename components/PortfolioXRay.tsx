@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Holding, AssetType, AccountType, Currency, PortfolioInsight } from "@/types/portfolio";
+import type { Holding, AssetType, AccountType, Currency, PortfolioInsight, PortfolioContext } from "@/types/portfolio";
 import { savePortfolioReport } from "@/lib/portfolioReports";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
 import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
@@ -194,6 +194,30 @@ function ExposureRows({ items }: { items: ExposureItem[] }) {
   );
 }
 
+// ─── Contextual coach button ──────────────────────────────────────────────────
+
+function CoachBtn({
+  label,
+  question,
+  onAskCoach,
+  portfolioContext,
+}: {
+  label: string;
+  question: string;
+  onAskCoach?: (question: string, context: PortfolioContext) => void;
+  portfolioContext: PortfolioContext | null;
+}) {
+  if (!onAskCoach || !portfolioContext) return null;
+  return (
+    <button
+      onClick={() => onAskCoach(question, portfolioContext)}
+      className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer mt-3"
+    >
+      <span>✦</span> {label}
+    </button>
+  );
+}
+
 // ─── Form state ───────────────────────────────────────────────────────────────
 
 interface FormState {
@@ -229,9 +253,10 @@ interface Props {
   monthlyContribution?: number;
   sessionId: string;
   initialHoldings?: Holding[];
+  onAskCoach?: (question: string, context: PortfolioContext) => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach }: Props) {
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -259,6 +284,29 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     totalValue > 0
       ? (sortedByValue.slice(0, 3).reduce((s, h) => s + h.marketValue, 0) / totalValue) * 100
       : 0;
+
+  const portfolioContext: PortfolioContext | null = holdings.length > 0 ? {
+    totalValue,
+    currency: "CAD",
+    holdings: sortedByValue.map((h) => ({
+      ticker: h.ticker,
+      name: h.name,
+      assetType: h.assetType,
+      marketValue: h.marketValue,
+      weight: totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0,
+    })),
+    largestHolding: sortedByValue.length > 0
+      ? { label: sortedByValue[0].ticker || sortedByValue[0].name, weight: (sortedByValue[0].marketValue / totalValue) * 100 }
+      : undefined,
+    top3Weight: holdings.length >= 3 ? top3Weight : undefined,
+    assetMix: assetMix.map((m) => ({ assetType: m.assetType, weight: m.weight })),
+    sectorExposure,
+    geographyExposure,
+    currencyExposure,
+    concentrationInsights: concentrationInsights.map((i) => ({ title: i.title, description: i.description })),
+    overlapInsights: overlapInsights.map((i) => ({ title: i.title, description: i.description })),
+    themeInsights: themeInsights.map((i) => ({ title: i.title, description: i.description })),
+  } : null;
 
   const qtyNum = form.quantity !== "" ? parseFloat(form.quantity) : NaN;
   const priceNum = form.marketPrice !== "" ? parseFloat(form.marketPrice) : NaN;
@@ -604,6 +652,15 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </div>
       )}
 
+      {holdings.length > 0 && (
+        <CoachBtn
+          label="✦ Explain my Portfolio X-Ray"
+          question="Explain my Portfolio X-Ray in plain English. Focus on total value, largest holdings, concentration, exposure, overlap notes, and what may be worth understanding."
+          onAskCoach={onAskCoach}
+          portfolioContext={portfolioContext}
+        />
+      )}
+
       {/* ── B. Concentration insights ── */}
       {concentrationInsights.length > 0 && (
         <div className="mb-6">
@@ -614,6 +671,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
               <InsightCard key={insight.id} insight={insight} />
             ))}
           </div>
+        </div>
+      )}
+
+      {concentrationInsights.length > 0 && (
+        <div className="mb-6">
+          <CoachBtn
+            label="✦ Explain concentration"
+            question="Explain my portfolio concentration in plain English. Focus on largest holding weight, top 3 concentration, and why concentration matters for a beginner investor."
+            onAskCoach={onAskCoach}
+            portfolioContext={portfolioContext}
+          />
         </div>
       )}
 
@@ -688,6 +756,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </div>
       )}
 
+      {holdings.length > 0 && (
+        <div className="mb-6">
+          <CoachBtn
+            label="✦ Explain exposure"
+            question="Explain my sector, geography, currency, and asset type exposure in plain English. Use cautious language and explain that exposure mappings are simplified estimates."
+            onAskCoach={onAskCoach}
+            portfolioContext={portfolioContext}
+          />
+        </div>
+      )}
+
       {/* ── D. Overlap notes ── */}
       {overlapInsights.length > 0 && (
         <div className="mb-6">
@@ -700,6 +779,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
               <InsightCard key={insight.id} insight={insight} />
             ))}
           </div>
+        </div>
+      )}
+
+      {overlapInsights.length > 0 && (
+        <div className="mb-6">
+          <CoachBtn
+            label="✦ Explain overlap"
+            question="Explain the overlap notes in my portfolio in plain English. Focus on ETF overlap and individual stocks that may already be represented inside broad ETFs."
+            onAskCoach={onAskCoach}
+            portfolioContext={portfolioContext}
+          />
         </div>
       )}
 
@@ -723,6 +813,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         totalValue={totalValue}
         sectorExposure={sectorExposure}
         defaultMonthlyContribution={monthlyContribution}
+        onAskCoach={onAskCoach && portfolioContext ? (q) => onAskCoach(q, portfolioContext) : undefined}
       />
 
       {/* ── Save report ── */}

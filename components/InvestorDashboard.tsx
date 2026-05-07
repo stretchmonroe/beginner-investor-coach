@@ -7,7 +7,7 @@ import type { Profile } from "@/lib/etfs";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import SavedPortfolioReports from "@/components/SavedPortfolioReports";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
-import type { Holding } from "@/types/portfolio";
+import type { Holding, PortfolioContext } from "@/types/portfolio";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -47,7 +47,7 @@ interface Props {
   onAssetClasses: () => void;
   onSimulator: () => void;
   onGoalPlanner: () => void;
-  onAskCoach: (question?: string) => void;
+  onAskCoach: (question?: string, context?: PortfolioContext) => void;
   onContribution: () => void;
   onWatchlist: () => void;
   onCompare: () => void;
@@ -172,6 +172,7 @@ export default function InvestorDashboard({
             sessionId={sessionId}
             onCountChange={setSavedPortfolioReportCount}
             onRestoreReport={onRestoreReport}
+            onAskCoach={onAskCoach}
           />
           <SavedReadinessPlans
             sessionId={sessionId}

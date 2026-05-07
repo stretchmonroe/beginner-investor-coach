@@ -19,7 +19,7 @@ import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
-import type { Holding } from "@/types/portfolio";
+import type { Holding, PortfolioContext } from "@/types/portfolio";
 import { supabase } from "@/lib/supabase";
 import {
   fetchWatchlistTickers,
@@ -80,6 +80,7 @@ export default function Home() {
   const [goalPlannerPrefillMonthly, setGoalPlannerPrefillMonthly] = useState<number | null>(null);
   const [goalPlannerPrefillStarting, setGoalPlannerPrefillStarting] = useState<number | null>(null);
   const [coachPrefillQuestion, setCoachPrefillQuestion] = useState<string | null>(null);
+  const [coachPortfolioContext, setCoachPortfolioContext] = useState<PortfolioContext | null>(null);
   const [sharedPlanInputs, setSharedPlanInputs] = useState<SharedPlanInputs>({});
   const [xrayInitialHoldings, setXrayInitialHoldings] = useState<Holding[]>([]);
 
@@ -152,8 +153,9 @@ export default function Home() {
     setSharedPlanInputs((prev) => ({ ...prev, ...updates }));
   }
 
-  function goToCoach(question?: string) {
+  function goToCoach(question?: string, context?: PortfolioContext) {
     setCoachPrefillQuestion(question ?? null);
+    setCoachPortfolioContext(context ?? null);
     setScreen("coach");
   }
 
@@ -208,6 +210,7 @@ export default function Home() {
           monthlyContribution={sharedPlanInputs.monthlyContribution}
           sessionId={sessionId}
           initialHoldings={xrayInitialHoldings}
+          onAskCoach={goToCoach}
         />
       )}
       {screen === "etfs" && (
@@ -269,6 +272,7 @@ export default function Home() {
           sessionId={sessionId}
           onBack={() => setScreen("dashboard")}
           prefillQuestion={coachPrefillQuestion ?? undefined}
+          portfolioContext={coachPortfolioContext ?? undefined}
         />
       )}
       {screen === "contribution" && (

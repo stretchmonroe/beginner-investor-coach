@@ -40,3 +40,28 @@ export interface PortfolioSnapshot {
   currency: Currency;
   createdAt: string;
 }
+
+export interface PortfolioContextHolding {
+  ticker: string;
+  name: string;
+  assetType: string;
+  marketValue: number;
+  weight: number;
+}
+
+export interface PortfolioContext {
+  totalValue?: number;
+  currency?: string;
+  holdings?: PortfolioContextHolding[];
+  largestHolding?: { label: string; weight: number };
+  top3Weight?: number;
+  assetMix?: Array<{ assetType: string; weight: number }>;
+  sectorExposure?: Array<{ label: string; weight: number }>;
+  geographyExposure?: Array<{ label: string; weight: number }>;
+  currencyExposure?: Array<{ label: string; weight: number }>;
+  concentrationInsights?: Array<{ title: string; description: string }>;
+  overlapInsights?: Array<{ title: string; description: string }>;
+  themeInsights?: Array<{ title: string; description: string }>;
+  reportName?: string;
+  savedAt?: string;
+}

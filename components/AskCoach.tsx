@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { QuizAnswers } from "./OnboardingQuiz";
+import type { PortfolioContext } from "@/types/portfolio";
 import { deriveProfile } from "@/lib/etfs";
 import {
   saveCoachConversation,
@@ -15,20 +16,22 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Disclaimer from "@/components/ui/Disclaimer";
 
-const READINESS_PROMPTS = [
-  "Explain my investing capacity",
-  "What does my goal gap mean?",
-  "What is a return assumption?",
-  "Why does protected savings matter?",
-  "What is the difference between a sample allocation and a recommendation?",
+const PORTFOLIO_PROMPTS = [
+  "Explain my Portfolio X-Ray",
+  "Am I concentrated in one holding?",
+  "What does sector exposure mean?",
+  "What does ETF overlap mean?",
+  "What happens if my largest holding drops?",
+  "How should I think about adding monthly contributions?",
+  "What questions should I ask before changing my portfolio?",
 ];
 
 const CONCEPT_PROMPTS = [
   "What is an ETF?",
   "What is diversification?",
   "What is a bond ETF?",
-  "How should I think about ETFs vs mutual funds?",
-  "Why does time horizon matter for investing?",
+  "What is a mutual fund?",
+  "What does MER mean?",
 ];
 
 interface Props {
@@ -37,6 +40,7 @@ interface Props {
   sessionId: string;
   onBack: () => void;
   prefillQuestion?: string;
+  portfolioContext?: PortfolioContext;
 }
 
 function formatAnswer(raw: string): React.ReactNode {
@@ -56,7 +60,7 @@ function formatAnswer(raw: string): React.ReactNode {
   return <>{nodes}</>;
 }
 
-export default function AskCoach({ answers, watchedTickers, sessionId, onBack, prefillQuestion }: Props) {
+export default function AskCoach({ answers, watchedTickers, sessionId, onBack, prefillQuestion, portfolioContext }: Props) {
   const [question, setQuestion] = useState(prefillQuestion ?? "");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -96,6 +100,7 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
           question: q,
           profile,
           watchedTickers: Array.from(watchedTickers),
+          portfolioContext: portfolioContext ?? null,
         }),
       });
       const data = await res.json();
@@ -153,7 +158,7 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
     <PageLayout maxWidth="sm">
       <PageHeader
         title="AI Portfolio Coach"
-        description="Ask questions about your investing readiness, goal feasibility, sample allocation, or investment basics. Educational only — not financial advice."
+        description="Ask about your holdings, concentration, exposure, overlap, scenarios, or investing terms. Educational only — not financial advice."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -170,10 +175,10 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
       {/* Suggested prompts */}
       <div className="mb-6">
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-          Readiness questions
+          Portfolio questions
         </p>
         <div className="flex flex-wrap gap-2 mb-4">
-          {READINESS_PROMPTS.map((p) => (
+          {PORTFOLIO_PROMPTS.map((p) => (
             <button
               key={p}
               onClick={() => setQuestion(p)}
@@ -204,7 +209,7 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value.slice(0, 1000))}
-          placeholder="Ask a question about your readiness plan or investing concepts…"
+          placeholder="Ask about your holdings, concentration, exposure, or investing concepts…"
           rows={3}
           className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
         />
@@ -229,7 +234,7 @@ export default function AskCoach({ answers, watchedTickers, sessionId, onBack, p
           <div className="flex items-center gap-2 px-5 py-3 bg-blue-100 border-b border-blue-200">
             <span className="text-blue-600 text-sm">✦</span>
             <span className="text-xs font-semibold text-blue-700 uppercase tracking-widest">
-              Readiness Coach
+              AI Portfolio Coach
             </span>
           </div>
           <div className="px-5 py-4">
