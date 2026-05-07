@@ -58,6 +58,7 @@ interface Props {
   onRestoreReport?: (holdings: Holding[]) => void;
   onViewReport?: (data: PortfolioReportData) => void;
   onPrivacy?: () => void;
+  onCompareReports?: () => void;
 }
 
 export default function InvestorDashboard({
@@ -79,6 +80,7 @@ export default function InvestorDashboard({
   onRestoreReport,
   onViewReport,
   onPrivacy,
+  onCompareReports,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -98,6 +100,7 @@ export default function InvestorDashboard({
     { label: "Coach History", action: () => onAskCoach() },
     { label: "Change Profile", action: onChangeProfile },
     { label: "Retake Quiz", action: onRetakeQuiz },
+    { label: "Compare Reports", action: () => onCompareReports?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
   ];
 

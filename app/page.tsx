@@ -16,6 +16,7 @@ import InvestorDashboard from "@/components/InvestorDashboard";
 import PortfolioXRay from "@/components/PortfolioXRay";
 import PortfolioReportView from "@/components/PortfolioReportView";
 import PrivacyDataControls from "@/components/PrivacyDataControls";
+import ReportComparison from "@/components/ReportComparison";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
@@ -30,7 +31,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport" | "privacy";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport" | "privacy" | "reportcomparison";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -225,6 +226,14 @@ export default function Home() {
           onRestoreReport={restorePortfolioReport}
           onViewReport={(data) => viewPortfolioReport(data, "dashboard")}
           onPrivacy={() => setScreen("privacy")}
+          onCompareReports={() => setScreen("reportcomparison")}
+        />
+      )}
+      {screen === "reportcomparison" && (
+        <ReportComparison
+          sessionId={sessionId}
+          onBack={() => setScreen("dashboard")}
+          onAskCoach={goToCoach}
         />
       )}
       {screen === "privacy" && (

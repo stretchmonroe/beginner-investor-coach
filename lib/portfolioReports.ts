@@ -89,6 +89,22 @@ export async function deletePortfolioReport(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export function rowToReportData(row: PortfolioReportRow): PortfolioReportData {
+  return {
+    reportName: row.report_name,
+    reportDate: row.created_at,
+    totalValue: row.total_value ?? 0,
+    holdings: row.holdings_json ?? [],
+    assetMix: row.concentration_json?.assetMix ?? [],
+    concentrationInsights: row.concentration_json?.concentrationInsights ?? [],
+    sectorExposure: row.exposure_json?.sectorExposure ?? [],
+    geographyExposure: row.exposure_json?.geographyExposure ?? [],
+    currencyExposure: row.exposure_json?.currencyExposure ?? [],
+    overlapInsights: row.overlap_insights_json?.overlapInsights ?? [],
+    themeInsights: row.overlap_insights_json?.themeInsights ?? [],
+  };
+}
+
 export async function deleteAllPortfolioReports(sessionId: string): Promise<void> {
   const { error } = await supabase
     .from("anonymous_portfolio_reports")
