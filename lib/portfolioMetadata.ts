@@ -311,7 +311,7 @@ const METADATA: Record<string, TickerMetadata> = {
 // ─── Lookup ───────────────────────────────────────────────────────────────────
 
 // Strip exchange suffixes (.TO, .V, .CN, .NE) so "XEQT.TO" resolves to XEQT metadata.
-function normalizeTicker(ticker: string): string {
+export function normalizeTicker(ticker: string): string {
   return ticker.toUpperCase().replace(/\.(TO|V|CN|NE)$/, "");
 }
 

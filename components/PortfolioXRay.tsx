@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight, PortfolioContext } from "@/types/portfolio";
 import { savePortfolioReport } from "@/lib/portfolioReports";
+import CsvImport from "@/components/CsvImport";
+import type { ImportMode } from "@/components/CsvImport";
 import TickerAutocomplete from "@/components/TickerAutocomplete";
 import type { AutocompleteSuggestion } from "@/components/TickerAutocomplete";
 import PortfolioScenarios from "@/components/PortfolioScenarios";
@@ -22,7 +24,6 @@ import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import EmptyState from "@/components/ui/EmptyState";
 import Disclaimer from "@/components/ui/Disclaimer";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -264,6 +265,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const [formError, setFormError] = useState<string | null>(null);
   const [reportName, setReportName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [showCsvImport, setShowCsvImport] = useState(false);
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
@@ -412,6 +414,10 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     }
   }
 
+  function handleCsvImport(imported: Holding[], mode: ImportMode) {
+    setHoldings((prev) => mode === "replace" ? imported : [...prev, ...imported]);
+  }
+
   function handleTickerSelect(suggestion: AutocompleteSuggestion) {
     const formCurrency: Currency = suggestion.currency === "USD" ? "USD" : "CAD";
     setForm((prev) => ({
@@ -555,13 +561,29 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </Card>
       )}
 
+      {/* ── CSV import panel ── */}
+      {showCsvImport && (
+        <div className="mb-6">
+          <CsvImport
+            existingHoldings={holdings}
+            onImport={handleCsvImport}
+            onCancel={() => setShowCsvImport(false)}
+          />
+        </div>
+      )}
+
       {/* ── Empty state ── */}
-      {holdings.length === 0 && !showForm && (
-        <EmptyState
-          title="Add your first holding to start your Portfolio X-Ray"
-          description="Enter your holdings manually to see concentration, exposure, and beginner-friendly insights."
-          action={{ label: "Add holding", onClick: openAddForm }}
-        />
+      {holdings.length === 0 && !showForm && !showCsvImport && (
+        <Card className="mb-6">
+          <p className="text-sm font-semibold text-slate-800 mb-1">Add your holdings</p>
+          <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+            Enter your holdings to see concentration, exposure, and beginner-friendly insights.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button onClick={openAddForm}>+ Add manually</Button>
+            <Button variant="secondary" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
+          </div>
+        </Card>
       )}
 
       {/* ── A. Holdings list ── */}
@@ -569,8 +591,11 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-slate-800">Holdings</h2>
-            {!showForm && (
-              <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
+            {!showForm && !showCsvImport && (
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
+              </div>
             )}
           </div>
           <div className="space-y-3">
