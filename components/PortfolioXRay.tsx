@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight, PortfolioContext } from "@/types/portfolio";
 import { savePortfolioReport } from "@/lib/portfolioReports";
 import CsvImport from "@/components/CsvImport";
@@ -17,14 +17,19 @@ import {
   computeUnmappedWeight,
   hasUnmappedHoldings,
   METADATA_DISCLAIMER,
+  getMetadata,
+  normalizeTicker,
 } from "@/lib/portfolioMetadata";
-import type { ExposureItem } from "@/lib/portfolioMetadata";
+import type { ExposureItem, TickerMetadata, EnrichedMetadataMap } from "@/lib/portfolioMetadata";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
+
+// Session-level FMP metadata cache — persists across re-renders within the browser tab
+const fmpCache = new Map<string, TickerMetadata | null>();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -266,6 +271,51 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const [reportName, setReportName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [showCsvImport, setShowCsvImport] = useState(false);
+  const [enrichedMetadata, setEnrichedMetadata] = useState<EnrichedMetadataMap>({});
+  const [enrichmentStatus, setEnrichmentStatus] = useState<"idle" | "loading" | "done">("idle");
+  const enrichingRef = useRef(false);
+
+  // ── FMP enrichment for unknown tickers ───────────────────────────────────
+
+  useEffect(() => {
+    if (holdings.length === 0) return;
+
+    const uncached = [
+      ...new Set(
+        holdings
+          .map((h) => normalizeTicker(h.ticker))
+          .filter((t) => t && !getMetadata(t) && !fmpCache.has(t))
+      ),
+    ];
+
+    if (uncached.length === 0) {
+      setEnrichmentStatus("done");
+      return;
+    }
+
+    if (enrichingRef.current) return;
+    enrichingRef.current = true;
+    setEnrichmentStatus("loading");
+
+    const fetchOne = async (ticker: string) => {
+      try {
+        const res = await fetch(`/api/holding-metadata?ticker=${encodeURIComponent(ticker)}`);
+        if (!res.ok) { fmpCache.set(ticker, null); return; }
+        const data = await res.json() as { metadata: TickerMetadata | null };
+        fmpCache.set(ticker, data.metadata ?? null);
+      } catch {
+        fmpCache.set(ticker, null);
+      }
+    };
+
+    Promise.all(uncached.map(fetchOne)).then(() => {
+      const updates: EnrichedMetadataMap = {};
+      for (const t of uncached) updates[t] = fmpCache.get(t) ?? null;
+      setEnrichedMetadata((prev) => ({ ...prev, ...updates }));
+      setEnrichmentStatus("done");
+      enrichingRef.current = false;
+    });
+  }, [holdings]);
 
   // ── Derived ──────────────────────────────────────────────────────────────
 
@@ -274,13 +324,22 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const assetMix = computeAssetMix(holdings, totalValue);
   const concentrationInsights = computeConcentrationInsights(holdings, totalValue);
 
-  const sectorExposure = computeSectorExposure(holdings, totalValue);
-  const geographyExposure = computeGeographyExposure(holdings, totalValue);
-  const currencyExposure = computeCurrencyExposure(holdings, totalValue);
-  const unmappedWeightPct = computeUnmappedWeight(holdings, totalValue);
+  const sectorExposure = computeSectorExposure(holdings, totalValue, enrichedMetadata);
+  const geographyExposure = computeGeographyExposure(holdings, totalValue, enrichedMetadata);
+  const currencyExposure = computeCurrencyExposure(holdings, totalValue, enrichedMetadata);
+  const unmappedWeightPct = computeUnmappedWeight(holdings, totalValue, enrichedMetadata);
   const overlapInsights = computeOverlapInsights(holdings);
   const themeInsights = computeThemeInsights(sectorExposure, geographyExposure, unmappedWeightPct);
-  const hasUnmapped = hasUnmappedHoldings(holdings);
+  const hasUnmapped = hasUnmappedHoldings(holdings, enrichedMetadata);
+
+  const mappedCount = holdings.filter((h) => {
+    const t = normalizeTicker(h.ticker);
+    return !!(getMetadata(t) ?? enrichedMetadata[t]);
+  }).length;
+  const unknownHoldings = holdings.filter((h) => {
+    const t = normalizeTicker(h.ticker);
+    return !(getMetadata(t) ?? enrichedMetadata[t]);
+  });
 
   const top3Weight =
     totalValue > 0
@@ -718,11 +777,40 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             Simplified estimates based on static metadata. {METADATA_DISCLAIMER}
           </p>
 
-          {hasUnmapped && (
+          {/* Metadata quality bar */}
+          <div className="flex items-center gap-2 mb-4 text-xs text-slate-500">
+            <span>
+              Mapped: <span className="font-semibold text-slate-700">{mappedCount}</span> of{" "}
+              <span className="font-semibold text-slate-700">{holdings.length}</span> holdings
+            </span>
+            {Object.values(enrichedMetadata).some((v) => v !== null) && (
+              <span className="text-teal-600 font-medium">· includes FMP data</span>
+            )}
+          </div>
+
+          {/* Enrichment loading state */}
+          {enrichmentStatus === "loading" && (
+            <div className="mb-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5">
+              <p className="text-xs text-slate-500">Checking metadata for unmapped holdings…</p>
+            </div>
+          )}
+
+          {/* Unknown holdings detail (after enrichment attempt) */}
+          {enrichmentStatus === "done" && hasUnmapped && (
             <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-              <p className="text-xs font-semibold text-amber-700">Some holdings are not mapped yet</p>
-              <p className="text-xs text-amber-600 mt-0.5">
-                Exposure estimates may be incomplete. Unmapped holdings are included in total value but not in sector, geography, or currency breakdowns.
+              <p className="text-xs font-semibold text-amber-700 mb-2">
+                {unknownHoldings.length} holding{unknownHoldings.length === 1 ? "" : "s"} could not be mapped
+              </p>
+              <div className="space-y-1 mb-2">
+                {unknownHoldings.map((h) => (
+                  <div key={h.id} className="flex items-center justify-between text-xs">
+                    <span className="text-amber-800 font-medium">{h.ticker || h.name || "Unknown"}</span>
+                    <span className="text-amber-600">{fmt(h.marketValue)}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-amber-600">
+                These holdings are included in portfolio value but may not be fully reflected in sector, geography, or currency exposure estimates.
               </p>
             </div>
           )}
