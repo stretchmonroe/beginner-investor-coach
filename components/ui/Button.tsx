@@ -24,9 +24,9 @@ const variantStyles: Record<Variant, string> = {
 };
 
 const sizeStyles: Record<Size, string> = {
-  sm: "text-xs px-3 py-1.5 rounded-lg",
-  md: "text-sm px-5 py-2.5 rounded-xl",
-  lg: "text-sm px-6 py-3.5 rounded-xl",
+  sm: "text-xs px-3 py-2 rounded-lg min-h-[36px]",
+  md: "text-sm px-5 py-2.5 rounded-xl min-h-[44px]",
+  lg: "text-sm px-6 py-3.5 rounded-xl min-h-[48px]",
 };
 
 export default function Button({
@@ -44,7 +44,7 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center transition-colors cursor-pointer ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`inline-flex items-center justify-center transition-colors cursor-pointer touch-manipulation ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} ${className}`}
     >
       {children}
     </button>

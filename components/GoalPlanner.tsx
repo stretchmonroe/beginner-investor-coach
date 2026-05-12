@@ -52,7 +52,7 @@ function DollarInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
   );
@@ -276,7 +276,7 @@ export default function GoalPlanner({
                   onSharedInputsChange?.({ timelineYears: y, timeline: tl });
                 }}
                 placeholder="15"
-                className={`w-full px-4 py-2.5 border rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${hasTimelineError ? "border-red-300" : "border-slate-200"}`}
+                className={`w-full px-4 py-2.5 border rounded-xl text-base md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${hasTimelineError ? "border-red-300" : "border-slate-200"}`}
               />
               {hasTimelineError && (
                 <p className="text-xs text-red-600 mt-1">Please enter a timeline greater than 0.</p>
@@ -336,7 +336,7 @@ export default function GoalPlanner({
                     onSharedInputsChange?.({ annualReturnAssumption: clamp(e.target.value) });
                   }}
                   placeholder="6"
-                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pr-7 pl-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">%</span>
               </div>
@@ -352,7 +352,7 @@ export default function GoalPlanner({
                   setAnnualReturn(String(defaultReturn));
                   onSharedInputsChange?.({ investorProfile: e.target.value, annualReturnAssumption: defaultReturn });
                 }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {PROFILES.map((p) => (
                   <option key={p} value={p}>{p}</option>

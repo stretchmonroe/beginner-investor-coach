@@ -264,8 +264,9 @@ const DEFAULT_FORM: FormState = {
   marketValue: "",
 };
 
+// text-base on mobile prevents iOS Safari from auto-zooming on input focus
 const inputClass =
-  "w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
+  "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 const labelClass = "block text-xs font-medium text-slate-500 mb-1";
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -668,7 +669,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <p className="text-sm font-semibold text-slate-800 mb-4">
             {editingId ? "Edit holding" : "Add holding"}
           </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4 mb-4">
             <div>
               <label className={labelClass}>Ticker</label>
               <TickerAutocomplete
@@ -811,14 +812,12 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             <span className="text-slate-600">CSV import and screenshot extraction</span> are part of{" "}
             <span className="font-medium text-slate-700">Premium Portfolio Tools</span> when you are ready.
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button onClick={openAddForm}>+ Add manually</Button>
-            <Button variant="secondary" onClick={tryOpenCsv}>Upload CSV</Button>
-            <Button
-              variant="secondary"
-              onClick={tryOpenScreenshot}
-              className="col-span-2"
-            >
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={openAddForm} fullWidth>+ Add manually</Button>
+              <Button variant="secondary" onClick={tryOpenCsv} fullWidth>Upload CSV</Button>
+            </div>
+            <Button variant="secondary" onClick={tryOpenScreenshot} fullWidth>
               Upload screenshot
             </Button>
           </div>
@@ -828,12 +827,12 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       {/* ── A. Holdings list ── */}
       {holdings.length > 0 && (
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-slate-800">Holdings</h2>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <h2 className="text-base font-semibold text-slate-800 pt-0.5">Holdings</h2>
             {!showForm && !showCsvImport && !showScreenshotUpload && (
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
-                <Button variant="ghost" size="sm" onClick={tryOpenCsv}>Upload CSV</Button>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add</Button>
+                <Button variant="ghost" size="sm" onClick={tryOpenCsv}>CSV</Button>
                 <Button variant="ghost" size="sm" onClick={tryOpenScreenshot}>Screenshot</Button>
               </div>
             )}
@@ -932,7 +931,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
       {/* ── Primary actions row ── */}
       {holdings.length > 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <CoachBtn
             label="✦ Explain my Portfolio X-Ray"
             question="Explain my Portfolio X-Ray in plain English. Focus on total value, largest holdings, concentration, exposure, overlap notes, and what may be worth understanding."
@@ -1190,7 +1189,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
                   placeholder="e.g. After adding new ETF position, before rebalancing review…"
                   rows={2}
-                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
+                  className="w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
                 />
                 <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
               </div>

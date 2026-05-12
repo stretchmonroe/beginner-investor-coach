@@ -162,7 +162,7 @@ interface Props {
 type Phase = "loading" | "empty" | "select" | "compare" | "error";
 
 const selectClass =
-  "w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
+  "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 
 export default function ReportComparison({ sessionId, onBack, onAskCoach, onViewPremium }: Props) {
   const { tier } = useSubscription();

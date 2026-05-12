@@ -114,13 +114,14 @@ function ExposureBarChart({ title, items }: { title: string; items: ExposureItem
     <div>
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">{title}</p>
       <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart data={data} layout="vertical" margin={{ left: 0, right: 44, top: 0, bottom: 0 }} barSize={14}>
+        <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 0, bottom: 0 }} barSize={14}>
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis
             type="category"
             dataKey="label"
-            width={120}
+            width={90}
             tick={{ fontSize: 11, fill: "#64748b" }}
+            tickFormatter={(v: string) => v.length > 13 ? `${v.slice(0, 12)}…` : v}
             axisLine={false}
             tickLine={false}
           />

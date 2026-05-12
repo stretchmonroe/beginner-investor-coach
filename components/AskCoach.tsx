@@ -460,7 +460,7 @@ export default function AskCoach({
               : "Ask about investing concepts — add holdings in Portfolio X-Ray for portfolio-specific answers…"
           }
           rows={3}
-          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-base md:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
         />
         <div className="flex items-center justify-between">
           <span className="text-xs text-slate-400">{question.length}/1000</span>

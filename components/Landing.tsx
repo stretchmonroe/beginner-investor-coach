@@ -31,7 +31,7 @@ const HOW_IT_WORKS = [
 
 export default function Landing({ onStart, onSkipQuiz, onSamplePortfolio }: Props) {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-16">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
       <div className="max-w-xl w-full text-center space-y-8">
         {/* Logo mark */}
         <div className="flex justify-center">

@@ -19,7 +19,7 @@ import Button from "@/components/ui/Button";
 // ─── UI constants ─────────────────────────────────────────────────────────────
 
 const inputClass =
-  "w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
+  "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 const labelClass = "block text-xs font-medium text-slate-500 mb-1";
 
 const MAPPED_FIELDS: Array<{ key: keyof ColumnMapping; label: string }> = [

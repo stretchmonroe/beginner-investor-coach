@@ -73,7 +73,7 @@ function DollarInput({ value, onChange }: { value: string; onChange: (v: string)
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full pl-7 pr-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
   );
@@ -337,7 +337,7 @@ export default function ContributionGuidance({
               <select
                 value={emergencyStatus}
                 onChange={(e) => setEmergencyStatus(e.target.value as EmergencyFundStatus)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {EMERGENCY_STATUSES.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -351,7 +351,7 @@ export default function ContributionGuidance({
                   setProfile(e.target.value as Profile);
                   onSharedInputsChange?.({ investorProfile: e.target.value });
                 }}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-base md:text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
               >
                 {PROFILES.map((p) => (
                   <option key={p} value={p}>{p}</option>
