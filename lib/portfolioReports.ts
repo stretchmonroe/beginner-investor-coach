@@ -13,6 +13,11 @@ export interface ReportAssetMixItem {
 export interface ConcentrationJson {
   concentrationInsights: PortfolioInsight[];
   assetMix: ReportAssetMixItem[];
+  // Snapshot metadata — optional, populated from schema v2+ saves
+  notes?: string;
+  unknownHoldingCount?: number;
+  mappedHoldingCount?: number;
+  hasMixedCurrencies?: boolean;
 }
 
 export interface ExposureJson {
@@ -61,6 +66,11 @@ export interface PortfolioReportData {
   currencyExposure: ExposureItem[];
   overlapInsights: PortfolioInsight[];
   themeInsights: PortfolioInsight[];
+  // Snapshot metadata
+  notes?: string;
+  unknownHoldingCount?: number;
+  mappedHoldingCount?: number;
+  hasMixedCurrencies?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -102,6 +112,10 @@ export function rowToReportData(row: PortfolioReportRow): PortfolioReportData {
     currencyExposure: row.exposure_json?.currencyExposure ?? [],
     overlapInsights: row.overlap_insights_json?.overlapInsights ?? [],
     themeInsights: row.overlap_insights_json?.themeInsights ?? [],
+    notes: row.concentration_json?.notes,
+    unknownHoldingCount: row.concentration_json?.unknownHoldingCount,
+    mappedHoldingCount: row.concentration_json?.mappedHoldingCount,
+    hasMixedCurrencies: row.concentration_json?.hasMixedCurrencies,
   };
 }
 

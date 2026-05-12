@@ -274,6 +274,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [formError, setFormError] = useState<string | null>(null);
   const [reportName, setReportName] = useState("");
+  const [reportNotes, setReportNotes] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [showScreenshotUpload, setShowScreenshotUpload] = useState(false);
@@ -487,11 +488,16 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         concentration_json: {
           concentrationInsights,
           assetMix: assetMix.map((m) => ({ assetType: m.assetType, value: m.value, weight: m.weight })),
+          notes: reportNotes.trim() || undefined,
+          unknownHoldingCount: unknownHoldings.length,
+          mappedHoldingCount: mappedCount,
+          hasMixedCurrencies,
         },
         exposure_json: { sectorExposure, geographyExposure, currencyExposure },
         overlap_insights_json: { overlapInsights, themeInsights },
       });
       setSaveState("saved");
+      setReportNotes("");
     } catch {
       setSaveState("error");
     }
@@ -1026,31 +1032,47 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         onAskCoach={onAskCoach && portfolioContext ? (q) => onAskCoach(q, portfolioContext) : undefined}
       />
 
-      {/* ── Save report ── */}
+      {/* ── Save snapshot ── */}
       {holdings.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-3">Save this report</h2>
+          <h2 className="text-base font-semibold text-slate-800 mb-1">Save snapshot</h2>
+          <p className="text-sm text-slate-500 mb-3">
+            Saves a read-only snapshot of the current holdings and analysis. Editing holdings later will not affect saved snapshots.
+          </p>
           <Card padding="sm">
             <div className="flex flex-col gap-3">
               <div>
                 <label className={labelClass}>
-                  Report name <span className="font-normal text-slate-400">(optional)</span>
+                  Snapshot name <span className="font-normal text-slate-400">(optional)</span>
                 </label>
                 <input
                   type="text"
                   value={reportName}
                   onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
-                  placeholder="Portfolio X-Ray"
+                  placeholder={`Portfolio X-Ray — ${new Date().toLocaleDateString("en-CA", { month: "long", year: "numeric" })}`}
                   className={inputClass}
                   maxLength={80}
                 />
               </div>
+              <div>
+                <label className={labelClass}>
+                  Notes <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <textarea
+                  value={reportNotes}
+                  onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
+                  placeholder="e.g. After adding new ETF position, before rebalancing review…"
+                  rows={2}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
+                />
+                <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 <Button onClick={handleSave} disabled={saveState === "saving"}>
-                  {saveState === "saving" ? "Saving…" : "Save report"}
+                  {saveState === "saving" ? "Saving…" : "Save snapshot"}
                 </Button>
                 {saveState === "saved" && (
-                  <p className="text-xs text-teal-600 font-medium">Saved. View it in Saved Reports on the dashboard.</p>
+                  <p className="text-xs text-teal-600 font-medium">Snapshot saved. View it in Saved Reports on the dashboard.</p>
                 )}
                 {saveState === "error" && (
                   <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>

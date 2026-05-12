@@ -236,8 +236,13 @@ export default function PortfolioReportView({ data, onBack, onAskCoach }: Props)
                 <p className="text-sm text-slate-500 mt-0.5">{data.reportName}</p>
               )}
             </div>
-            <p className="text-sm text-slate-400 shrink-0">{formatDate(data.reportDate)}</p>
+            <p className="text-sm text-slate-400 shrink-0">Snapshot · {formatDate(data.reportDate)}</p>
           </div>
+          {data.notes && (
+            <div className="mb-4 rounded-xl bg-slate-50 border border-slate-100 px-4 py-2.5">
+              <p className="text-xs text-slate-500 italic leading-relaxed">{data.notes}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Card variant="muted" padding="sm">
@@ -438,19 +443,29 @@ export default function PortfolioReportView({ data, onBack, onAskCoach }: Props)
           <Card padding="sm">
             <div className="space-y-2 text-xs text-slate-600">
               <p>
+                <span className="font-semibold text-slate-700">Snapshot date:</span>{" "}
+                {formatDate(data.reportDate)}. This report is read-only and does not change when current holdings are edited.
+              </p>
+              <p>
                 <span className="font-semibold text-slate-700">Holdings source:</span>{" "}
-                Manually entered or imported from a CSV file.
+                Manually entered, imported from CSV, or extracted from a screenshot at the time of saving.
               </p>
               <p>
                 <span className="font-semibold text-slate-700">Exposure estimates:</span>{" "}
-                Based on simplified static educational metadata for known tickers. Some holdings may also use
-                FMP company profile data enriched at the time of analysis.
+                Based on simplified static educational metadata for known tickers, with FMP data where available at the time of analysis.
+                {data.mappedHoldingCount != null && data.unknownHoldingCount != null && (
+                  ` At save time: ${data.mappedHoldingCount} holding${data.mappedHoldingCount === 1 ? "" : "s"} mapped, ${data.unknownHoldingCount} unmapped.`
+                )}
               </p>
+              {data.unknownHoldingCount != null && data.unknownHoldingCount > 0 && (
+                <p>
+                  <span className="font-semibold text-slate-700">Unmapped holdings:</span>{" "}
+                  {data.unknownHoldingCount} holding{data.unknownHoldingCount === 1 ? "" : "s"} could not be mapped at save time. These appear in total portfolio value but may be excluded from sector, geography, and currency breakdowns.
+                </p>
+              )}
               <p>
                 <span className="font-semibold text-slate-700">Limitations:</span>{" "}
-                Exposure mappings are educational estimates. They may not reflect current fund holdings,
-                fees, currency conversion, or market weights. Holdings without metadata appear in total
-                value but may be excluded from sector, geography, and currency breakdowns.
+                Exposure mappings are simplified educational estimates and may not reflect current fund holdings, fees, currency conversion, or market weights.
               </p>
             </div>
           </Card>

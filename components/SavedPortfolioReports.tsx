@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   getPortfolioReports,
   deletePortfolioReport,
+  rowToReportData,
 } from "@/lib/portfolioReports";
 import type { PortfolioReportRow, PortfolioReportData } from "@/lib/portfolioReports";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
@@ -54,24 +55,6 @@ function ProportionBar({ weight }: { weight: number }) {
   );
 }
 
-// ─── Row → report data ────────────────────────────────────────────────────────
-
-function rowToReportData(row: PortfolioReportRow): PortfolioReportData {
-  return {
-    reportName: row.report_name,
-    reportDate: row.created_at,
-    totalValue: row.total_value ?? 0,
-    holdings: row.holdings_json ?? [],
-    assetMix: row.concentration_json?.assetMix ?? [],
-    concentrationInsights: row.concentration_json?.concentrationInsights ?? [],
-    sectorExposure: row.exposure_json?.sectorExposure ?? [],
-    geographyExposure: row.exposure_json?.geographyExposure ?? [],
-    currencyExposure: row.exposure_json?.currencyExposure ?? [],
-    overlapInsights: row.overlap_insights_json?.overlapInsights ?? [],
-    themeInsights: row.overlap_insights_json?.themeInsights ?? [],
-  };
-}
-
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -94,6 +77,7 @@ export default function SavedPortfolioReports({
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteErrorId, setDeleteErrorId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,6 +100,7 @@ export default function SavedPortfolioReports({
     const next = reports.filter((r) => r.id !== id);
     setReports(next);
     onCountChange?.(next.length);
+    setConfirmDeleteId(null);
     setDeleteErrorId(null);
     if (expandedId === id) setExpandedId(null);
     try {
@@ -128,14 +113,14 @@ export default function SavedPortfolioReports({
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-400 py-4">Loading saved portfolio reports…</p>;
+    return <p className="text-sm text-slate-400 py-4">Loading saved snapshots…</p>;
   }
 
   if (reports.length === 0) {
     return (
       <EmptyState
-        title="No saved portfolio reports"
-        description="Saved portfolio reports will appear here after you enter holdings in Portfolio X-Ray and click Save."
+        title="No saved snapshots"
+        description="Saved portfolio snapshots will appear here after you enter holdings in Portfolio X-Ray and click Save snapshot."
       />
     );
   }
@@ -151,13 +136,17 @@ export default function SavedPortfolioReports({
         const concentration = report.concentration_json;
         const exposure = report.exposure_json;
         const overlap = report.overlap_insights_json;
+        const notes = concentration?.notes;
+        const unknownCount = concentration?.unknownHoldingCount;
+        const mappedCount = concentration?.mappedHoldingCount;
+        const hasMixedCurrencies = concentration?.hasMixedCurrencies;
 
         return (
           <Card key={report.id} padding="sm">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="min-w-0">
-                <p className="text-xs text-slate-400">{formatDate(report.created_at)}</p>
+                <p className="text-xs text-slate-400">{formatDate(report.created_at)} · snapshot</p>
                 <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">
                   {report.report_name ?? "Portfolio X-Ray"}
                 </p>
@@ -171,19 +160,41 @@ export default function SavedPortfolioReports({
                   }
                   className="text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                 >
-                  {onViewReport ? "View Report" : isExpanded ? "Close" : "View"}
+                  {onViewReport ? "View" : isExpanded ? "Close" : "View"}
                 </button>
-                <button
-                  onClick={() => handleDelete(report.id)}
-                  className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
-                >
-                  Delete
-                </button>
+                {confirmDeleteId === report.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleDelete(report.id)}
+                      className="text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(report.id)}
+                    className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
 
+            {/* Notes */}
+            {notes && (
+              <p className="text-xs text-slate-500 italic mb-2 leading-relaxed">{notes}</p>
+            )}
+
             {/* Summary metrics */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs mb-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs mb-2">
               <div>
                 <p className="text-slate-400">Total value</p>
                 <p className="font-semibold text-slate-700">
@@ -195,7 +206,7 @@ export default function SavedPortfolioReports({
                 <p className="font-semibold text-slate-700">{holdings.length}</p>
               </div>
               {largest && (
-                <div>
+                <div className="col-span-2">
                   <p className="text-slate-400">Largest holding</p>
                   <p className="font-semibold text-slate-700">
                     {largest.label} — {pct(largest.weight)}
@@ -209,8 +220,8 @@ export default function SavedPortfolioReports({
                 </div>
               )}
               {exposure?.sectorExposure?.[0] && (
-                <div className="col-span-2">
-                  <p className="text-slate-400">Largest sector</p>
+                <div>
+                  <p className="text-slate-400">Top sector</p>
                   <p className="font-semibold text-slate-700">
                     {exposure.sectorExposure[0].label} — {pct(exposure.sectorExposure[0].weight)}
                   </p>
@@ -218,11 +229,32 @@ export default function SavedPortfolioReports({
               )}
             </div>
 
+            {/* Snapshot metadata badges */}
+            {(hasMixedCurrencies || (unknownCount != null && unknownCount > 0) || mappedCount != null) && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {hasMixedCurrencies && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    Mixed currencies
+                  </span>
+                )}
+                {unknownCount != null && unknownCount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                    {unknownCount} unmapped
+                  </span>
+                )}
+                {mappedCount != null && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                    {mappedCount} mapped
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Expanded detail view */}
             {isExpanded && (
               <div className="border-t border-slate-100 pt-4 space-y-5 mt-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
-                  Report details — read only
+                  Snapshot — read only · analysis from {formatDate(report.created_at)}
                 </p>
 
                 {/* Holdings */}
@@ -247,6 +279,9 @@ export default function SavedPortfolioReports({
                                   <span className="text-slate-400 ml-1.5 truncate">
                                     {h.name}
                                   </span>
+                                )}
+                                {h.currency && (
+                                  <span className="text-slate-400 ml-1">· {h.currency}</span>
                                 )}
                               </div>
                               <div className="text-right shrink-0">
@@ -354,7 +389,7 @@ export default function SavedPortfolioReports({
                   [...(overlap.overlapInsights ?? []), ...(overlap.themeInsights ?? [])].length >
                     0 && (
                     <div>
-                      <SectionHeader title="Insights" className="!mb-2" />
+                      <SectionHeader title="Overlap & Theme Insights" className="!mb-2" />
                       <div className="space-y-2">
                         {[...overlap.overlapInsights, ...overlap.themeInsights].map((ins) => (
                           <div
@@ -373,11 +408,17 @@ export default function SavedPortfolioReports({
                     </div>
                   )}
 
-                <p className="text-xs text-slate-400 leading-relaxed pt-1">
-                  Educational only. Not financial advice. This report is based on the holdings
-                  entered and simplified exposure mappings. It may not reflect current fund
-                  holdings, fees, or your full financial situation.
-                </p>
+                {/* Snapshot metadata note */}
+                <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2.5">
+                  <p className="text-xs font-semibold text-slate-500 mb-1">About this snapshot</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Analysis from {formatDate(report.created_at)} using simplified exposure mappings.
+                    {unknownCount != null && unknownCount > 0
+                      ? ` ${unknownCount} holding${unknownCount === 1 ? "" : "s"} could not be mapped — exposure estimates for those may be incomplete.`
+                      : ""}
+                    {" "}Educational only. Not financial advice.
+                  </p>
+                </div>
 
                 {onAskCoach && holdings.length > 0 && (
                   <button
@@ -410,12 +451,14 @@ export default function SavedPortfolioReports({
                         concentrationInsights: concentration?.concentrationInsights?.map((i) => ({ title: i.title, description: i.description })),
                         overlapInsights: overlap?.overlapInsights?.map((i) => ({ title: i.title, description: i.description })),
                         themeInsights: overlap?.themeInsights?.map((i) => ({ title: i.title, description: i.description })),
+                        unknownHoldingCount: unknownCount,
+                        hasMixedCurrencies: hasMixedCurrencies ?? false,
                       };
-                      onAskCoach("Explain this saved Portfolio Report in plain English. Summarize the holdings, concentration, exposure, overlap, and what may be worth understanding. Keep it educational only.", ctx);
+                      onAskCoach("Explain this saved Portfolio snapshot in plain English. Summarize the holdings, concentration, exposure, overlap, and what may be worth understanding. Keep it educational only.", ctx);
                     }}
                     className="w-full text-sm font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
                   >
-                    ✦ Explain this saved report
+                    ✦ Explain this snapshot
                   </button>
                 )}
 
@@ -427,7 +470,7 @@ export default function SavedPortfolioReports({
                     }}
                     className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
                   >
-                    Use this report in Portfolio X-Ray →
+                    Re-open holdings in Portfolio X-Ray →
                   </button>
                 )}
               </div>
@@ -440,7 +483,7 @@ export default function SavedPortfolioReports({
         );
       })}
 
-      <Disclaimer extended="Educational only. Not financial advice. Saved portfolio reports are snapshots based on manually entered holdings and simplified exposure mappings." />
+      <Disclaimer extended="Educational only. Not financial advice. Saved snapshots are based on manually entered holdings and simplified exposure mappings at the time of saving." />
     </div>
   );
 }
