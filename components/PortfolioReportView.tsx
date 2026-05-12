@@ -10,6 +10,9 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
+import Dialog from "@/components/ui/Dialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { canDownloadPortfolioPdf, UPGRADE_COPY } from "@/lib/subscriptionFeatures";
 
 // ─── Formatting ───────────────────────────────────────────────────────────────
 
@@ -121,9 +124,12 @@ interface Props {
   data: PortfolioReportData;
   onBack: () => void;
   onAskCoach?: (question: string) => void;
+  onViewPremiumTools?: () => void;
 }
 
-export default function PortfolioReportView({ data, onBack, onAskCoach }: Props) {
+export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPremiumTools }: Props) {
+  const { tier } = useSubscription();
+  const [pdfUpgradeOpen, setPdfUpgradeOpen] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const [pdfState, setPdfState] = useState<PdfState>("idle");
 
@@ -142,6 +148,10 @@ export default function PortfolioReportView({ data, onBack, onAskCoach }: Props)
   const allOverlap = [...data.overlapInsights, ...data.themeInsights];
 
   async function handleDownloadPdf() {
+    if (!canDownloadPortfolioPdf(tier)) {
+      setPdfUpgradeOpen(true);
+      return;
+    }
     if (!reportRef.current) return;
     setPdfState("loading");
     try {
@@ -490,6 +500,16 @@ export default function PortfolioReportView({ data, onBack, onAskCoach }: Props)
           </Card>
         </div>
       )}
+      <Dialog
+        open={pdfUpgradeOpen}
+        onClose={() => setPdfUpgradeOpen(false)}
+        title={UPGRADE_COPY.pdf.title}
+        description={UPGRADE_COPY.pdf.body}
+        primaryLabel={UPGRADE_COPY.pdf.primaryCta}
+        onPrimary={() => onViewPremiumTools?.()}
+        secondaryLabel="Not now"
+        onSecondary={() => {}}
+      />
     </PageLayout>
   );
 }

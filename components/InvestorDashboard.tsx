@@ -59,6 +59,7 @@ interface Props {
   onViewReport?: (data: PortfolioReportData) => void;
   onPrivacy?: () => void;
   onCompareReports?: () => void;
+  onPremiumTools?: () => void;
 }
 
 export default function InvestorDashboard({
@@ -81,6 +82,7 @@ export default function InvestorDashboard({
   onViewReport,
   onPrivacy,
   onCompareReports,
+  onPremiumTools,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -101,12 +103,16 @@ export default function InvestorDashboard({
     { label: "Change Profile", action: onChangeProfile },
     { label: "Retake Quiz", action: onRetakeQuiz },
     { label: "Compare Reports", action: () => onCompareReports?.() },
+    { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
   ];
 
   return (
     <PageLayout maxWidth="lg">
-      <PageHeader title="AI Portfolio Coach" />
+      <PageHeader
+        title="AI Portfolio Coach"
+        description="For Canadian beginner investors — know what you own, what you’re exposed to, and what to consider next."
+      />
 
       {/* Profile card */}
       <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-5 mb-6`}>

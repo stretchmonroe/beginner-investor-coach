@@ -119,6 +119,7 @@ export async function POST(req: Request) {
       readinessContext,
       portfolioContext,
       conversationHistory,
+      premiumExpanded,
     } = body as {
       question: string;
       profile?: string | null;
@@ -126,6 +127,7 @@ export async function POST(req: Request) {
       readinessContext?: string | null;
       portfolioContext?: PortfolioContext | null;
       conversationHistory?: ConversationTurn[];
+      premiumExpanded?: boolean;
     };
 
     const trimmed = (question ?? "").trim();
@@ -150,6 +152,11 @@ export async function POST(req: Request) {
       systemPrompt += `\n\n${formatPortfolioContext(portfolioContext)}`;
     }
 
+    if (premiumExpanded) {
+      systemPrompt +=
+        "\n\nThe user has access to expanded Portfolio Coach explanations. Provide a bit more depth in each section while keeping the same structure, cautious language, and all safety rules (still no buy/sell recommendations).";
+    }
+
     // Include up to 3 prior Q&A turns (6 messages) for in-session follow-up support
     const priorTurns = (conversationHistory ?? []).slice(-6);
     const messages: Array<{ role: "user" | "assistant"; content: string }> = [
@@ -159,7 +166,7 @@ export async function POST(req: Request) {
 
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: premiumExpanded ? 2048 : 1024,
       system: systemPrompt,
       messages,
     });

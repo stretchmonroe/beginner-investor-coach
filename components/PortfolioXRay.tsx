@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Holding, AssetType, AccountType, Currency, PortfolioInsight, PortfolioContext } from "@/types/portfolio";
-import { savePortfolioReport } from "@/lib/portfolioReports";
+import { savePortfolioReport, getPortfolioReports } from "@/lib/portfolioReports";
 import CsvImport from "@/components/CsvImport";
 import type { ImportMode } from "@/components/CsvImport";
 import ScreenshotUpload from "@/components/ScreenshotUpload";
@@ -31,6 +31,17 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
+import Dialog from "@/components/ui/Dialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import {
+  canUseCsvUpload,
+  canUseScreenshotImport,
+  canAddMoreHoldings,
+  canSaveAnotherReport,
+  showAdvancedOverlapInsights,
+  UPGRADE_COPY,
+  type UpgradeMoment,
+} from "@/lib/subscriptionFeatures";
 
 // Session-level FMP metadata cache — persists across re-renders within the browser tab
 const fmpCache = new Map<string, TickerMetadata | null>();
@@ -265,9 +276,12 @@ interface Props {
   initialHoldings?: Holding[];
   onAskCoach?: (question: string, context: PortfolioContext) => void;
   onViewReport?: (data: PortfolioReportData) => void;
+  onViewPremiumTools?: () => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach, onViewReport }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach, onViewReport, onViewPremiumTools }: Props) {
+  const { tier, isPremium } = useSubscription();
+  const [upgradeMoment, setUpgradeMoment] = useState<UpgradeMoment | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -435,6 +449,26 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     setFormError(null);
   }
 
+  function openPremiumNotice(moment: UpgradeMoment) {
+    setUpgradeMoment(moment);
+  }
+
+  function tryOpenCsv() {
+    if (!canUseCsvUpload(tier)) {
+      openPremiumNotice("csv");
+      return;
+    }
+    setShowCsvImport(true);
+  }
+
+  function tryOpenScreenshot() {
+    if (!canUseScreenshotImport(tier)) {
+      openPremiumNotice("screenshot");
+      return;
+    }
+    setShowScreenshotUpload(true);
+  }
+
   function submitForm() {
     if (!form.ticker.trim() && !form.name.trim()) {
       setFormError("Enter a ticker symbol or holding name.");
@@ -445,6 +479,11 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       setFormError(
         "Enter a market value, or fill in both quantity and market price to calculate it automatically."
       );
+      return;
+    }
+
+    if (!editingId && !canAddMoreHoldings(tier, holdings.length)) {
+      openPremiumNotice("holdings");
       return;
     }
 
@@ -477,6 +516,18 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
   async function handleSave() {
     if (!sessionId || holdings.length === 0) return;
+    if (!isPremium) {
+      try {
+        const rows = await getPortfolioReports(sessionId);
+        if (!canSaveAnotherReport(tier, rows.length)) {
+          openPremiumNotice("savedReports");
+          return;
+        }
+      } catch {
+        setSaveState("error");
+        return;
+      }
+    }
     setSaveState("saving");
     try {
       await savePortfolioReport({
@@ -539,6 +590,10 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       themeInsights,
     });
   }
+
+  const showAdvancedOverlap = showAdvancedOverlapInsights(tier);
+  const overlapToDisplay = showAdvancedOverlap ? overlapInsights : overlapInsights.slice(0, 1);
+  const themeToDisplay = showAdvancedOverlap ? themeInsights : [];
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -699,14 +754,16 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         <Card className="mb-6">
           <p className="text-sm font-semibold text-slate-800 mb-1">Add holdings to unlock your Portfolio X-Ray.</p>
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Enter your holdings manually, upload a CSV, or upload a screenshot to see concentration, exposure, and beginner-friendly insights.
+            Add holdings manually to explore concentration and exposure on the free tier.{" "}
+            <span className="text-slate-600">CSV import and screenshot extraction</span> are part of{" "}
+            <span className="font-medium text-slate-700">Premium Portfolio Tools</span> when you are ready.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Button onClick={openAddForm}>+ Add manually</Button>
-            <Button variant="secondary" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
+            <Button variant="secondary" onClick={tryOpenCsv}>Upload CSV</Button>
             <Button
               variant="secondary"
-              onClick={() => setShowScreenshotUpload(true)}
+              onClick={tryOpenScreenshot}
               className="col-span-2"
             >
               Upload screenshot
@@ -723,8 +780,8 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             {!showForm && !showCsvImport && !showScreenshotUpload && (
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add holding</Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowCsvImport(true)}>Upload CSV</Button>
-                <Button variant="ghost" size="sm" onClick={() => setShowScreenshotUpload(true)}>Screenshot</Button>
+                <Button variant="ghost" size="sm" onClick={tryOpenCsv}>Upload CSV</Button>
+                <Button variant="ghost" size="sm" onClick={tryOpenScreenshot}>Screenshot</Button>
               </div>
             )}
           </div>
@@ -962,9 +1019,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           )}
 
           {/* Theme insights */}
-          {themeInsights.length > 0 && (
+          {themeToDisplay.length > 0 && (
             <div className="space-y-4">
-              {themeInsights.map((insight) => (
+              {themeToDisplay.map((insight) => (
                 <InsightCard key={insight.id} insight={insight} />
               ))}
             </div>
@@ -984,21 +1041,38 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       )}
 
       {/* ── D. Overlap notes ── */}
-      {overlapInsights.length > 0 && (
+      {overlapToDisplay.length > 0 && (
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-800 mb-1">Overlap notes</h2>
           <p className="text-sm text-slate-500 mb-3">
             Potential holding interactions based on simplified static mapping.
           </p>
           <div className="space-y-4">
-            {overlapInsights.map((insight) => (
+            {overlapToDisplay.map((insight) => (
               <InsightCard key={insight.id} insight={insight} />
             ))}
           </div>
         </div>
       )}
 
-      {overlapInsights.length > 0 && (
+      {!showAdvancedOverlap && holdings.length > 0 && (overlapInsights.length > 1 || themeInsights.length > 0) && (
+        <Card variant="muted" className="mb-6">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
+            Advanced Portfolio Insights
+          </p>
+          <p className="text-sm text-slate-600 leading-relaxed mb-3">
+            Additional overlap notes and theme-level context are part of Premium Portfolio Tools — a calm
+            upgrade path when you want expanded analysis, not a requirement to get started.
+          </p>
+          {onViewPremiumTools && (
+            <Button variant="secondary" size="sm" onClick={onViewPremiumTools}>
+              Learn about Premium Portfolio Tools
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {overlapToDisplay.length > 0 && (
         <div className="mb-6">
           <CoachBtn
             label="✦ Explain overlap"
@@ -1084,6 +1158,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       )}
 
       <Disclaimer extended="Educational only. Not financial advice. This analysis is based on the holdings you enter and simplified exposure mappings. It may not reflect current fund holdings, fees, market prices, currency conversion, taxes, or your full financial situation." />
+
+      <Dialog
+        open={upgradeMoment !== null}
+        onClose={() => setUpgradeMoment(null)}
+        title={upgradeMoment ? UPGRADE_COPY[upgradeMoment].title : ""}
+        description={upgradeMoment ? UPGRADE_COPY[upgradeMoment].body : undefined}
+        primaryLabel={upgradeMoment ? UPGRADE_COPY[upgradeMoment].primaryCta : "OK"}
+        onPrimary={() => onViewPremiumTools?.()}
+        secondaryLabel="Not now"
+        onSecondary={() => {}}
+      />
     </PageLayout>
   );
 }

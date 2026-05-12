@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AppProviders from "@/components/AppProviders";
 
 export const metadata: Metadata = {
-  title: "Beginner Investor Coach",
-  description: "Learn how to start investing with confidence",
+  title: "AI Portfolio Coach · Canadian beginners",
+  description:
+    "Know what you own, what you’re exposed to, and what to consider next — without pretending to be a day trader.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 text-slate-900 antialiased">{children}</body>
+      <body className="bg-slate-50 text-slate-900 antialiased">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   );
 }

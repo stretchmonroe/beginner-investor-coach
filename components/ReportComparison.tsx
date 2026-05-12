@@ -20,6 +20,8 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
 import EmptyState from "@/components/ui/EmptyState";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { canUseReportComparison, UPGRADE_COPY } from "@/lib/subscriptionFeatures";
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -151,6 +153,7 @@ interface Props {
   sessionId: string;
   onBack: () => void;
   onAskCoach?: (question: string, context?: PortfolioContext) => void;
+  onViewPremium?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -160,7 +163,8 @@ type Phase = "loading" | "empty" | "select" | "compare" | "error";
 const selectClass =
   "w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 
-export default function ReportComparison({ sessionId, onBack, onAskCoach }: Props) {
+export default function ReportComparison({ sessionId, onBack, onAskCoach, onViewPremium }: Props) {
+  const { tier } = useSubscription();
   const [phase, setPhase] = useState<Phase>("loading");
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
   const [earlierId, setEarlierId] = useState<string>("");
@@ -187,6 +191,33 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach }: Prop
       })
       .catch(() => setPhase("error"));
   }, [sessionId]);
+
+  if (!canUseReportComparison(tier)) {
+    const copy = UPGRADE_COPY.reportComparison;
+    return (
+      <PageLayout maxWidth="md">
+        <PageHeader
+          title="Compare reports"
+          description="See how saved Portfolio X-Ray snapshots differ over time."
+          action={
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              ← Back
+            </Button>
+          }
+        />
+        <Card className="mb-6">
+          <p className="text-sm text-slate-700 leading-relaxed mb-4">{copy.body}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => onViewPremium?.()}>{copy.primaryCta}</Button>
+            <Button variant="secondary" onClick={onBack}>
+              Back to dashboard
+            </Button>
+          </div>
+        </Card>
+        <Disclaimer extended="Educational only. Not financial advice. Comparisons use saved snapshot data only." />
+      </PageLayout>
+    );
+  }
 
   function handleCompare() {
     const eRow = reports.find((r) => r.id === earlierId);

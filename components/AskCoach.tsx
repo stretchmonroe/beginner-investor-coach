@@ -15,6 +15,13 @@ import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Disclaimer from "@/components/ui/Disclaimer";
+import Dialog from "@/components/ui/Dialog";
+import { useSubscription } from "@/contexts/SubscriptionContext";
+import { UPGRADE_COPY } from "@/lib/subscriptionFeatures";
+import {
+  hasReachedFreeAiCoachLimit,
+  incrementAiCoachMessagesToday,
+} from "@/lib/usageTracking";
 
 // ── Static prompts ────────────────────────────────────────────────────────────
 
@@ -225,6 +232,7 @@ interface Props {
   onBack: () => void;
   prefillQuestion?: string;
   portfolioContext?: PortfolioContext;
+  onViewPremiumTools?: () => void;
 }
 
 export default function AskCoach({
@@ -234,7 +242,10 @@ export default function AskCoach({
   onBack,
   prefillQuestion,
   portfolioContext,
+  onViewPremiumTools,
 }: Props) {
+  const { isPremium } = useSubscription();
+  const [aiLimitDialogOpen, setAiLimitDialogOpen] = useState(false);
   const [question, setQuestion] = useState(prefillQuestion ?? "");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -280,6 +291,12 @@ export default function AskCoach({
   }, [sessionId]);
 
   async function submitQuestion(q: string) {
+    if (!isPremium && hasReachedFreeAiCoachLimit()) {
+      setAiLimitDialogOpen(true);
+      setError("You've reached today's free AI Coach limit.");
+      return;
+    }
+
     setQuestion(q);
     setLoading(true);
     setLoadingPhase(0);
@@ -298,6 +315,7 @@ export default function AskCoach({
           watchedTickers: Array.from(watchedTickers),
           portfolioContext: portfolioContext ?? null,
           conversationHistory: priorTurns,
+          premiumExpanded: isPremium,
         }),
       });
       const data = await res.json();
@@ -305,6 +323,9 @@ export default function AskCoach({
         setError(data.error ?? "Something went wrong. Please try again.");
       } else {
         setAnswer(data.answer);
+        if (!isPremium) {
+          incrementAiCoachMessagesToday();
+        }
         setConversationTurns((prev) => [
           ...prev,
           { role: "user", content: q },
@@ -492,6 +513,17 @@ export default function AskCoach({
       )}
 
       <Disclaimer extended="Educational only. The AI Coach explains portfolio concepts and simplified exposure estimates. It does not provide personalized financial advice." />
+
+      <Dialog
+        open={aiLimitDialogOpen}
+        onClose={() => setAiLimitDialogOpen(false)}
+        title={UPGRADE_COPY.aiCoach.title}
+        description={UPGRADE_COPY.aiCoach.body}
+        primaryLabel={UPGRADE_COPY.aiCoach.primaryCta}
+        onPrimary={() => onViewPremiumTools?.()}
+        secondaryLabel="Not now"
+        onSecondary={() => {}}
+      />
 
       {/* Recent questions */}
       {historyLoaded && (

@@ -17,6 +17,7 @@ import PortfolioXRay from "@/components/PortfolioXRay";
 import PortfolioReportView from "@/components/PortfolioReportView";
 import PrivacyDataControls from "@/components/PrivacyDataControls";
 import ReportComparison from "@/components/ReportComparison";
+import PremiumPortfolioTools from "@/components/PremiumPortfolioTools";
 import type { QuizAnswers } from "@/components/OnboardingQuiz";
 import type { ContributionGuidanceSnapshot } from "@/lib/learningPlans";
 import type { GoalPlan } from "@/types/readinessPlan";
@@ -31,7 +32,7 @@ import {
   removeWatchlistItem,
 } from "@/lib/watchlist";
 
-type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport" | "privacy" | "reportcomparison";
+type Screen = "landing" | "quiz" | "profileselection" | "dashboard" | "etfs" | "watchlist" | "compare" | "simulator" | "coach" | "contribution" | "goalplanner" | "assetclasses" | "portfolioxray" | "portfolioreport" | "privacy" | "reportcomparison" | "premiumtools";
 
 function deriveProfileLabel(a: QuizAnswers): string {
   const riskScore =
@@ -227,6 +228,7 @@ export default function Home() {
           onViewReport={(data) => viewPortfolioReport(data, "dashboard")}
           onPrivacy={() => setScreen("privacy")}
           onCompareReports={() => setScreen("reportcomparison")}
+          onPremiumTools={() => setScreen("premiumtools")}
         />
       )}
       {screen === "reportcomparison" && (
@@ -234,6 +236,13 @@ export default function Home() {
           sessionId={sessionId}
           onBack={() => setScreen("dashboard")}
           onAskCoach={goToCoach}
+          onViewPremium={() => setScreen("premiumtools")}
+        />
+      )}
+      {screen === "premiumtools" && (
+        <PremiumPortfolioTools
+          onBack={() => setScreen("dashboard")}
+          onContinue={() => setScreen("dashboard")}
         />
       )}
       {screen === "privacy" && (
@@ -252,6 +261,7 @@ export default function Home() {
           initialHoldings={xrayInitialHoldings}
           onAskCoach={goToCoach}
           onViewReport={(data) => viewPortfolioReport(data, "portfolioxray")}
+          onViewPremiumTools={() => setScreen("premiumtools")}
         />
       )}
       {screen === "portfolioreport" && reportViewData && (
@@ -259,6 +269,7 @@ export default function Home() {
           data={reportViewData}
           onBack={() => setScreen(reportViewOrigin)}
           onAskCoach={(q) => goToCoach(q)}
+          onViewPremiumTools={() => setScreen("premiumtools")}
         />
       )}
       {screen === "etfs" && (
@@ -321,6 +332,7 @@ export default function Home() {
           onBack={() => setScreen("dashboard")}
           prefillQuestion={coachPrefillQuestion ?? undefined}
           portfolioContext={coachPortfolioContext ?? undefined}
+          onViewPremiumTools={() => setScreen("premiumtools")}
         />
       )}
       {screen === "contribution" && (

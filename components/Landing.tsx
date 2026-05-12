@@ -19,19 +19,18 @@ export default function Landing({ onStart, onSkipQuiz }: Props) {
         {/* Headline */}
         <div className="space-y-3">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-            Beginner Investor Coach
+            AI Portfolio Coach
           </h1>
           <p className="text-xl text-slate-600 font-medium">
-            Learn how to start investing with confidence
+            For Canadian beginner investors
           </p>
         </div>
 
         {/* Description */}
         <p className="text-slate-500 leading-relaxed text-base">
-          Not sure where to begin? This free tool helps you understand ETFs,
-          mutual funds, risk tolerance, and long-term investing — in plain
-          English. No jargon. No pressure. Just clear, beginner-friendly
-          guidance.
+          Know what you own, what you’re exposed to, and what to consider next — without pretending to be
+          a day trader. Explore ETFs, portfolio basics, and contribution ideas in plain English. Educational
+          only: no jargon, no pressure.
         </p>
 
         {/* CTA */}
