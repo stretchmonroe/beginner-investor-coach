@@ -22,6 +22,7 @@ import Disclaimer from "@/components/ui/Disclaimer";
 import EmptyState from "@/components/ui/EmptyState";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { canUseReportComparison, UPGRADE_COPY } from "@/lib/subscriptionFeatures";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
@@ -194,6 +195,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
 
   if (!canUseReportComparison(tier)) {
     const copy = UPGRADE_COPY.reportComparison;
+    trackEvent("upgrade_prompt_viewed", { feature: "report_comparison" });
     return (
       <PageLayout maxWidth="md">
         <PageHeader
@@ -208,7 +210,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
         <Card className="mb-6">
           <p className="text-sm text-slate-700 leading-relaxed mb-4">{copy.body}</p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => onViewPremium?.()}>{copy.primaryCta}</Button>
+            <Button onClick={() => { trackEvent("upgrade_prompt_clicked", { feature: "report_comparison" }); onViewPremium?.(); }}>{copy.primaryCta}</Button>
             <Button variant="secondary" onClick={onBack}>
               Back to dashboard
             </Button>
@@ -226,6 +228,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
     setEarlierData(rowToReportData(eRow));
     setLaterData(rowToReportData(lRow));
     setPhase("compare");
+    trackEvent("report_compared");
   }
 
   // ── Loading ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 
@@ -45,6 +46,10 @@ interface Props {
 export default function Onboarding({ open, onDismiss, onAddHoldings, onSamplePortfolio }: Props) {
   const [step, setStep] = useState(0);
 
+  useEffect(() => {
+    if (open) trackEvent("onboarding_viewed");
+  }, [open]);
+
   if (!open) return null;
 
   const current = STEPS[step];
@@ -52,6 +57,7 @@ export default function Onboarding({ open, onDismiss, onAddHoldings, onSamplePor
   const isFirst = step === 0;
 
   function handleDismiss() {
+    trackEvent("onboarding_skipped", { step });
     setStep(0);
     onDismiss();
   }
@@ -105,6 +111,7 @@ export default function Onboarding({ open, onDismiss, onAddHoldings, onSamplePor
             <Button
               className="w-full"
               onClick={() => {
+                trackEvent("onboarding_completed");
                 setStep(0);
                 onAddHoldings();
               }}
@@ -115,6 +122,7 @@ export default function Onboarding({ open, onDismiss, onAddHoldings, onSamplePor
               variant="secondary"
               className="w-full"
               onClick={() => {
+                trackEvent("onboarding_completed");
                 setStep(0);
                 onSamplePortfolio();
               }}

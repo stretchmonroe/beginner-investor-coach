@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
 import type { PortfolioInsight } from "@/types/portfolio";
 import type { ExposureItem } from "@/lib/portfolioMetadata";
@@ -13,6 +13,7 @@ import Disclaimer from "@/components/ui/Disclaimer";
 import Dialog from "@/components/ui/Dialog";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { canDownloadPortfolioPdf, UPGRADE_COPY } from "@/lib/subscriptionFeatures";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Formatting ───────────────────────────────────────────────────────────────
 
@@ -133,6 +134,10 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
   const reportRef = useRef<HTMLDivElement>(null);
   const [pdfState, setPdfState] = useState<PdfState>("idle");
 
+  useEffect(() => {
+    trackEvent("report_viewed");
+  }, []);
+
   const sortedHoldings = [...data.holdings].sort((a, b) => b.marketValue - a.marketValue);
   const hasMixedCurrencies =
     data.holdings.some((h) => h.currency === "USD") && data.holdings.some((h) => h.currency === "CAD");
@@ -150,10 +155,12 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
   async function handleDownloadPdf() {
     if (!canDownloadPortfolioPdf(tier)) {
       setPdfUpgradeOpen(true);
+      trackEvent("upgrade_prompt_viewed", { feature: "pdf" });
       return;
     }
     if (!reportRef.current) return;
     setPdfState("loading");
+    trackEvent("pdf_export_started");
     try {
       const [{ default: JsPDF }, { default: html2canvas }] = await Promise.all([
         import("jspdf"),
@@ -182,8 +189,10 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
 
       pdf.save(generateFileName(data));
       setPdfState("idle");
+      trackEvent("pdf_export_completed");
     } catch {
       setPdfState("error");
+      trackEvent("pdf_export_failed");
     }
   }
 
@@ -506,7 +515,10 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
         title={UPGRADE_COPY.pdf.title}
         description={UPGRADE_COPY.pdf.body}
         primaryLabel={UPGRADE_COPY.pdf.primaryCta}
-        onPrimary={() => onViewPremiumTools?.()}
+        onPrimary={() => {
+          trackEvent("upgrade_prompt_clicked", { feature: "pdf" });
+          onViewPremiumTools?.();
+        }}
         secondaryLabel="Not now"
         onSecondary={() => {}}
       />

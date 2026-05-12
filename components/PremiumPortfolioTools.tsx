@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
@@ -8,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { trackEvent } from "@/lib/analytics";
 
 interface Props {
   onBack: () => void;
@@ -26,6 +28,10 @@ const BENEFITS = [
 
 export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
   const { isPremium, setTier } = useSubscription();
+
+  useEffect(() => {
+    trackEvent("premium_page_viewed");
+  }, []);
 
   return (
     <PageLayout maxWidth="md">

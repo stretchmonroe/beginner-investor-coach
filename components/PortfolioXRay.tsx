@@ -33,6 +33,7 @@ import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
 import Dialog from "@/components/ui/Dialog";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { trackEvent } from "@/lib/analytics";
 import {
   canUseCsvUpload,
   canUseScreenshotImport,
@@ -340,6 +341,30 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     });
   }, [holdings]);
 
+  // ── Analytics: fire once when first analysis is ready ────────────────────
+
+  const hasFiredXrayRef = useRef(false);
+  useEffect(() => {
+    if (hasFiredXrayRef.current || holdings.length === 0 || enrichmentStatus !== "done") return;
+    hasFiredXrayRef.current = true;
+
+    const unknownCount = holdings.filter((h) => {
+      const t = normalizeTicker(h.ticker);
+      return !(getMetadata(t) ?? enrichedMetadata[t]);
+    }).length;
+
+    if (isSample) {
+      trackEvent("sample_portfolio_loaded");
+    }
+    trackEvent("portfolio_xray_generated", {
+      holdings_count: holdings.length,
+      is_sample: isSample ?? false,
+    });
+    if (unknownCount > 0) {
+      trackEvent("unknown_holdings_detected", { unknown_count: unknownCount });
+    }
+  }, [holdings, enrichmentStatus, enrichedMetadata, isSample]);
+
   // ── Derived ──────────────────────────────────────────────────────────────
 
   const totalValue = holdings.reduce((s, h) => s + h.marketValue, 0);
@@ -453,6 +478,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
   function openPremiumNotice(moment: UpgradeMoment) {
     setUpgradeMoment(moment);
+    trackEvent("upgrade_prompt_viewed", { feature: moment });
   }
 
   function tryOpenCsv() {
@@ -460,6 +486,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       openPremiumNotice("csv");
       return;
     }
+    trackEvent("csv_upload_started", { source: "portfolio_xray" });
     setShowCsvImport(true);
   }
 
@@ -468,6 +495,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       openPremiumNotice("screenshot");
       return;
     }
+    trackEvent("screenshot_upload_started", { source: "portfolio_xray" });
     setShowScreenshotUpload(true);
   }
 
@@ -506,6 +534,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           : new Date().toISOString(),
     };
 
+    if (!editingId) {
+      trackEvent("holdings_added_manual", { holdings_count: holdings.length + 1 });
+    }
     setHoldings((prev) =>
       editingId ? prev.map((h) => (h.id === editingId ? holding : h)) : [...prev, holding]
     );
@@ -551,6 +582,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       });
       setSaveState("saved");
       setReportNotes("");
+      trackEvent("report_saved", { has_notes: reportNotes.trim().length > 0 });
     } catch {
       setSaveState("error");
     }
@@ -558,11 +590,13 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
   function handleCsvImport(imported: Holding[], mode: ImportMode) {
     setHoldings((prev) => mode === "replace" ? imported : [...prev, ...imported]);
+    trackEvent("csv_upload_completed", { holdings_count: imported.length });
   }
 
   function handleScreenshotImport(imported: Holding[], mode: ScreenshotImportMode) {
     setHoldings((prev) => mode === "replace" ? imported : [...prev, ...imported]);
     setShowScreenshotUpload(false);
+    trackEvent("screenshot_upload_completed", { holdings_count: imported.length });
   }
 
   function handleTickerSelect(suggestion: AutocompleteSuggestion) {
@@ -1184,7 +1218,10 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         title={upgradeMoment ? UPGRADE_COPY[upgradeMoment].title : ""}
         description={upgradeMoment ? UPGRADE_COPY[upgradeMoment].body : undefined}
         primaryLabel={upgradeMoment ? UPGRADE_COPY[upgradeMoment].primaryCta : "OK"}
-        onPrimary={() => onViewPremiumTools?.()}
+        onPrimary={() => {
+          trackEvent("upgrade_prompt_clicked", { feature: upgradeMoment ?? undefined });
+          onViewPremiumTools?.();
+        }}
         secondaryLabel="Not now"
         onSecondary={() => {}}
       />

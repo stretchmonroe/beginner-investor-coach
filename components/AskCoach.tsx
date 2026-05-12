@@ -22,6 +22,7 @@ import {
   hasReachedFreeAiCoachLimit,
   incrementAiCoachMessagesToday,
 } from "@/lib/usageTracking";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Static prompts ────────────────────────────────────────────────────────────
 
@@ -290,13 +291,22 @@ export default function AskCoach({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
+  // Track coach opened once per mount
+  useEffect(() => {
+    trackEvent("ai_coach_opened", { has_portfolio_context: hasPortfolioContext });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function submitQuestion(q: string) {
     if (!isPremium && hasReachedFreeAiCoachLimit()) {
       setAiLimitDialogOpen(true);
       setError("You've reached today's free AI Coach limit.");
+      trackEvent("ai_limit_reached");
+      trackEvent("upgrade_prompt_viewed", { feature: "ai_coach" });
       return;
     }
 
+    trackEvent("ai_message_sent", { has_portfolio_context: hasPortfolioContext });
     setQuestion(q);
     setLoading(true);
     setLoadingPhase(0);
@@ -323,6 +333,7 @@ export default function AskCoach({
         setError(data.error ?? "Something went wrong. Please try again.");
       } else {
         setAnswer(data.answer);
+        trackEvent("ai_response_generated", { has_portfolio_context: hasPortfolioContext });
         if (!isPremium) {
           incrementAiCoachMessagesToday();
         }
@@ -415,7 +426,7 @@ export default function AskCoach({
           {suggestedPrompts.map((p) => (
             <button
               key={p}
-              onClick={() => setQuestion(p)}
+              onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
               className="text-xs px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
             >
               {p}
@@ -429,7 +440,7 @@ export default function AskCoach({
           {CONCEPT_PROMPTS.map((p) => (
             <button
               key={p}
-              onClick={() => setQuestion(p)}
+              onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
               className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
             >
               {p}
@@ -520,7 +531,10 @@ export default function AskCoach({
         title={UPGRADE_COPY.aiCoach.title}
         description={UPGRADE_COPY.aiCoach.body}
         primaryLabel={UPGRADE_COPY.aiCoach.primaryCta}
-        onPrimary={() => onViewPremiumTools?.()}
+        onPrimary={() => {
+          trackEvent("upgrade_prompt_clicked", { feature: "ai_coach" });
+          onViewPremiumTools?.();
+        }}
         secondaryLabel="Not now"
         onSecondary={() => {}}
       />

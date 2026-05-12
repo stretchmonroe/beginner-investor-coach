@@ -209,6 +209,32 @@ export default function PrivacyDataControls({
         </div>
       </div>
 
+      {/* ── Product analytics ── */}
+      <div className="mb-6">
+        <h2 className="text-base font-semibold text-slate-800 mb-3">Product analytics</h2>
+        <Card padding="sm">
+          <p className="text-sm text-slate-500 leading-relaxed">
+            The app uses lightweight, anonymous analytics (PostHog) to understand feature usage
+            and improve the experience. Only product events are tracked — such as which features
+            are used and where users drop off.
+          </p>
+          <ul className="space-y-1.5 mt-3">
+            {[
+              "Portfolio values, prices, and holdings are not tracked",
+              "Uploaded screenshots and raw CSV contents are not tracked",
+              "AI Coach message text is not tracked",
+              "No session replay or keystroke recording",
+              "No advertising or marketing trackers",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2 text-xs text-slate-500">
+                <span className="text-teal-500 shrink-0 mt-0.5">✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      </div>
+
       {/* ── What is not stored ── */}
       <div className="mb-6">
         <h2 className="text-base font-semibold text-slate-800 mb-3">What is not stored</h2>

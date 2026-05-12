@@ -13,6 +13,7 @@ import Card from "@/components/ui/Card";
 import Disclaimer from "@/components/ui/Disclaimer";
 import EmptyState from "@/components/ui/EmptyState";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,7 @@ export default function SavedPortfolioReports({
     if (expandedId === id) setExpandedId(null);
     try {
       await deletePortfolioReport(id);
+      trackEvent("report_deleted");
     } catch {
       setReports(prev);
       onCountChange?.(prev.length);
@@ -153,11 +155,14 @@ export default function SavedPortfolioReports({
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() =>
-                    onViewReport
-                      ? onViewReport(rowToReportData(report))
-                      : setExpandedId(isExpanded ? null : report.id)
-                  }
+                  onClick={() => {
+                    if (onViewReport) {
+                      trackEvent("report_viewed", { source: "list" });
+                      onViewReport(rowToReportData(report));
+                    } else {
+                      setExpandedId(isExpanded ? null : report.id);
+                    }
+                  }}
                   className="text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                 >
                   {onViewReport ? "View" : isExpanded ? "Close" : "View"}
