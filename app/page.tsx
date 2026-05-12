@@ -26,7 +26,7 @@ import type { Etf, Profile } from "@/lib/etfs";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
 import { SAMPLE_HOLDINGS } from "@/lib/samplePortfolio";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/src/lib/analytics";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
 import { supabase } from "@/lib/supabase";
 import {
@@ -200,6 +200,7 @@ export default function Home() {
     }
     setXrayInitialHoldings(SAMPLE_HOLDINGS);
     setIsSamplePortfolio(true);
+    trackEvent('sample_portfolio_loaded');
     setScreen("portfolioxray");
   }
 
