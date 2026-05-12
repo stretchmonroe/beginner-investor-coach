@@ -388,6 +388,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     concentrationInsights: concentrationInsights.map((i) => ({ title: i.title, description: i.description })),
     overlapInsights: overlapInsights.map((i) => ({ title: i.title, description: i.description })),
     themeInsights: themeInsights.map((i) => ({ title: i.title, description: i.description })),
+    unknownHoldingCount: unknownHoldings.length,
+    unknownHoldingTickers: unknownHoldings.map((h) => h.ticker || h.name).filter(Boolean),
+    hasMixedCurrencies,
   } : null;
 
   const qtyNum = form.quantity !== "" ? parseFloat(form.quantity) : NaN;

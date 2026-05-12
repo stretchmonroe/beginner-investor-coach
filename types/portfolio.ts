@@ -62,6 +62,9 @@ export interface PortfolioContext {
   concentrationInsights?: Array<{ title: string; description: string }>;
   overlapInsights?: Array<{ title: string; description: string }>;
   themeInsights?: Array<{ title: string; description: string }>;
+  unknownHoldingCount?: number;
+  unknownHoldingTickers?: string[];
+  hasMixedCurrencies?: boolean;
   reportName?: string;
   savedAt?: string;
 }
