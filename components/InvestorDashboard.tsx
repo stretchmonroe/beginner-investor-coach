@@ -60,6 +60,7 @@ interface Props {
   onPrivacy?: () => void;
   onCompareReports?: () => void;
   onPremiumTools?: () => void;
+  onViewOnboarding?: () => void;
 }
 
 export default function InvestorDashboard({
@@ -83,6 +84,7 @@ export default function InvestorDashboard({
   onPrivacy,
   onCompareReports,
   onPremiumTools,
+  onViewOnboarding,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -105,6 +107,7 @@ export default function InvestorDashboard({
     { label: "Compare Reports", action: () => onCompareReports?.() },
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
+    { label: "Replay introduction", action: () => onViewOnboarding?.() },
   ];
 
   return (

@@ -274,12 +274,14 @@ interface Props {
   monthlyContribution?: number;
   sessionId: string;
   initialHoldings?: Holding[];
+  isSample?: boolean;
+  onClearSample?: () => void;
   onAskCoach?: (question: string, context: PortfolioContext) => void;
   onViewReport?: (data: PortfolioReportData) => void;
   onViewPremiumTools?: () => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, onAskCoach, onViewReport, onViewPremiumTools }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools }: Props) {
   const { tier, isPremium } = useSubscription();
   const [upgradeMoment, setUpgradeMoment] = useState<UpgradeMoment | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
@@ -608,6 +610,23 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           </Button>
         }
       />
+
+      {/* ── Sample portfolio banner ── */}
+      {isSample && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 text-sm">
+          <span className="text-amber-500 text-base shrink-0 mt-0.5">🧪</span>
+          <div className="flex-1">
+            <p className="font-semibold text-amber-800">You&apos;re viewing a sample portfolio</p>
+            <p className="text-amber-700 text-xs mt-0.5">This is a fictional beginner portfolio designed to show overlaps and exposures. Your holdings are not saved.</p>
+          </div>
+          <button
+            onClick={onClearSample}
+            className="text-xs text-amber-700 underline hover:text-amber-900 transition-colors cursor-pointer shrink-0 mt-0.5"
+          >
+            Start with my own
+          </button>
+        </div>
+      )}
 
       {/* ── Add / Edit form ── */}
       {showForm && (

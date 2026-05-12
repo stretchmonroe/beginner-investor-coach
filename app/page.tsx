@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Landing from "@/components/Landing";
+import Onboarding from "@/components/Onboarding";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
 import ETFExplorer from "@/components/ETFExplorer";
 import Watchlist from "@/components/Watchlist";
@@ -24,6 +25,7 @@ import type { GoalPlan } from "@/types/readinessPlan";
 import type { Etf, Profile } from "@/lib/etfs";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
+import { SAMPLE_HOLDINGS } from "@/lib/samplePortfolio";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
 import { supabase } from "@/lib/supabase";
 import {
@@ -88,16 +90,21 @@ export default function Home() {
   const [coachPortfolioContext, setCoachPortfolioContext] = useState<PortfolioContext | null>(null);
   const [sharedPlanInputs, setSharedPlanInputs] = useState<SharedPlanInputs>({});
   const [xrayInitialHoldings, setXrayInitialHoldings] = useState<Holding[]>([]);
+  const [isSamplePortfolio, setIsSamplePortfolio] = useState(false);
   const [reportViewData, setReportViewData] = useState<PortfolioReportData | null>(null);
   const [reportViewOrigin, setReportViewOrigin] = useState<"portfolioxray" | "dashboard">("dashboard");
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Initialise session ID and load watchlist from Supabase after mount
+  // Initialise session ID, load watchlist, and check first-visit onboarding
   useEffect(() => {
     const id = getOrCreateSessionId();
     setSessionId(id);
     fetchWatchlistTickers(id).then((tickers) => {
       setWatchedTickers(new Set(tickers));
     });
+    if (!localStorage.getItem("bic_onboarding_done")) {
+      setShowOnboarding(true);
+    }
   }, []);
 
   function handleQuizComplete(a: QuizAnswers) {
@@ -177,6 +184,23 @@ export default function Home() {
     setScreen("portfolioreport");
   }
 
+  function dismissOnboarding() {
+    localStorage.setItem("bic_onboarding_done", "1");
+    setShowOnboarding(false);
+  }
+
+  function handleSamplePortfolio() {
+    dismissOnboarding();
+    if (!answers) {
+      const synthetic = syntheticAnswersForProfile("Balanced Beginner");
+      setQuizSkipped(true);
+      setAnswers(synthetic);
+    }
+    setXrayInitialHoldings(SAMPLE_HOLDINGS);
+    setIsSamplePortfolio(true);
+    setScreen("portfolioxray");
+  }
+
   function handleClearSession() {
     localStorage.removeItem("bic_session_id");
     const newId = crypto.randomUUID();
@@ -193,6 +217,7 @@ export default function Home() {
         <Landing
           onStart={() => { setQuizSkipped(false); setScreen("quiz"); }}
           onSkipQuiz={() => { setProfileSelectionOrigin("landing"); setScreen("profileselection"); }}
+          onSamplePortfolio={handleSamplePortfolio}
         />
       )}
       {screen === "quiz" && <OnboardingQuiz onComplete={handleQuizComplete} />}
@@ -229,6 +254,7 @@ export default function Home() {
           onPrivacy={() => setScreen("privacy")}
           onCompareReports={() => setScreen("reportcomparison")}
           onPremiumTools={() => setScreen("premiumtools")}
+          onViewOnboarding={() => setShowOnboarding(true)}
         />
       )}
       {screen === "reportcomparison" && (
@@ -255,10 +281,13 @@ export default function Home() {
       )}
       {screen === "portfolioxray" && (
         <PortfolioXRay
-          onBack={() => { setXrayInitialHoldings([]); setScreen("dashboard"); }}
+          key={isSamplePortfolio ? "sample" : "live"}
+          onBack={() => { setXrayInitialHoldings([]); setIsSamplePortfolio(false); setScreen("dashboard"); }}
           monthlyContribution={sharedPlanInputs.monthlyContribution}
           sessionId={sessionId}
           initialHoldings={xrayInitialHoldings}
+          isSample={isSamplePortfolio}
+          onClearSample={() => { setXrayInitialHoldings([]); setIsSamplePortfolio(false); }}
           onAskCoach={goToCoach}
           onViewReport={(data) => viewPortfolioReport(data, "portfolioxray")}
           onViewPremiumTools={() => setScreen("premiumtools")}
@@ -389,6 +418,22 @@ export default function Home() {
       {screen === "assetclasses" && (
         <AssetClassExplorer onBack={() => setScreen(assetClassOrigin)} />
       )}
+      <Onboarding
+        open={showOnboarding}
+        onDismiss={dismissOnboarding}
+        onAddHoldings={() => {
+          dismissOnboarding();
+          if (!answers) {
+            const synthetic = syntheticAnswersForProfile("Balanced Beginner");
+            setQuizSkipped(true);
+            setAnswers(synthetic);
+          }
+          setXrayInitialHoldings([]);
+          setIsSamplePortfolio(false);
+          setScreen("portfolioxray");
+        }}
+        onSamplePortfolio={handleSamplePortfolio}
+      />
 </>
   );
 }
