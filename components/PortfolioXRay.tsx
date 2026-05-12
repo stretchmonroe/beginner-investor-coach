@@ -221,7 +221,7 @@ function CoachBtn({
   return (
     <button
       onClick={() => onAskCoach(question, portfolioContext)}
-      className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer mt-3"
+      className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
     >
       <span>✦</span> {label}
     </button>
@@ -346,6 +346,21 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     const t = normalizeTicker(h.ticker);
     return !(getMetadata(t) ?? enrichedMetadata[t]);
   });
+
+  // Duplicate ticker detection
+  const tickerCounts = holdings.reduce<Record<string, number>>((acc, h) => {
+    const t = normalizeTicker(h.ticker);
+    if (t) acc[t] = (acc[t] ?? 0) + 1;
+    return acc;
+  }, {});
+  const duplicateTickerSet = new Set(
+    Object.entries(tickerCounts).filter(([, c]) => c > 1).map(([t]) => t)
+  );
+
+  // Mixed currency detection
+  const hasMixedCurrencies =
+    holdings.some((h) => h.currency === "CAD") &&
+    holdings.some((h) => h.currency === "USD");
 
   const top3Weight =
     totalValue > 0
@@ -673,9 +688,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
       {/* ── Empty state ── */}
       {holdings.length === 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
         <Card className="mb-6">
-          <p className="text-sm font-semibold text-slate-800 mb-1">Add your holdings</p>
+          <p className="text-sm font-semibold text-slate-800 mb-1">Add holdings to unlock your Portfolio X-Ray.</p>
           <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Enter your holdings to see concentration, exposure, and beginner-friendly insights.
+            Enter your holdings manually, upload a CSV, or upload a screenshot to see concentration, exposure, and beginner-friendly insights.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Button onClick={openAddForm}>+ Add manually</Button>
@@ -720,6 +735,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                         <Badge variant="muted">{h.accountType}</Badge>
                         <Badge variant="muted">{h.currency}</Badge>
                       </div>
+                      {h.ticker && duplicateTickerSet.has(normalizeTicker(h.ticker)) && (
+                        <p className="text-xs text-amber-600 mt-1.5">Duplicate ticker — this appears more than once.</p>
+                      )}
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold text-slate-800">{fmt(h.marketValue)}</p>
@@ -748,6 +766,16 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ── Mixed currency note ── */}
+      {hasMixedCurrencies && holdings.length > 0 && (
+        <div className="mb-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
+          <p className="text-xs font-semibold text-blue-700 mb-1">Mixed currencies detected</p>
+          <p className="text-xs text-blue-600 leading-relaxed">
+            Your holdings include both CAD and USD values. Total portfolio value is shown as a simple sum without currency conversion, so the combined total may not reflect a single-currency equivalent.
+          </p>
         </div>
       )}
 
@@ -783,22 +811,21 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </div>
       )}
 
-      {/* ── View Report ── */}
-      {holdings.length > 0 && onViewReport && !showForm && !showCsvImport && (
-        <div className="flex justify-end mb-4">
-          <Button variant="secondary" size="sm" onClick={handleViewReport}>
-            View Report
-          </Button>
+      {/* ── Primary actions row ── */}
+      {holdings.length > 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
+        <div className="flex items-center justify-between mb-4">
+          <CoachBtn
+            label="✦ Explain my Portfolio X-Ray"
+            question="Explain my Portfolio X-Ray in plain English. Focus on total value, largest holdings, concentration, exposure, overlap notes, and what may be worth understanding."
+            onAskCoach={onAskCoach}
+            portfolioContext={portfolioContext}
+          />
+          {onViewReport && (
+            <Button variant="secondary" size="sm" onClick={handleViewReport}>
+              View Report
+            </Button>
+          )}
         </div>
-      )}
-
-      {holdings.length > 0 && (
-        <CoachBtn
-          label="✦ Explain my Portfolio X-Ray"
-          question="Explain my Portfolio X-Ray in plain English. Focus on total value, largest holdings, concentration, exposure, overlap notes, and what may be worth understanding."
-          onAskCoach={onAskCoach}
-          portfolioContext={portfolioContext}
-        />
       )}
 
       {/* ── Visual charts ── */}
@@ -858,7 +885,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {/* Enrichment loading state */}
           {enrichmentStatus === "loading" && (
             <div className="mb-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5">
-              <p className="text-xs text-slate-500">Checking metadata for unmapped holdings…</p>
+              <p className="text-xs text-slate-500">Looking up holdings data…</p>
             </div>
           )}
 
@@ -1031,7 +1058,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         </div>
       )}
 
-      <Disclaimer extended="Educational only. Not financial advice. Exposure estimates use simplified static mappings and may not reflect current holdings, fees, or fund composition." />
+      <Disclaimer extended="Educational only. Not financial advice. This analysis is based on the holdings you enter and simplified exposure mappings. It may not reflect current fund holdings, fees, market prices, currency conversion, taxes, or your full financial situation." />
     </PageLayout>
   );
 }
