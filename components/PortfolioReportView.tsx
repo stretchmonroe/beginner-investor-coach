@@ -129,7 +129,7 @@ interface Props {
 }
 
 export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPremiumTools }: Props) {
-  const { tier } = useSubscription();
+  const { tier, openCheckout } = useSubscription();
   const [pdfUpgradeOpen, setPdfUpgradeOpen] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const [pdfState, setPdfState] = useState<PdfState>("idle");
@@ -517,7 +517,8 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
         primaryLabel={UPGRADE_COPY.pdf.primaryCta}
         onPrimary={() => {
           trackEvent("upgrade_prompt_clicked", { feature: "pdf" });
-          onViewPremiumTools?.();
+          setPdfUpgradeOpen(false);
+          openCheckout();
         }}
         secondaryLabel="Not now"
         onSecondary={() => {}}

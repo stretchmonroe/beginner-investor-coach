@@ -5,9 +5,9 @@ import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
 import Disclaimer from "@/components/ui/Disclaimer";
 import SectionHeader from "@/components/ui/SectionHeader";
+import SubscriptionStatus from "@/components/SubscriptionStatus";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { trackEvent } from "@/lib/analytics";
 
@@ -17,17 +17,17 @@ interface Props {
 }
 
 const BENEFITS = [
-  "CSV portfolio import",
-  "Screenshot holdings extraction",
-  "Unlimited Portfolio Reports",
-  "PDF export from the report view",
-  "Portfolio comparison over time",
-  "Expanded AI explanations",
-  "Advanced overlap insights",
+  { label: "CSV portfolio import", detail: "Paste a spreadsheet export from your brokerage" },
+  { label: "Screenshot holdings extraction", detail: "Upload a screenshot and let AI read your positions" },
+  { label: "Unlimited Portfolio Reports", detail: "Save and revisit as many snapshots as you want" },
+  { label: "PDF export", detail: "Download any report as a clean PDF" },
+  { label: "Portfolio comparison over time", detail: "Compare two saved snapshots to see what changed" },
+  { label: "Expanded AI explanations", detail: "Deeper context when asking the AI Portfolio Coach" },
+  { label: "Advanced overlap insights", detail: "See which holdings duplicate each other across ETFs" },
 ] as const;
 
 export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
-  const { isPremium, setTier } = useSubscription();
+  const { isPremium, setTier, openCheckout, openPortal, loading } = useSubscription();
 
   useEffect(() => {
     trackEvent("premium_page_viewed");
@@ -38,7 +38,7 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
       <PageHeader
         eyebrow="Premium Portfolio Tools"
         title="Advanced Portfolio Insights"
-        description="Know what you own, what you’re exposed to, and what to consider next — without pretending to be a day trader. Premium adds deeper portfolio workflows when you’re ready."
+        description="Know what you own, what you're exposed to, and what to consider next — without pretending to be a day trader."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -46,11 +46,9 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
         }
       />
 
-      {isPremium && (
-        <div className="mb-4">
-          <Badge variant="info">Premium preview enabled on this device</Badge>
-        </div>
-      )}
+      <div className="mb-5">
+        <SubscriptionStatus showManage />
+      </div>
 
       <SectionHeader
         title="What Premium includes"
@@ -58,44 +56,87 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
       />
 
       <Card className="mb-6">
-        <ul className="space-y-3 text-sm text-slate-700">
-          {BENEFITS.map((line) => (
-            <li key={line} className="flex gap-2">
-              <span className="text-teal-600 font-semibold shrink-0">✓</span>
-              <span>{line}</span>
+        <ul className="space-y-3.5">
+          {BENEFITS.map(({ label, detail }) => (
+            <li key={label} className="flex gap-2.5">
+              <span className="text-teal-600 font-semibold shrink-0 mt-0.5">✓</span>
+              <div>
+                <p className="text-sm font-medium text-slate-800">{label}</p>
+                <p className="text-xs text-slate-500">{detail}</p>
+              </div>
             </li>
           ))}
         </ul>
       </Card>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-8">
-        <Button disabled className="opacity-80 cursor-not-allowed">
-          Coming soon
-        </Button>
+      {!isPremium ? (
+        <Card className="mb-6 border-teal-200 bg-teal-50">
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-sm font-semibold text-teal-800 mb-0.5">
+                Premium Portfolio Tools — CAD $12 / month
+              </p>
+              <p className="text-xs text-slate-600">
+                Cancel anytime. Billed monthly. Secure payment via Stripe.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={openCheckout}
+                disabled={loading}
+              >
+                {loading ? "Loading…" : "Upgrade to Premium"}
+              </Button>
+              <Button variant="secondary" onClick={onBack}>
+                Maybe later
+              </Button>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="mb-6 border-teal-200 bg-teal-50">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-teal-800">
+              You have Premium Portfolio Tools.
+            </p>
+            <p className="text-xs text-slate-600">
+              All features are unlocked on this device.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <Button onClick={openPortal} variant="secondary" size="sm" disabled={loading}>
+                {loading ? "Loading…" : "Manage billing"}
+              </Button>
+              {onContinue && (
+                <Button size="sm" onClick={onContinue}>
+                  Continue to Portfolio X-Ray
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <div className="mb-8">
         <Button variant="secondary" onClick={onBack}>
           Back to dashboard
         </Button>
       </div>
 
       <Card variant="muted" className="mb-6">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
-          Local preview (development)
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">
+          Local preview (development only)
         </p>
-        <p className="text-sm text-slate-600 mb-3">
-          Billing is not connected yet. You can toggle Premium on this browser only to test gates and
-          limits.
+        <p className="text-xs text-slate-500 mb-3">
+          Toggle tier for UI testing without going through Stripe.
         </p>
         <div className="flex flex-wrap gap-2">
           {!isPremium ? (
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => {
-                setTier("premium");
-                onContinue?.();
-              }}
+              onClick={() => { setTier("premium"); onContinue?.(); }}
             >
-              Enable Premium preview (this device)
+              Enable Premium (this device)
             </Button>
           ) : (
             <Button variant="secondary" size="sm" onClick={() => setTier("free")}>

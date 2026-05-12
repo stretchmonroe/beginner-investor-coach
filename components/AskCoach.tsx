@@ -245,7 +245,7 @@ export default function AskCoach({
   portfolioContext,
   onViewPremiumTools,
 }: Props) {
-  const { isPremium } = useSubscription();
+  const { isPremium, openCheckout } = useSubscription();
   const [aiLimitDialogOpen, setAiLimitDialogOpen] = useState(false);
   const [question, setQuestion] = useState(prefillQuestion ?? "");
   const [answer, setAnswer] = useState("");
@@ -533,7 +533,8 @@ export default function AskCoach({
         primaryLabel={UPGRADE_COPY.aiCoach.primaryCta}
         onPrimary={() => {
           trackEvent("upgrade_prompt_clicked", { feature: "ai_coach" });
-          onViewPremiumTools?.();
+          setAiLimitDialogOpen(false);
+          openCheckout();
         }}
         secondaryLabel="Not now"
         onSecondary={() => {}}

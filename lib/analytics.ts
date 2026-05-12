@@ -37,7 +37,14 @@ export type EventName =
   | "upgrade_prompt_viewed"
   | "upgrade_prompt_clicked"
   | "premium_page_viewed"
-  | "premium_feature_blocked";
+  | "premium_feature_blocked"
+  // Stripe / subscription
+  | "checkout_started"
+  | "checkout_completed"
+  | "checkout_failed"
+  | "subscription_activated"
+  | "subscription_cancelled"
+  | "customer_portal_opened";
 
 export type EventProperties = Record<string, string | number | boolean | null | undefined>;
 

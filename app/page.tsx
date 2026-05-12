@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import Landing from "@/components/Landing";
 import Onboarding from "@/components/Onboarding";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
@@ -95,8 +96,12 @@ export default function Home() {
   const [reportViewData, setReportViewData] = useState<PortfolioReportData | null>(null);
   const [reportViewOrigin, setReportViewOrigin] = useState<"portfolioxray" | "dashboard">("dashboard");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
-  // Initialise session ID, load watchlist, and check first-visit onboarding
+  const { refreshSubscription } = useSubscription();
+  const refreshCalledRef = useRef(false);
+
+  // Initialise session ID, load watchlist, check first-visit onboarding, and handle Stripe redirects
   useEffect(() => {
     const id = getOrCreateSessionId();
     setSessionId(id);
@@ -106,6 +111,20 @@ export default function Home() {
     if (!localStorage.getItem("bic_onboarding_done")) {
       setShowOnboarding(true);
     }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout_success") === "1") {
+      window.history.replaceState({}, "", "/");
+      setCheckoutSuccess(true);
+      setScreen("dashboard");
+      trackEvent("checkout_completed");
+      // Give the webhook a moment to land, then re-verify subscription status
+      if (!refreshCalledRef.current) {
+        refreshCalledRef.current = true;
+        setTimeout(() => refreshSubscription(), 2000);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleQuizComplete(a: QuizAnswers) {
@@ -229,6 +248,21 @@ export default function Home() {
           onSelect={handleProfileSelect}
           onBack={() => setScreen(profileSelectionOrigin)}
         />
+      )}
+      {screen === "dashboard" && checkoutSuccess && (
+        <div className="fixed top-0 inset-x-0 z-50 flex justify-center pt-4 px-4 pointer-events-none">
+          <div className="flex items-center gap-3 bg-teal-700 text-white text-sm px-4 py-3 rounded-xl shadow-lg pointer-events-auto max-w-sm w-full">
+            <span className="shrink-0">✓</span>
+            <span className="flex-1 font-medium">Premium Tools unlocked. Welcome aboard.</span>
+            <button
+              onClick={() => setCheckoutSuccess(false)}
+              className="shrink-0 text-teal-200 hover:text-white transition-colors"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
       {screen === "dashboard" && answers && (
         <InvestorDashboard

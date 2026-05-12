@@ -87,36 +87,36 @@ export const UPGRADE_COPY: Record<
   csv: {
     title: "Premium Portfolio Tools",
     body: "CSV upload is part of Premium Portfolio Tools. You can still add holdings manually and use the Portfolio X-Ray on the free tier.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   screenshot: {
     title: "Premium Portfolio Tools",
     body: "Screenshot import is available with Premium. You can still enter holdings manually or use a CSV on Premium.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   holdings: {
     title: "Free tier limit",
     body: "You’ve reached the free holdings limit for Portfolio X-Ray. Premium includes room for a larger portfolio list, or remove a holding to stay within the free tier.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   savedReports: {
     title: "Free tier limit",
     body: "You’ve reached the free saved report limit. Premium includes unlimited saved Portfolio Reports so you can track snapshots over time.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   aiCoach: {
     title: "Free tier limit",
     body: "You’ve reached today’s free AI Coach limit. Premium includes expanded AI explanations for your portfolio questions.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   pdf: {
     title: "Premium Portfolio Tools",
     body: "PDF export is available with Premium. You can still use Print / Save as PDF from your browser on the free tier.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
   reportComparison: {
     title: "Advanced Portfolio Insights",
     body: "Portfolio Report comparison is part of Premium Portfolio Tools. Save another snapshot when you’re ready, and compare changes over time with Premium.",
-    primaryCta: "View Premium tools",
+    primaryCta: "Upgrade to Premium",
   },
 };

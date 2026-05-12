@@ -284,7 +284,7 @@ interface Props {
 }
 
 export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools }: Props) {
-  const { tier, isPremium } = useSubscription();
+  const { tier, isPremium, openCheckout } = useSubscription();
   const [upgradeMoment, setUpgradeMoment] = useState<UpgradeMoment | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
   const [showForm, setShowForm] = useState(false);
@@ -1219,7 +1219,8 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         primaryLabel={upgradeMoment ? UPGRADE_COPY[upgradeMoment].primaryCta : "OK"}
         onPrimary={() => {
           trackEvent("upgrade_prompt_clicked", { feature: upgradeMoment ?? undefined });
-          onViewPremiumTools?.();
+          setUpgradeMoment(null);
+          openCheckout();
         }}
         secondaryLabel="Not now"
         onSecondary={() => {}}

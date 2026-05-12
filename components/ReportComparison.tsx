@@ -165,7 +165,7 @@ const selectClass =
   "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 
 export default function ReportComparison({ sessionId, onBack, onAskCoach, onViewPremium }: Props) {
-  const { tier } = useSubscription();
+  const { tier, openCheckout } = useSubscription();
   const [phase, setPhase] = useState<Phase>("loading");
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
   const [earlierId, setEarlierId] = useState<string>("");
@@ -210,7 +210,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
         <Card className="mb-6">
           <p className="text-sm text-slate-700 leading-relaxed mb-4">{copy.body}</p>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { trackEvent("upgrade_prompt_clicked", { feature: "report_comparison" }); onViewPremium?.(); }}>{copy.primaryCta}</Button>
+            <Button onClick={() => { trackEvent("upgrade_prompt_clicked", { feature: "report_comparison" }); openCheckout(); }}>{copy.primaryCta}</Button>
             <Button variant="secondary" onClick={onBack}>
               Back to dashboard
             </Button>
