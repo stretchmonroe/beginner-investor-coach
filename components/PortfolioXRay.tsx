@@ -1097,9 +1097,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <section>
             <button
               onClick={() => setShowDetailedAnalysis((s) => !s)}
-              className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer mb-4"
+              className="flex items-center gap-2 text-lg font-semibold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer mb-4"
             >
-              View detailed analysis <span className="text-xs">{showDetailedAnalysis ? "▲" : "▼"}</span>
+              View detailed analysis <span className="text-sm text-slate-400">{showDetailedAnalysis ? "▲" : "▼"}</span>
             </button>
             {showDetailedAnalysis && (
               <div className="space-y-6">
