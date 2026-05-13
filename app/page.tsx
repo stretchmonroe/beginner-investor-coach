@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/AuthModal";
 import Landing from "@/components/Landing";
 import Onboarding from "@/components/Onboarding";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
@@ -99,7 +101,9 @@ export default function Home() {
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
   const { refreshSubscription } = useSubscription();
+  const { user, signOut } = useAuth();
   const refreshCalledRef = useRef(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Initialise session ID, load watchlist, check first-visit onboarding, and handle Stripe redirects
   useEffect(() => {
@@ -299,6 +303,7 @@ export default function Home() {
           answers={answers}
           quizSkipped={quizSkipped}
           sessionId={sessionId}
+          user={user}
           onPortfolioXRay={() => { setXrayInitialHoldings([]); setScreen("portfolioxray"); }}
           onAssetClasses={() => { setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
           onSimulator={goToSimulator}
@@ -312,11 +317,14 @@ export default function Home() {
           onCompareReports={() => setScreen("reportcomparison")}
           onPremiumTools={() => setScreen("premiumtools")}
           onViewOnboarding={() => setShowOnboarding(true)}
+          onSignIn={() => setShowAuthModal(true)}
+          onSignOut={signOut}
         />
       )}
       {screen === "reportcomparison" && (
         <ReportComparison
           sessionId={sessionId}
+          userId={user?.id}
           onBack={() => setScreen("dashboard")}
           onAskCoach={goToCoach}
           onViewPremium={() => setScreen("premiumtools")}
@@ -342,6 +350,7 @@ export default function Home() {
           onBack={() => { setXrayInitialHoldings([]); setIsSamplePortfolio(false); setScreen("dashboard"); }}
           monthlyContribution={sharedPlanInputs.monthlyContribution}
           sessionId={sessionId}
+          userId={user?.id}
           initialHoldings={xrayInitialHoldings}
           isSample={isSamplePortfolio}
           onClearSample={() => { setXrayInitialHoldings([]); setIsSamplePortfolio(false); }}
@@ -349,6 +358,7 @@ export default function Home() {
           onViewReport={(data) => viewPortfolioReport(data, "portfolioxray")}
           onViewPremiumTools={() => setScreen("premiumtools")}
           onSamplePortfolio={handleSamplePortfolio}
+          onSignIn={() => setShowAuthModal(true)}
         />
       )}
       {screen === "portfolioreport" && reportViewData && (
@@ -416,6 +426,7 @@ export default function Home() {
           answers={answers}
           watchedTickers={watchedTickers}
           sessionId={sessionId}
+          userId={user?.id}
           onBack={() => setScreen("dashboard")}
           prefillQuestion={coachPrefillQuestion ?? undefined}
           portfolioContext={coachPortfolioContext ?? undefined}
@@ -491,6 +502,11 @@ export default function Home() {
           setScreen("portfolioxray");
         }}
         onSamplePortfolio={handleSamplePortfolio}
+      />
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        message="Save your portfolio and history across devices."
       />
 </>
   );

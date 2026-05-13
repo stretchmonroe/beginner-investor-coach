@@ -152,6 +152,7 @@ function HoldingChangeRow({ hc }: { hc: HoldingChange }) {
 
 interface Props {
   sessionId: string;
+  userId?: string;
   onBack: () => void;
   onAskCoach?: (question: string, context?: PortfolioContext) => void;
   onViewPremium?: () => void;
@@ -164,7 +165,7 @@ type Phase = "loading" | "empty" | "select" | "compare" | "error";
 const selectClass =
   "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 
-export default function ReportComparison({ sessionId, onBack, onAskCoach, onViewPremium }: Props) {
+export default function ReportComparison({ sessionId, userId, onBack, onAskCoach, onViewPremium }: Props) {
   const { tier, openCheckout } = useSubscription();
   const [phase, setPhase] = useState<Phase>("loading");
   const [reports, setReports] = useState<PortfolioReportRow[]>([]);
@@ -175,7 +176,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
 
   useEffect(() => {
     if (!sessionId) return;
-    getPortfolioReports(sessionId)
+    getPortfolioReports(sessionId, userId)
       .then((rows) => {
         if (rows.length < 2) {
           setPhase("empty");
@@ -191,7 +192,7 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
         }
       })
       .catch(() => setPhase("error"));
-  }, [sessionId]);
+  }, [sessionId, userId]);
 
   if (!canUseReportComparison(tier)) {
     const copy = UPGRADE_COPY.reportComparison;

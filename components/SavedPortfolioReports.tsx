@@ -60,6 +60,7 @@ function ProportionBar({ weight }: { weight: number }) {
 
 interface Props {
   sessionId: string;
+  userId?: string;
   onCountChange?: (count: number) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
   onViewReport?: (data: PortfolioReportData) => void;
@@ -70,6 +71,7 @@ interface Props {
 
 export default function SavedPortfolioReports({
   sessionId,
+  userId,
   onCountChange,
   onRestoreReport,
   onViewReport,
@@ -84,7 +86,7 @@ export default function SavedPortfolioReports({
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
-    getPortfolioReports(sessionId)
+    getPortfolioReports(sessionId, userId)
       .then((rows) => {
         setReports(rows);
         onCountChange?.(rows.length);
@@ -94,7 +96,7 @@ export default function SavedPortfolioReports({
         onCountChange?.(0);
       })
       .finally(() => setLoading(false));
-  }, [sessionId, onCountChange]);
+  }, [sessionId, userId, onCountChange]);
 
   async function handleDelete(id: string) {
     const prev = [...reports];

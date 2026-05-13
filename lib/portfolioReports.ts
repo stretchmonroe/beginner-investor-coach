@@ -36,6 +36,7 @@ export interface OverlapJson {
 export interface PortfolioReportRow {
   id: string;
   anonymous_session_id: string;
+  user_id?: string | null;
   report_name: string | null;
   total_value: number | null;
   currency: string | null;
@@ -75,18 +76,29 @@ export interface PortfolioReportData {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-export async function savePortfolioReport(report: PortfolioReportInsert): Promise<void> {
-  const { error } = await supabase.from("anonymous_portfolio_reports").insert(report);
+export async function savePortfolioReport(
+  report: PortfolioReportInsert,
+  userId?: string
+): Promise<void> {
+  const row = userId ? { ...report, user_id: userId } : report;
+  const { error } = await supabase.from("anonymous_portfolio_reports").insert(row);
   if (error) throw new Error(error.message);
 }
 
-export async function getPortfolioReports(sessionId: string): Promise<PortfolioReportRow[]> {
-  const { data, error } = await supabase
+export async function getPortfolioReports(
+  sessionId: string,
+  userId?: string
+): Promise<PortfolioReportRow[]> {
+  const query = supabase
     .from("anonymous_portfolio_reports")
     .select("*")
-    .eq("anonymous_session_id", sessionId)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(20);
+
+  const { data, error } = userId
+    ? await query.eq("user_id", userId)
+    : await query.eq("anonymous_session_id", sessionId);
+
   if (error) throw new Error(error.message);
   return (data ?? []) as PortfolioReportRow[];
 }

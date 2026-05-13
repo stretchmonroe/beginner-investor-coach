@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import type { QuizAnswers } from "./OnboardingQuiz";
 import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
@@ -43,6 +44,7 @@ interface Props {
   answers: QuizAnswers;
   quizSkipped: boolean;
   sessionId: string;
+  user?: User | null;
   onPortfolioXRay: () => void;
   onAssetClasses: () => void;
   onSimulator: () => void;
@@ -56,12 +58,15 @@ interface Props {
   onCompareReports?: () => void;
   onPremiumTools?: () => void;
   onViewOnboarding?: () => void;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
 }
 
 export default function InvestorDashboard({
   answers,
   quizSkipped,
   sessionId,
+  user,
   onPortfolioXRay,
   onAssetClasses,
   onSimulator,
@@ -75,6 +80,8 @@ export default function InvestorDashboard({
   onCompareReports,
   onPremiumTools,
   onViewOnboarding,
+  onSignIn,
+  onSignOut,
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
@@ -91,6 +98,9 @@ export default function InvestorDashboard({
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
     { label: "Replay introduction", action: () => onViewOnboarding?.() },
+    ...(user
+      ? [{ label: `Sign out (${user.email})`, action: () => onSignOut?.() }]
+      : [{ label: "Sign in to sync across devices", action: () => onSignIn?.() }]),
   ];
 
   return (
@@ -136,6 +146,24 @@ export default function InvestorDashboard({
           <Button variant="secondary" size="sm" onClick={onRetakeQuiz}>
             Change profile
           </Button>
+          {user ? (
+            <span className="text-xs text-slate-500">
+              Signed in as {user.email} ·{" "}
+              <button
+                onClick={onSignOut}
+                className="underline underline-offset-2 hover:text-slate-700 transition-colors cursor-pointer"
+              >
+                Sign out
+              </button>
+            </span>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="text-xs text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              Sign in to sync across devices
+            </button>
+          )}
         </div>
       </div>
 
@@ -184,6 +212,7 @@ export default function InvestorDashboard({
         <div className="mb-6 space-y-6">
           <SavedPortfolioReports
             sessionId={sessionId}
+            userId={user?.id}
             onCountChange={setSavedPortfolioReportCount}
             onRestoreReport={onRestoreReport}
             onViewReport={onViewReport}

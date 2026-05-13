@@ -350,6 +350,7 @@ interface Props {
   onBack: () => void;
   monthlyContribution?: number;
   sessionId: string;
+  userId?: string;
   initialHoldings?: Holding[];
   isSample?: boolean;
   onClearSample?: () => void;
@@ -357,9 +358,10 @@ interface Props {
   onViewReport?: (data: PortfolioReportData) => void;
   onViewPremiumTools?: () => void;
   onSamplePortfolio?: () => void;
+  onSignIn?: () => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools, onSamplePortfolio }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, userId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools, onSamplePortfolio, onSignIn }: Props) {
   const { tier, isPremium, openCheckout } = useSubscription();
   const [upgradeMoment, setUpgradeMoment] = useState<UpgradeMoment | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
@@ -631,7 +633,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
     if (!sessionId || holdings.length === 0) return;
     if (!isPremium) {
       try {
-        const rows = await getPortfolioReports(sessionId);
+        const rows = await getPortfolioReports(sessionId, userId);
         if (!canSaveAnotherReport(tier, rows.length)) {
           openPremiumNotice("savedReports");
           return;
@@ -659,7 +661,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
         },
         exposure_json: { sectorExposure, geographyExposure, currencyExposure },
         overlap_insights_json: { overlapInsights, themeInsights },
-      });
+      }, userId);
       setSaveState("saved");
       setReportNotes("");
       trackEvent("report_saved", { has_notes: reportNotes.trim().length > 0 });
@@ -1212,6 +1214,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                     <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
                   )}
                 </div>
+                {!userId && onSignIn && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    <button
+                      onClick={onSignIn}
+                      className="underline underline-offset-2 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      Sign in
+                    </button>{" "}
+                    to save across devices.
+                  </p>
+                )}
               </div>
             </Card>
           </section>

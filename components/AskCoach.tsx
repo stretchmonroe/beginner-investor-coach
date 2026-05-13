@@ -230,6 +230,7 @@ interface Props {
   answers: QuizAnswers | null;
   watchedTickers: Set<string>;
   sessionId: string;
+  userId?: string;
   onBack: () => void;
   prefillQuestion?: string;
   portfolioContext?: PortfolioContext;
@@ -240,6 +241,7 @@ export default function AskCoach({
   answers,
   watchedTickers,
   sessionId,
+  userId,
   onBack,
   prefillQuestion,
   portfolioContext,
@@ -282,7 +284,7 @@ export default function AskCoach({
 
   async function loadHistory() {
     if (!sessionId) return;
-    const items = await getCoachConversations(sessionId);
+    const items = await getCoachConversations(sessionId, userId);
     setHistory(items);
     setHistoryLoaded(true);
   }
@@ -346,7 +348,7 @@ export default function AskCoach({
         setTimeout(() => {
           answerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 50);
-        saveCoachConversation(sessionId, q, data.answer, profile)
+        saveCoachConversation(sessionId, q, data.answer, profile, userId)
           .then(() => loadHistory())
           .catch(() => setSaveError(true));
       }
