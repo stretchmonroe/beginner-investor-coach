@@ -103,7 +103,7 @@ export default function InvestorDashboard({
     { label: "Watchlist", action: onWatchlist },
     { label: "Coach History", action: () => onAskCoach() },
     { label: "Change Profile", action: onChangeProfile },
-    { label: "Retake Quiz", action: onRetakeQuiz },
+    { label: "Change profile", action: onRetakeQuiz },
     { label: "Compare Reports", action: () => onCompareReports?.() },
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
@@ -157,7 +157,7 @@ export default function InvestorDashboard({
             onClick={onRetakeQuiz}
             className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
           >
-            Retake quiz →
+            Change profile →
           </button>
         </div>
       </div>

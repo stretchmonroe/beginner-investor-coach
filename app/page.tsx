@@ -173,7 +173,7 @@ export default function Home() {
       localStorage.setItem("bic_quiz_answers", JSON.stringify(synthetic));
       localStorage.setItem("bic_quiz_skipped", "true");
     } catch { /* ignore */ }
-    setScreen("dashboard");
+    setScreen(profileSelectionOrigin === "landing" ? "portfolioxray" : "dashboard");
     supabase.from("quiz_results").insert({
       session_id: sessionId,
       profile,
@@ -268,8 +268,7 @@ export default function Home() {
     <>
       {screen === "landing" && (
         <Landing
-          onStart={() => { setQuizSkipped(false); setScreen("quiz"); }}
-          onSkipQuiz={() => { setProfileSelectionOrigin("landing"); setScreen("profileselection"); }}
+          onSelectProfile={(profile) => { setProfileSelectionOrigin("landing"); handleProfileSelect(profile); }}
           onSamplePortfolio={handleSamplePortfolio}
         />
       )}
@@ -315,7 +314,7 @@ export default function Home() {
           onWatchlist={() => setScreen("watchlist")}
           onCompare={() => setScreen("compare")}
           onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
-          onRetakeQuiz={() => setScreen("landing")}
+          onRetakeQuiz={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRestorePlan={updateSharedPlan}
           onRestoreReport={restorePortfolioReport}
           onViewReport={(data) => viewPortfolioReport(data, "dashboard")}

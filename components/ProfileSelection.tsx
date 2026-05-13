@@ -80,16 +80,8 @@ export default function ProfileSelection({ onSelect, onBack }: Props) {
           ))}
         </div>
 
-        {/* Nudge toward quiz */}
-        <p className="text-xs text-slate-400 text-center leading-relaxed">
-          Not sure which fits you?{" "}
-          <button
-            onClick={onBack}
-            className="underline text-slate-500 hover:text-slate-700 cursor-pointer"
-          >
-            Take the beginner quiz
-          </button>{" "}
-          — it only takes a minute.
+        <p className="text-xs text-slate-400 text-center">
+          You can change this at any time from the dashboard.
         </p>
       </div>
     </main>
