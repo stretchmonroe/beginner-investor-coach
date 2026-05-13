@@ -316,6 +316,27 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 19 — Onboarding Simplification
+
+**`5eefb06` Replace beginner quiz with inline profile picker**
+- Landing page now shows 3 profile cards inline (Conservative / Balanced / Growth Beginner) — one tap goes straight to Portfolio X-Ray
+- Quiz screen removed from main onboarding path (still accessible as a screen)
+- `ProfileSelection` screen kept for "Change profile" flow from dashboard
+- "Retake quiz" label renamed to "Change profile" throughout
+- After profile pick from landing → navigates to `portfolioxray` (not `dashboard`)
+
+**`ddca917` Move sample portfolio CTA to Portfolio X-Ray empty state**
+- "Try sample portfolio" removed from landing page
+- Now appears as a quiet text link in the X-Ray empty state card
+- Landing page simplified to just: headline + 3 profile cards + trust note + how it works
+
+**`b5f874c` Remove off-direction tools from More tools menu**
+- Removed: Goal Feasibility, ETF Explorer, Compare ETFs, Watchlist, Sample Learning Allocation (duplicate of primary card), duplicate Change Profile entry
+- More tools trimmed from 14 → 8 items
+- Removed `onExploreETFs`, `onGoalPlanner`, `onWatchlist`, `onCompare` props from `InvestorDashboard`
+
+---
+
 ### Phase 18 — Beta Launch
 
 **`d0bcacb` Add beta mode flag**
