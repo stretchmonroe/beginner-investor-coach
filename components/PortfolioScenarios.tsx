@@ -251,11 +251,11 @@ function EvidencePanel({ items }: { items: { label: string; value: string }[] })
 
 function WhatThisMeans({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-4 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3">
-      <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-1.5">
+    <div className="mt-4 border-l-2 border-slate-200 pl-4">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
         What this means
       </p>
-      <p className="text-sm text-blue-900 leading-relaxed">{children}</p>
+      <p className="text-sm text-slate-600 leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -409,7 +409,7 @@ export default function PortfolioScenarios({
   return (
     <>
       <section>
-        <h2 className="text-lg font-semibold text-slate-900 mb-1">Explore scenarios</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-1">Explore scenarios</h2>
         <p className="text-sm text-slate-500 mb-4">
           What-if tools to explore how contributions or market moves might affect your portfolio.
         </p>
@@ -418,7 +418,7 @@ export default function PortfolioScenarios({
             <button
               key={tile.id}
               onClick={() => setActiveScenario(tile.id)}
-              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+              className="flex flex-col gap-2 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <span className="text-xl">{tile.icon}</span>
               <p className="text-sm font-semibold text-slate-800 leading-snug">{tile.title}</p>

@@ -91,9 +91,9 @@ export default function OnboardingQuiz({ onComplete }: Props) {
           </div>
         </div>
 
-        {/* Question card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-6">
-          <h2 className="text-xl font-semibold text-slate-900 leading-snug">
+        {/* Question */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold tracking-tight text-slate-900 leading-snug">
             {question.text}
           </h2>
 

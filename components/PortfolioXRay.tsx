@@ -927,7 +927,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {keyInsights.length > 0 && (
             <section>
               <div className="flex items-baseline justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">What stands out</h2>
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">What stands out</h2>
                 {onAskCoach && portfolioContext && (
                   <button
                     onClick={() => onAskCoach(
@@ -950,7 +950,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
           {/* 2. Portfolio snapshot */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-5">Portfolio snapshot</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-5">Portfolio snapshot</h2>
             <div className="grid grid-cols-2 gap-x-8 gap-y-5">
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">Total value</p>
@@ -988,7 +988,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {(assetMix.length > 0 || sectorExposure.length > 0) && (
             <section>
               <div className="flex items-baseline justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">Exposure</h2>
+                <h2 className="text-lg font-semibold tracking-tight text-slate-900">Exposure</h2>
                 {enrichmentStatus === "loading" && (
                   <span className="text-xs text-slate-400">Looking up holdings…</span>
                 )}
@@ -1061,7 +1061,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {!showForm && !showCsvImport && !showScreenshotUpload && (
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">Holdings</h2>
+                <h2 className="text-lg font-semibold tracking-tight text-slate-900">Holdings</h2>
                 <div className="flex items-center gap-1.5">
                   <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add</Button>
                   <Button variant="ghost" size="sm" onClick={tryOpenCsv}>CSV</Button>
@@ -1095,7 +1095,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <section>
             <button
               onClick={() => setShowDetailedAnalysis((s) => !s)}
-              className="flex items-center gap-2 text-lg font-semibold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer mb-6"
+              className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 hover:text-slate-600 transition-colors cursor-pointer mb-6"
             >
               View detailed analysis <span className="text-sm text-slate-400">{showDetailedAnalysis ? "▲" : "▼"}</span>
             </button>
@@ -1166,7 +1166,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {/* 6. Save snapshot */}
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-slate-900">Save snapshot</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Save snapshot</h2>
               {onViewReport && (
                 <Button variant="secondary" size="sm" onClick={handleViewReport}>
                   View Report

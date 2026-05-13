@@ -146,16 +146,16 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
                   {plan.investor_profile ?? "Balanced Beginner"}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex items-center gap-4 shrink-0">
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : plan.id)}
-                  className="text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
                 >
-                  {isExpanded ? "Close" : "View details"}
+                  {isExpanded ? "Close" : "View"}
                 </button>
                 <button
                   onClick={() => handleDelete(plan.id)}
-                  className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                 >
                   Delete
                 </button>
@@ -371,7 +371,7 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
                       onRestorePlan(buildSharedInputs(plan));
                       setExpandedId(null);
                     }}
-                    className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
                   >
                     Use these values in planning tools →
                   </button>
@@ -382,9 +382,9 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
                       onAskCoach(buildCoachQuestion(plan));
                       setExpandedId(null);
                     }}
-                    className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    🪔 Ask Lantern to explain this
+                    <span>🪔</span> Ask Lantern about this →
                   </button>
                 )}
               </div>

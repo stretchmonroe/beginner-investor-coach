@@ -132,7 +132,7 @@ export default function InvestorDashboard({
       </div>
 
       {/* Primary navigation grid */}
-      <div className="grid grid-cols-2 gap-2 mb-8">
+      <div className="grid grid-cols-2 gap-3 mb-8">
         <button
           onClick={onPortfolioXRay}
           className="flex flex-col gap-2.5 rounded-2xl p-5 text-left hover:bg-slate-50 transition-colors cursor-pointer"

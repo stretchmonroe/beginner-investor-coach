@@ -12,7 +12,6 @@ import {
 } from "@/lib/coachHistory";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
-import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Disclaimer from "@/components/ui/Disclaimer";
 import Dialog from "@/components/ui/Dialog";
@@ -564,18 +563,18 @@ export default function AskCoach({
           {history.length === 0 ? (
             <p className="text-sm text-slate-400">Your recent coach questions will appear here.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-slate-100">
               {history.map((item) => (
-                <Card key={item.id} padding="sm">
-                  <p className="text-sm font-medium text-slate-800">{item.question}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed mt-1">
+                <div key={item.id} className="py-4">
+                  <p className="text-sm font-medium text-slate-800 mb-1">{item.question}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     {item.answer.replace(/\*\*/g, "").slice(0, 120)}…
                   </p>
-                  <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center justify-between mt-2.5">
                     <span className="text-xs text-slate-400">
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
-                    <div className="flex gap-3">
+                    <div className="flex gap-4">
                       <button
                         onClick={() => handleViewHistory(item)}
                         className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
@@ -593,7 +592,7 @@ export default function AskCoach({
                   {deleteErrorId === item.id && (
                     <p className="text-xs text-red-500 mt-1">Could not delete. Try again.</p>
                   )}
-                </Card>
+                </div>
               ))}
             </div>
           )}

@@ -85,7 +85,7 @@ export default function NavDrawer({ open, onClose, user, onSignIn, onSignOut, to
               <button
                 key={tool.label}
                 onClick={() => { tool.action(); onClose(); }}
-                className="flex items-center justify-between w-full py-2.5 text-sm text-slate-700 hover:text-blue-600 transition-colors cursor-pointer text-left"
+                className="flex items-center justify-between w-full py-3 text-sm text-slate-700 hover:text-blue-600 transition-colors cursor-pointer text-left"
               >
                 <span>{tool.label}</span>
                 <span className="text-slate-300 text-xs">→</span>

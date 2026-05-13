@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Button from "@/components/ui/Button";
 
 type ModalState = "idle" | "sending" | "sent" | "error";
 
@@ -73,9 +74,9 @@ export default function AuthModal({ open, onClose, message }: Props) {
         </div>
 
         {state === "sent" ? (
-          <div className="rounded-xl bg-teal-50 border border-teal-200 px-4 py-3">
-            <p className="text-sm font-medium text-teal-800">Check your email</p>
-            <p className="text-xs text-teal-700 mt-0.5">
+          <div className="py-2">
+            <p className="text-sm font-medium text-slate-800">Check your email</p>
+            <p className="text-sm text-slate-500 mt-1 leading-relaxed">
               Click the link in your inbox to sign in. You can close this.
             </p>
           </div>
@@ -104,13 +105,9 @@ export default function AuthModal({ open, onClose, message }: Props) {
                 {errorText || "Something went wrong. Please try again."}
               </p>
             )}
-            <button
-              type="submit"
-              disabled={state === "sending" || !email.trim()}
-              className="w-full text-sm font-semibold bg-slate-900 text-white rounded-xl px-4 py-2.5 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
+            <Button type="submit" disabled={state === "sending" || !email.trim()} fullWidth>
               {state === "sending" ? "Sending…" : "Send sign-in link"}
-            </button>
+            </Button>
           </form>
         )}
 

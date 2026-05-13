@@ -155,7 +155,7 @@ export default function SavedPortfolioReports({
                   {report.report_name ?? "Portfolio X-Ray"}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex items-center gap-4 shrink-0">
                 <button
                   onClick={() => {
                     if (onViewReport) {
@@ -165,21 +165,21 @@ export default function SavedPortfolioReports({
                       setExpandedId(isExpanded ? null : report.id);
                     }
                   }}
-                  className="text-xs font-medium text-blue-600 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
                 >
                   {onViewReport ? "View" : isExpanded ? "Close" : "View"}
                 </button>
                 {confirmDeleteId === report.id ? (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleDelete(report.id)}
-                      className="text-xs font-medium text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                      className="text-xs font-medium text-red-600 hover:text-red-800 transition-colors cursor-pointer"
                     >
                       Delete
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
-                      className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors"
+                      className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -187,7 +187,7 @@ export default function SavedPortfolioReports({
                 ) : (
                   <button
                     onClick={() => setConfirmDeleteId(report.id)}
-                    className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                   >
                     Delete
                   </button>
@@ -463,9 +463,9 @@ export default function SavedPortfolioReports({
                       };
                       onAskCoach("Explain this saved Portfolio snapshot in plain English. Summarize the holdings, concentration, exposure, overlap, and what may be worth understanding. Keep it educational only.", ctx);
                     }}
-                    className="w-full text-sm font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center gap-1.5"
                   >
-                    ✦ Explain this snapshot
+                    <span>🪔</span> Ask Lantern about this snapshot →
                   </button>
                 )}
 
@@ -475,9 +475,9 @@ export default function SavedPortfolioReports({
                       onRestoreReport(holdings);
                       setExpandedId(null);
                     }}
-                    className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors cursor-pointer"
                   >
-                    Re-open holdings in Portfolio X-Ray →
+                    Re-open in Portfolio X-Ray →
                   </button>
                 )}
               </div>
