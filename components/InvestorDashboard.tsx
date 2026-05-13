@@ -12,7 +12,6 @@ import type { Holding, PortfolioContext } from "@/types/portfolio";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
-import Button from "@/components/ui/Button";
 import Disclaimer from "@/components/ui/Disclaimer";
 
 const profileMeta: Record<
@@ -115,31 +114,28 @@ export default function InvestorDashboard({
         </div>
       )}
 
-      {/* Profile card */}
-      <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-5 mb-6`}>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${meta.badgeColor}`}>
-            <span>{meta.badge}</span>
-            <span>{profileLabel}</span>
-          </span>
-          {quizSkipped && (
-            <span className="text-xs text-slate-400 font-normal px-2 py-1 rounded-full bg-white/60 border border-slate-200">
-              Profile selected manually
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" size="sm" onClick={onRetakeQuiz}>
-            Change profile
-          </Button>
-        </div>
+      {/* Profile strip */}
+      <div className="flex flex-wrap items-center gap-3 mb-8 pb-5 border-b border-slate-100">
+        <span className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1 rounded-full ${meta.badgeColor}`}>
+          <span>{meta.badge}</span>
+          <span>{profileLabel}</span>
+        </span>
+        {quizSkipped && (
+          <span className="text-xs text-slate-400">Profile selected</span>
+        )}
+        <button
+          onClick={onRetakeQuiz}
+          className="ml-auto text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+        >
+          Change →
+        </button>
       </div>
 
       {/* Primary navigation grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <button
           onClick={onPortfolioXRay}
-          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
           <span className="text-xl">🔍</span>
           <span className="text-sm font-semibold text-slate-800">Portfolio X-Ray</span>
@@ -147,7 +143,7 @@ export default function InvestorDashboard({
         </button>
         <button
           onClick={() => onAskCoach()}
-          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
           <span className="text-xl">🪔</span>
           <span className="text-sm font-semibold text-slate-800">Ask Lantern</span>
@@ -155,7 +151,7 @@ export default function InvestorDashboard({
         </button>
         <button
           onClick={onSimulator}
-          className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
           <span className="text-xl">📊</span>
           <span className="text-sm font-semibold text-slate-800">Contribution Scenarios</span>
@@ -163,7 +159,7 @@ export default function InvestorDashboard({
         </button>
         <button
           onClick={() => setShowSavedReports((s) => !s)}
-          className={`flex flex-col gap-1.5 border rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer ${showSavedReports ? "bg-slate-50 border-slate-300" : "bg-white border-slate-200"}`}
+          className={`flex flex-col gap-1.5 rounded-2xl p-4 text-left transition-colors cursor-pointer ${showSavedReports ? "bg-slate-100" : "hover:bg-slate-50"}`}
         >
           <span className="text-xl">📋</span>
           <span className="text-sm font-semibold text-slate-800">Saved Reports</span>

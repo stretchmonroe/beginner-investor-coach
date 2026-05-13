@@ -410,12 +410,9 @@ export default function AskCoach({
 
       {/* No portfolio context nudge */}
       {!hasPortfolioContext && (
-        <div className="mb-5 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
-          <p className="text-xs text-slate-500 leading-relaxed">
-            <span className="font-semibold text-slate-600">Add your holdings in Portfolio X-Ray</span>{" "}
-            for portfolio-aware answers. Lantern can still help with any investing concept — no holdings needed to get started.
-          </p>
-        </div>
+        <p className="text-xs text-slate-400 mb-5 leading-relaxed">
+          Add holdings in Portfolio X-Ray for portfolio-aware answers — or ask any investing concept below.
+        </p>
       )}
 
       {/* Suggested prompts */}
@@ -499,21 +496,19 @@ export default function AskCoach({
 
       {/* Answer */}
       {(answer || loading) && (
-        <div ref={answerRef} className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3 bg-blue-100 border-b border-blue-200">
-            <span className="text-blue-600 text-sm">🪔</span>
-            <span className="text-xs font-semibold text-blue-700 uppercase tracking-widest">
-              Lantern
-            </span>
+        <div ref={answerRef} className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm">🪔</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Lantern</span>
             {hasPortfolioContext && !loading && (
-              <span className="ml-auto text-xs text-blue-500 font-medium">Portfolio-aware</span>
+              <span className="ml-auto text-xs text-slate-400">Portfolio-aware</span>
             )}
           </div>
-          <div className="px-5 py-4">
+          <div className="bg-slate-50 rounded-2xl px-5 py-4">
             {loading ? (
-              <div className="flex items-center gap-3 py-2">
-                <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-                <span className="text-sm text-blue-700">{LOADING_PHASES[loadingPhase]}</span>
+              <div className="flex items-center gap-3 py-1">
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-400 border-t-transparent animate-spin" />
+                <span className="text-sm text-slate-500">{LOADING_PHASES[loadingPhase]}</span>
               </div>
             ) : (
               <>

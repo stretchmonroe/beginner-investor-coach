@@ -150,14 +150,14 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
           <p className="text-center text-slate-500 text-sm mb-8">
             Here&apos;s the kind of thing Lantern surfaces about a typical beginner portfolio.
           </p>
-          <div className="space-y-3">
+          <div>
             {PREVIEW_INSIGHTS.map((insight, i) => (
               <div
                 key={i}
-                className="flex gap-3 items-start bg-white border border-slate-100 rounded-2xl px-5 py-4 shadow-sm"
+                className="flex gap-3 items-start py-4 border-b border-slate-100 last:border-0"
               >
-                <span className="text-amber-400 text-base mt-0.5 shrink-0">🪔</span>
-                <p className="text-sm text-slate-700 leading-relaxed">{insight}</p>
+                <span className="text-amber-400 text-sm mt-0.5 shrink-0">🪔</span>
+                <p className="text-sm text-slate-600 leading-relaxed">{insight}</p>
               </div>
             ))}
           </div>

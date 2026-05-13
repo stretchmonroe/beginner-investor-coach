@@ -171,27 +171,27 @@ const SEVERITY_LABEL: Record<string, string> = {
 };
 
 function InsightCard({ insight }: { insight: PortfolioInsight }) {
+  const dot =
+    insight.severity === "warning" ? "bg-rose-400"
+    : insight.severity === "caution" ? "bg-amber-400"
+    : "bg-slate-300";
   return (
-    <Card>
-      <div className="mb-2">
-        <Badge variant={SEVERITY_BADGE[insight.severity]}>
-          {SEVERITY_LABEL[insight.severity]}
-        </Badge>
+    <div className="flex items-start gap-3 py-4 border-b border-slate-100 last:border-0">
+      <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${dot}`} />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
+        <p className="text-sm text-slate-500 leading-relaxed">{insight.description}</p>
+        {insight.evidence.length > 0 && (
+          <div className="mt-2 space-y-0.5">
+            {insight.evidence.map((ev, i) => (
+              <p key={i} className="text-xs text-slate-400">
+                <span className="font-medium">{ev.label}:</span> {ev.value}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
-      <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
-      <p className="text-sm text-slate-600 leading-relaxed mb-4">{insight.description}</p>
-      <div className="border-t border-slate-100 pt-3">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Evidence</p>
-        <div className="space-y-1.5">
-          {insight.evidence.map((ev, i) => (
-            <div key={i} className="flex items-baseline gap-2 text-xs">
-              <span className="font-semibold text-slate-500 shrink-0">{ev.label}:</span>
-              <span className="text-slate-600">{ev.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Card>
+    </div>
   );
 }
 
@@ -224,7 +224,7 @@ interface HoldingRowProps {
 function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: HoldingRowProps) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="rounded-xl border border-slate-100 bg-white px-4 py-3">
+    <div className="py-3">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
@@ -940,38 +940,38 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   </button>
                 )}
               </div>
-              <Card>
+              <div>
                 {keyInsights.map((insight) => (
                   <KeyInsightCard key={insight.id} insight={insight} />
                 ))}
-              </Card>
+              </div>
             </section>
           )}
 
           {/* 2. Portfolio snapshot */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Portfolio snapshot</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <Card variant="muted" padding="sm">
-                <p className="text-xs text-slate-400 mb-1">Total value</p>
+            <h2 className="text-lg font-semibold text-slate-900 mb-5">Portfolio snapshot</h2>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Total value</p>
                 <p className="text-xl font-bold text-slate-800">{fmt(totalValue)}</p>
-                {hasMixedCurrencies && <p className="text-xs text-slate-400 mt-1">CAD + USD, not converted</p>}
-              </Card>
-              <Card variant="muted" padding="sm">
-                <p className="text-xs text-slate-400 mb-1">Holdings</p>
+                {hasMixedCurrencies && <p className="text-xs text-slate-400 mt-0.5">CAD + USD</p>}
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Holdings</p>
                 <p className="text-xl font-bold text-slate-800">{holdings.length}</p>
-              </Card>
-              <Card variant="muted" padding="sm">
-                <p className="text-xs text-slate-400 mb-1">Largest holding</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Largest holding</p>
                 <p className="text-sm font-bold text-slate-800 truncate">
                   {sortedByValue[0].ticker || sortedByValue[0].name}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {pct((sortedByValue[0].marketValue / totalValue) * 100)} of portfolio
                 </p>
-              </Card>
-              <Card variant="muted" padding="sm">
-                <p className="text-xs text-slate-400 mb-1">Top sector</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Top sector</p>
                 {topSector ? (
                   <>
                     <p className="text-sm font-bold text-slate-800 truncate">{topSector.label}</p>
@@ -980,7 +980,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                 ) : (
                   <p className="text-sm text-slate-400">—</p>
                 )}
-              </Card>
+              </div>
             </div>
           </section>
 
@@ -993,9 +993,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   <span className="text-xs text-slate-400">Looking up holdings…</span>
                 )}
               </div>
-              <Card>
+              <div className="space-y-6">
                 {assetMix.length > 0 && (
-                  <div className={sectorExposure.length > 0 ? "mb-6" : ""}>
+                  <div>
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Asset mix</p>
                     <ExposureRows items={assetMix.map((i) => ({ label: i.assetType, value: i.value, weight: i.weight }))} />
                   </div>
@@ -1007,7 +1007,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   </div>
                 )}
                 {(geographyExposure.length > 0 || currencyExposure.length > 0) && (
-                  <div className="mt-5 pt-5 border-t border-slate-100">
+                  <div className="pt-2">
                     <button
                       onClick={() => setShowFullExposure((s) => !s)}
                       className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
@@ -1030,21 +1030,17 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                           </div>
                         )}
                         {enrichmentStatus === "done" && hasUnmapped && (
-                          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-                            <p className="text-xs font-semibold text-amber-700 mb-1">
-                              {unknownHoldings.length} holding{unknownHoldings.length === 1 ? "" : "s"} not fully mapped
-                            </p>
-                            <p className="text-xs text-amber-600">
-                              {unknownHoldings.map((h) => h.ticker || h.name).filter(Boolean).join(", ")} — included in total but may not appear in exposure estimates.
-                            </p>
-                          </div>
+                          <p className="text-xs text-amber-600">
+                            {unknownHoldings.length} holding{unknownHoldings.length === 1 ? "" : "s"} not fully mapped
+                            {" "}({unknownHoldings.map((h) => h.ticker || h.name).filter(Boolean).join(", ")}).
+                          </p>
                         )}
                       </div>
                     )}
                   </div>
                 )}
-                <p className="text-xs text-slate-400 mt-5 pt-5 border-t border-slate-100">{METADATA_DISCLAIMER}</p>
-              </Card>
+                <p className="text-xs text-slate-400 pt-2">{METADATA_DISCLAIMER}</p>
+              </div>
               {onAskCoach && portfolioContext && (
                 <div className="mt-3">
                   <button
@@ -1072,7 +1068,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   <Button variant="ghost" size="sm" onClick={tryOpenScreenshot}>Screenshot</Button>
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="divide-y divide-slate-100">
                 {(showAllHoldings ? sortedByValue : sortedByValue.slice(0, 4)).map((h) => (
                   <HoldingRow
                     key={h.id}
@@ -1145,17 +1141,19 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                   </div>
                 )}
                 {!showAdvancedOverlap && (overlapInsights.length > 1 || themeInsights.length > 0) && (
-                  <Card variant="muted">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">More depth available</p>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-3">
-                      Additional overlap patterns and theme insights are available with Premium Portfolio Tools.
+                  <div className="py-3">
+                    <p className="text-sm text-slate-500 mb-1.5">
+                      Additional overlap and theme insights available with Premium Portfolio Tools.
                     </p>
                     {onViewPremiumTools && (
-                      <Button variant="secondary" size="sm" onClick={onViewPremiumTools}>
-                        Learn about Premium Portfolio Tools
-                      </Button>
+                      <button
+                        onClick={onViewPremiumTools}
+                        className="text-xs font-medium text-slate-500 hover:text-slate-700 underline underline-offset-2 transition-colors cursor-pointer"
+                      >
+                        Learn about Premium →
+                      </button>
                     )}
-                  </Card>
+                  </div>
                 )}
                 <p className="text-xs text-slate-400">
                   {mappedCount} of {holdings.length} holdings mapped
@@ -1175,8 +1173,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                 </Button>
               )}
             </div>
-            <Card padding="sm">
-              <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
                 <div>
                   <label className={labelClass}>
                     Snapshot name <span className="font-normal text-slate-400">(optional)</span>
@@ -1225,32 +1222,27 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                     to save across devices.
                   </p>
                 )}
-              </div>
-            </Card>
+            </div>
           </section>
 
           {/* 7. Ask Lantern */}
           {onAskCoach && portfolioContext && (
-            <section>
-              <Card variant="highlighted">
-                <div className="flex items-start gap-3">
-                  <span className="text-xl shrink-0 mt-0.5">🪔</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-blue-900 mb-1">Ask Lantern</p>
-                    <p className="text-sm text-blue-700 mb-4 leading-relaxed">
-                      Get a plain-English walkthrough of your portfolio — what stands out, what overlaps, and what to think about.
-                    </p>
-                    <Button
-                      onClick={() => onAskCoach(
-                        "Explain my Portfolio X-Ray in plain English. Focus on concentration, exposure, overlap, and what may be worth understanding for a beginner investor.",
-                        portfolioContext
-                      )}
-                    >
-                      Explain my portfolio
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+            <section className="flex items-start gap-3 pt-2">
+              <span className="text-lg shrink-0 mt-0.5">🪔</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-1">Ask Lantern</p>
+                <p className="text-sm text-slate-500 mb-3 leading-relaxed">
+                  Get a plain-English walkthrough — what stands out, what overlaps, what to think about.
+                </p>
+                <Button
+                  onClick={() => onAskCoach(
+                    "Explain my Portfolio X-Ray in plain English. Focus on concentration, exposure, overlap, and what may be worth understanding for a beginner investor.",
+                    portfolioContext
+                  )}
+                >
+                  Explain my portfolio
+                </Button>
+              </div>
             </section>
           )}
 
