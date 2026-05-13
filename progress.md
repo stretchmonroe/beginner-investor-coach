@@ -351,6 +351,66 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 20 — UI Polish
+
+**Typography, spacing, layout rhythm, interaction consistency, and visual hierarchy pass**
+
+*Typography & spacing:*
+- `InsightCard` / `KeyInsightCard`: `py-4` → `py-5`
+- `HoldingRow`: `py-3` → `py-4`
+- Analysis wrapper: `space-y-10` → `space-y-14`; all section heading `mb-4` → `mb-6` with `tracking-tight`
+- How-it-works steps: `space-y-8` → `space-y-10`
+
+*UI consistency:*
+- `AskCoach` history: replaced `Card` wrappers with `divide-y divide-slate-100` clean list
+- `SavedPortfolioReports` / `SavedReadinessPlans` / `SavedLearningPlans`: all action buttons (View / Delete / Confirm) converted from bordered pill buttons to plain text links
+- `AuthModal` submit: raw `<button>` → `Button` component
+- `OnboardingQuiz`: removed outer card wrapper; progress bar `bg-emerald-500` → `bg-amber-400`; selected state uses `border-slate-900 bg-slate-50` (no colour)
+- `EmptyState`: removed `rounded-2xl bg-slate-50 border` wrapper — now plain `py-12`
+- `PortfolioScenarios` tiles: removed `border border-slate-200 bg-white hover:shadow-sm` — borderless with `hover:bg-slate-50`
+- `WhatThisMeans`: boxed `bg-blue-50` callout → `border-l-2 border-slate-200 pl-4` left-rule
+- `AuthModal` success state: teal bordered box → plain text
+- Removed `shadow-sm` from `AssetClassExplorer`, `ETFExplorer`, `Watchlist`, `CompareETFs` card containers
+
+*Layout rhythm:*
+- `PortfolioXRay`, `InvestorDashboard`, `PortfolioReportView`: `maxWidth="lg"` → `maxWidth="xl"` (1024px → 1280px)
+- `AskCoach`: `maxWidth="sm"` → `maxWidth="md"`
+- Dashboard nav grid + Portfolio snapshot stats: `grid-cols-2` → `sm:grid-cols-4`
+- Save Snapshot + Ask Lantern merged into side-by-side `sm:grid-cols-[3fr_2fr]` section in Portfolio X-Ray
+
+*Button & CTA consistency:*
+- `Button` component: added `focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1` on all variants
+- `Landing.tsx`: Growth Beginner `emerald` → `teal`; profile card `hover:shadow-sm` removed
+- `ProfileSelection`: `transition-all hover:shadow-sm` → `transition-colors`
+- `NavDrawer`: tool items `py-2.5` → `py-3`; sign-in hover `hover:text-blue-600` → `hover:text-slate-900`
+- "View detailed analysis" toggle: `text-lg font-semibold text-slate-900` → `text-base font-semibold text-slate-500 hover:text-slate-800`
+
+---
+
+### Phase 21 — Holdings & Exposure Redesign
+
+**`(uncommitted)` Redesign Holdings and Exposure sections**
+
+*ExposureRows:*
+- Replaced inline `label | bar | pct` single-row layout with stacked label-above-bar layout
+- Label and percentage sit on the same line above the bar (`justify-between`)
+- Bar height: `h-1.5` → `h-2`; fill: `bg-slate-400` → `bg-slate-700`
+- Removed fixed `w-32` label width — now full-width natural flow
+
+*HoldingRow:*
+- Ticker moved to its own line as primary text (`font-semibold`); name dropped to `text-xs text-slate-400` secondary line below
+- Duplicate warning moved inline with ticker as `text-xs text-amber-500` badge
+- "Unknown" account type suppressed in expanded detail panel
+- Expand chevron: `text-xs` → `text-[10px] leading-none` (visually quieter)
+
+*Exposure subsection labels:*
+- All 4 instances (`Asset mix`, `Sector`, `Geography`, `Currency`) changed from `uppercase tracking-widest font-semibold` → lowercase `font-medium`, `mb-4` → `mb-3`
+
+*SavedPortfolioReports ProportionBar:*
+- `h-1.5 bg-blue-400` → `h-2 bg-slate-600` to match new ExposureRows style
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |

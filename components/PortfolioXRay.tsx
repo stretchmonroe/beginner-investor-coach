@@ -227,11 +227,11 @@ function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: Holdi
     <div className="py-4">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-baseline gap-2">
-            {h.ticker && <span className="text-sm font-bold text-slate-800">{h.ticker}</span>}
-            {h.name && <span className="text-sm text-slate-400 truncate max-w-[180px] sm:max-w-none">{h.name}</span>}
+          <div className="flex items-baseline gap-2">
+            {h.ticker && <span className="text-sm font-semibold text-slate-800">{h.ticker}</span>}
+            {isDuplicate && <span className="text-xs text-amber-500">Duplicate</span>}
           </div>
-          {isDuplicate && <p className="text-xs text-amber-500 mt-0.5">Appears more than once</p>}
+          {h.name && <p className="text-xs text-slate-400 truncate mt-0.5">{h.name}</p>}
         </div>
         <div className="text-right shrink-0">
           <p className="text-sm font-semibold text-slate-700">{pct(weight)}</p>
@@ -239,7 +239,7 @@ function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: Holdi
         </div>
         <button
           onClick={() => setExpanded((s) => !s)}
-          className="text-xs text-slate-300 hover:text-slate-500 transition-colors cursor-pointer ml-1 shrink-0"
+          className="text-slate-300 hover:text-slate-500 transition-colors cursor-pointer ml-1 shrink-0 text-[10px] leading-none"
           aria-label={expanded ? "collapse" : "expand"}
         >
           {expanded ? "▲" : "▼"}
@@ -249,7 +249,7 @@ function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: Holdi
         <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="default">{h.assetType}</Badge>
-            <Badge variant="muted">{h.accountType}</Badge>
+            {h.accountType && h.accountType !== "Unknown" && <Badge variant="muted">{h.accountType}</Badge>}
             <Badge variant="muted">{h.currency}</Badge>
           </div>
           {(h.quantity !== null || h.marketPrice !== null) && (
@@ -272,19 +272,19 @@ function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: Holdi
 
 function ExposureRows({ items }: { items: ExposureItem[] }) {
   return (
-    <div className="space-y-3.5">
+    <div className="space-y-4">
       {items.map((item) => (
-        <div key={item.label} className="flex items-center gap-3">
-          <span className="text-sm text-slate-600 w-32 shrink-0">{item.label}</span>
-          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+        <div key={item.label}>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm text-slate-600">{item.label}</span>
+            <span className="text-sm font-semibold text-slate-700 tabular-nums">{pct(item.weight)}</span>
+          </div>
+          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-slate-400"
+              className="h-full rounded-full bg-slate-700"
               style={{ width: `${Math.min(item.weight, 100)}%` }}
             />
           </div>
-          <span className="text-sm font-medium text-slate-500 w-10 text-right shrink-0 tabular-nums">
-            {pct(item.weight)}
-          </span>
         </div>
       ))}
     </div>
@@ -996,13 +996,13 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
               <div className="space-y-6">
                 {assetMix.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Asset mix</p>
+                    <p className="text-xs font-medium text-slate-400 mb-3">Asset mix</p>
                     <ExposureRows items={assetMix.map((i) => ({ label: i.assetType, value: i.value, weight: i.weight }))} />
                   </div>
                 )}
                 {sectorExposure.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Sector</p>
+                    <p className="text-xs font-medium text-slate-400 mb-3">Sector</p>
                     <ExposureRows items={sectorExposure} />
                   </div>
                 )}
@@ -1018,13 +1018,13 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                       <div className="mt-5 space-y-6">
                         {geographyExposure.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Geography</p>
+                            <p className="text-xs font-medium text-slate-400 mb-3">Geography</p>
                             <ExposureRows items={geographyExposure} />
                           </div>
                         )}
                         {currencyExposure.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Currency</p>
+                            <p className="text-xs font-medium text-slate-400 mb-3">Currency</p>
                             <ExposureRows items={currencyExposure} />
                             <p className="text-xs text-slate-400 mt-3">A Canadian-listed ETF may still hold foreign assets.</p>
                           </div>

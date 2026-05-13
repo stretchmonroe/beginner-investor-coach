@@ -43,9 +43,9 @@ function top3Weight(holdings: Holding[], totalValue: number): number | null {
 function ProportionBar({ weight }: { weight: number }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+      <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
         <div
-          className="h-full rounded-full bg-blue-400"
+          className="h-full rounded-full bg-slate-600"
           style={{ width: `${Math.min(weight, 100)}%` }}
         />
       </div>
