@@ -7,7 +7,6 @@ import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import SavedPortfolioReports from "@/components/SavedPortfolioReports";
-import NavDrawer from "@/components/NavDrawer";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
@@ -85,44 +84,15 @@ export default function InvestorDashboard({
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const profileLabel = deriveProfile(answers) ?? "Balanced Beginner";
   const meta = profileMeta[profileLabel];
-
-  const tools = [
-    { label: "Money Snapshot", action: onContribution },
-    { label: "Asset Class Explorer", action: onAssetClasses },
-    { label: "Lantern History", action: () => onAskCoach() },
-    { label: "Compare Reports", action: () => onCompareReports?.() },
-    { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
-    { label: "Privacy & Data", action: () => onPrivacy?.() },
-    { label: "Replay introduction", action: () => onViewOnboarding?.() },
-  ];
 
   return (
     <PageLayout maxWidth="lg">
       <PageHeader
         title="Lantern"
         description="Understand what you actually own — overlap, concentration, and exposure in plain English."
-        action={
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer relative"
-            aria-label="Open menu"
-          >
-            {/* Hamburger icon */}
-            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden>
-              <rect x="0" y="0.5" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
-              <rect x="0" y="6.25" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
-              <rect x="0" y="12" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
-            </svg>
-            {/* Dot indicator when signed in */}
-            {user && (
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-500" />
-            )}
-          </button>
-        }
       />
 
       {process.env.NEXT_PUBLIC_BETA_MODE === "true" && (
@@ -225,15 +195,6 @@ export default function InvestorDashboard({
       )}
 
       <Disclaimer extended="For educational use only. Nothing here is personalized financial advice — speak with a licensed advisor before making investment decisions." />
-
-      <NavDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        user={user}
-        onSignIn={onSignIn}
-        onSignOut={onSignOut}
-        tools={tools}
-      />
     </PageLayout>
   );
 }

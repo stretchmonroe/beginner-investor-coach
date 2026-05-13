@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/AuthModal";
+import NavDrawer from "@/components/NavDrawer";
 import Landing from "@/components/Landing";
 import Onboarding from "@/components/Onboarding";
 import OnboardingQuiz from "@/components/OnboardingQuiz";
@@ -104,6 +105,7 @@ export default function Home() {
   const { user, signOut } = useAuth();
   const refreshCalledRef = useRef(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Initialise session ID, load watchlist, check first-visit onboarding, and handle Stripe redirects
   useEffect(() => {
@@ -507,6 +509,43 @@ export default function Home() {
         open={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         message="Save your portfolio and history across devices."
+      />
+
+      {/* Global hamburger button — visible on every screen */}
+      {screen !== "landing" && (
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="fixed top-4 right-4 z-50 flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:shadow-md transition-all cursor-pointer"
+          aria-label="Open menu"
+        >
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden>
+            <rect x="0" y="0.5" width="16" height="1.5" rx="0.75" fill="#475569" />
+            <rect x="0" y="6.25" width="16" height="1.5" rx="0.75" fill="#475569" />
+            <rect x="0" y="12" width="16" height="1.5" rx="0.75" fill="#475569" />
+          </svg>
+          {user && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-500" />
+          )}
+        </button>
+      )}
+
+      <NavDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        user={user}
+        onSignIn={() => { setDrawerOpen(false); setShowAuthModal(true); }}
+        onSignOut={() => { setDrawerOpen(false); signOut(); }}
+        tools={[
+          { label: "Dashboard", action: () => setScreen("dashboard") },
+          { label: "Portfolio X-Ray", action: () => { setXrayInitialHoldings([]); setIsSamplePortfolio(false); setScreen("portfolioxray"); } },
+          { label: "Ask Lantern", action: () => goToCoach() },
+          { label: "Contribution Scenarios", action: goToSimulator },
+          { label: "Money Snapshot", action: () => { setContributionOrigin("dashboard"); setScreen("contribution"); } },
+          { label: "Asset Class Explorer", action: () => { setAssetClassOrigin("dashboard"); setScreen("assetclasses"); } },
+          { label: "Compare Reports", action: () => setScreen("reportcomparison") },
+          { label: "Premium Portfolio Tools", action: () => setScreen("premiumtools") },
+          { label: "Privacy & Data", action: () => setScreen("privacy") },
+        ]}
       />
 </>
   );
