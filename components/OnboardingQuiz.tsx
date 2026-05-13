@@ -85,7 +85,7 @@ export default function OnboardingQuiz({ onComplete }: Props) {
           </div>
           <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+              className="h-full bg-amber-400 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -106,8 +106,8 @@ export default function OnboardingQuiz({ onComplete }: Props) {
                     onClick={() => handleSelect(option)}
                     className={`w-full text-left px-5 py-3.5 rounded-xl border text-sm font-medium transition-colors duration-100 cursor-pointer
                       ${selected
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/50"
+                        ? "border-slate-900 bg-slate-50 text-slate-900"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                   >
                     {option}

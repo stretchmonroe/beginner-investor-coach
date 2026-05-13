@@ -82,7 +82,7 @@ export default function SavedLearningPlans({ sessionId, refreshTrigger, onView }
             return (
               <div
                 key={plan.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3"
+                className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -94,13 +94,13 @@ export default function SavedLearningPlans({ sessionId, refreshTrigger, onView }
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => onView(plan)}
-                      className="text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                      className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
                     >
                       View
                     </button>
                     <button
                       onClick={() => handleDelete(plan.id)}
-                      className="text-xs font-medium text-slate-500 border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                      className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
                     >
                       Delete
                     </button>

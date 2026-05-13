@@ -152,7 +152,7 @@ export default function AssetClassExplorer({ onBack }: Props) {
         {ASSET_CLASSES.map((ac) => (
           <div
             key={ac.id}
-            className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4"
+            className="bg-white rounded-2xl border border-slate-100 p-6 space-y-4"
           >
             {/* Title + risk badge */}
             <div className="flex flex-wrap items-center gap-3">
@@ -229,7 +229,7 @@ export default function AssetClassExplorer({ onBack }: Props) {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-slate-100">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">

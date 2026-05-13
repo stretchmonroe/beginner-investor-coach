@@ -19,22 +19,22 @@ const PROFILES: {
     label: "Conservative Beginner",
     badge: "🛡️",
     description: "I prefer stability and want to keep things emotionally manageable.",
-    cardStyle: "border-violet-200 bg-violet-50 hover:border-violet-300 hover:shadow-sm",
+    cardStyle: "border-violet-200 bg-violet-50 hover:border-violet-300",
     badgeStyle: "bg-violet-100 text-violet-700",
   },
   {
     label: "Balanced Beginner",
     badge: "⚖️",
     description: "I want a mix of growth and stability — still learning what that means.",
-    cardStyle: "border-blue-200 bg-blue-50 hover:border-blue-300 hover:shadow-sm",
+    cardStyle: "border-blue-200 bg-blue-50 hover:border-blue-300",
     badgeStyle: "bg-blue-100 text-blue-700",
   },
   {
     label: "Growth Beginner",
     badge: "📈",
     description: "I have a longer timeline and can sit with more market movement.",
-    cardStyle: "border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:shadow-sm",
-    badgeStyle: "bg-emerald-100 text-emerald-700",
+    cardStyle: "border-teal-200 bg-teal-50 hover:border-teal-300",
+    badgeStyle: "bg-teal-100 text-teal-700",
   },
 ];
 

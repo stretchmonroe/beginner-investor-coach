@@ -60,7 +60,7 @@ export default function NavDrawer({ open, onClose, user, onSignIn, onSignOut, to
               <p className="text-xs text-slate-500 truncate">{user.email}</p>
               <button
                 onClick={() => { onSignOut?.(); onClose(); }}
-                className="text-sm font-medium text-slate-700 hover:text-red-600 transition-colors cursor-pointer"
+                className="text-sm font-medium text-slate-700 hover:text-rose-500 transition-colors cursor-pointer"
               >
                 Sign out
               </button>
@@ -68,7 +68,7 @@ export default function NavDrawer({ open, onClose, user, onSignIn, onSignOut, to
           ) : (
             <button
               onClick={() => { onSignIn?.(); onClose(); }}
-              className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors cursor-pointer"
+              className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
             >
               Sign in to sync across devices
             </button>

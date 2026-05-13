@@ -67,7 +67,7 @@ export default function ProfileSelection({ onSelect, onBack }: Props) {
             <button
               key={p.label}
               onClick={() => onSelect(p.label)}
-              className={`w-full text-left rounded-2xl border p-5 space-y-3 transition-all cursor-pointer hover:shadow-sm ${p.cardStyle}`}
+              className={`w-full text-left rounded-2xl border p-5 space-y-3 transition-colors cursor-pointer ${p.cardStyle}`}
             >
               <div className={`inline-flex items-center gap-2 text-sm font-semibold px-3 py-1.5 rounded-full ${p.badgeStyle}`}>
                 <span>{p.badge}</span>

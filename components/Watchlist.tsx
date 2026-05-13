@@ -64,7 +64,7 @@ export default function Watchlist({ watchedTickers, answers, onRemove, onCompare
             return (
               <div
                 key={etf.ticker}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col gap-3"
+                className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-3"
               >
                 {/* Ticker + risk */}
                 <div className="flex items-center justify-between">
