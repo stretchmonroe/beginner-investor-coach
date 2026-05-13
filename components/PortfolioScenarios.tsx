@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { Holding, AssetType } from "@/types/portfolio";
 import type { ExposureItem } from "@/lib/portfolioMetadata";
-import Card from "@/components/ui/Card";
-import Disclaimer from "@/components/ui/Disclaimer";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -286,6 +284,85 @@ const inputClass =
   "w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white";
 const labelClass = "block text-xs font-medium text-slate-500 mb-1";
 
+// ─── Scenario modal shell ─────────────────────────────────────────────────────
+
+function ScenarioModal({
+  title,
+  description,
+  onClose,
+  children,
+}: {
+  title: string;
+  description: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/40 cursor-default border-0 w-full h-full"
+        aria-label="Close"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[88vh] flex flex-col z-10 border border-slate-100">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-300 hover:text-slate-600 transition-colors cursor-pointer text-2xl leading-none ml-4 shrink-0 mt-0.5"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div className="overflow-y-auto px-6 py-5 space-y-5 flex-1">
+          {children}
+        </div>
+        <div className="px-6 py-3 border-t border-slate-100 shrink-0">
+          <p className="text-xs text-slate-400">
+            Educational only — not financial advice. These are what-if estimates based on the holdings you entered.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Scenario tiles ────────────────────────────────────────────────────────────
+
+type ActiveScenario = "contribution" | "holding-drop" | "sector-drop" | null;
+
+const SCENARIO_TILES: { id: Exclude<ActiveScenario, null>; icon: string; title: string; description: string }[] = [
+  {
+    id: "contribution",
+    icon: "📈",
+    title: "Monthly contribution",
+    description: "How would regular investing shift your weights?",
+  },
+  {
+    id: "holding-drop",
+    icon: "📉",
+    title: "Holding drop",
+    description: "What's the impact if one position falls?",
+  },
+  {
+    id: "sector-drop",
+    icon: "🔻",
+    title: "Sector drop",
+    description: "What if a whole sector pulls back?",
+  },
+];
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -305,6 +382,8 @@ export default function PortfolioScenarios({
   defaultMonthlyContribution,
   onAskCoach,
 }: Props) {
+  const [activeScenario, setActiveScenario] = useState<ActiveScenario>(null);
+
   const [contribAmount, setContribAmount] = useState(defaultMonthlyContribution ?? 1250);
   const [contribMonths, setContribMonths] = useState(12);
   const [contribTarget, setContribTarget] = useState<ContributionTarget>("proportional");
@@ -316,421 +395,316 @@ export default function PortfolioScenarios({
   const [sectorName, setSectorName] = useState("");
   const [sectorDropPct, setSectorDropPct] = useState(20);
 
-  // Derived defaults
   const sortedByValue = [...holdings].sort((a, b) => b.marketValue - a.marketValue);
   const effectiveDropId = dropHoldingId || sortedByValue[0]?.id || "";
   const mappedSectors = sectorExposure.filter((s) => s.label !== "Unknown");
   const effectiveSector = sectorName || mappedSectors[0]?.label || "";
 
-  // Computed results
-  const contrib = computeContribution(
-    holdings,
-    totalValue,
-    contribAmount,
-    contribMonths,
-    contribTarget,
-    contribHoldingId
-  );
+  const contrib = computeContribution(holdings, totalValue, contribAmount, contribMonths, contribTarget, contribHoldingId);
   const drop = computeHoldingDrop(holdings, totalValue, effectiveDropId, dropPct);
   const secDrop = computeSectorDrop(sectorExposure, totalValue, effectiveSector, sectorDropPct);
 
+  if (holdings.length === 0) return null;
+
   return (
-    <div className="mb-6">
-      <h2 className="text-base font-semibold text-slate-800 mb-1">Portfolio Scenarios</h2>
-      <p className="text-sm text-slate-500 mb-4">
-        Explore what could happen if you add money monthly or if one part of your portfolio drops
-        in value.
-      </p>
+    <>
+      <section>
+        <h2 className="text-lg font-semibold text-slate-900 mb-1">Explore scenarios</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          What-if tools to explore how contributions or market moves might affect your portfolio.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {SCENARIO_TILES.map((tile) => (
+            <button
+              key={tile.id}
+              onClick={() => setActiveScenario(tile.id)}
+              className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
+            >
+              <span className="text-xl">{tile.icon}</span>
+              <p className="text-sm font-semibold text-slate-800 leading-snug">{tile.title}</p>
+              <p className="text-xs text-slate-500 leading-snug">{tile.description}</p>
+            </button>
+          ))}
+        </div>
+      </section>
 
-      {holdings.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-500 text-center py-2">
-            Add holdings above to explore scenarios.
-          </p>
-        </Card>
-      ) : (
-        <>
-          {/* ── Scenario 1: Monthly contribution ────────────────────────── */}
-          <Card className="mb-4">
-            <p className="text-sm font-semibold text-slate-800 mb-0.5">
-              Scenario 1 — Monthly contribution
-            </p>
-            <p className="text-xs text-slate-500 mb-4">
-              What if you add a set amount each month?
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className={labelClass}>Monthly amount ($)</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={contribAmount}
-                  onChange={(e) =>
-                    setContribAmount(Math.max(1, parseFloat(e.target.value) || 1))
-                  }
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Months</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={360}
-                  value={contribMonths}
-                  onChange={(e) =>
-                    setContribMonths(
-                      Math.max(1, Math.min(360, parseInt(e.target.value, 10) || 1))
-                    )
-                  }
-                  className={inputClass}
-                />
-              </div>
+      {/* ── Modal ── */}
+      {activeScenario === "contribution" && (
+        <ScenarioModal
+          title="Monthly contribution"
+          description="What if you add a set amount each month?"
+          onClose={() => setActiveScenario(null)}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Monthly amount ($)</label>
+              <input
+                type="number"
+                min={1}
+                value={contribAmount}
+                onChange={(e) => setContribAmount(Math.max(1, parseFloat(e.target.value) || 1))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Months</label>
+              <input
+                type="number"
+                min={1}
+                max={360}
+                value={contribMonths}
+                onChange={(e) => setContribMonths(Math.max(1, Math.min(360, parseInt(e.target.value, 10) || 1)))}
+                className={inputClass}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className={labelClass}>Contribution target</label>
+              <select
+                value={contribTarget}
+                onChange={(e) => setContribTarget(e.target.value as ContributionTarget)}
+                className={inputClass}
+              >
+                {(Object.entries(CONTRIB_TARGET_LABELS) as [ContributionTarget, string][]).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            {contribTarget === "manual" && (
               <div className="col-span-2">
-                <label className={labelClass}>Contribution target</label>
+                <label className={labelClass}>Select holding</label>
                 <select
-                  value={contribTarget}
-                  onChange={(e) => setContribTarget(e.target.value as ContributionTarget)}
+                  value={contribHoldingId}
+                  onChange={(e) => setContribHoldingId(e.target.value)}
                   className={inputClass}
                 >
-                  {(
-                    Object.entries(CONTRIB_TARGET_LABELS) as [ContributionTarget, string][]
-                  ).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
+                  <option value="">— Select holding —</option>
+                  {holdings.map((h) => (
+                    <option key={h.id} value={h.id}>{h.ticker || h.name} ({fmt(h.marketValue)})</option>
                   ))}
                 </select>
               </div>
-              {contribTarget === "manual" && (
-                <div className="col-span-2">
-                  <label className={labelClass}>Select holding</label>
-                  <select
-                    value={contribHoldingId}
-                    onChange={(e) => setContribHoldingId(e.target.value)}
-                    className={inputClass}
-                  >
-                    <option value="">— Select holding —</option>
-                    {holdings.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.ticker || h.name} ({fmt(h.marketValue)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            )}
+          </div>
 
-            {contrib?.kind === "warning" && <WarningNote message={contrib.message} />}
+          {contrib?.kind === "warning" && <WarningNote message={contrib.message} />}
 
-            {contrib?.kind === "result" && (
-              <>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                  Result
-                </p>
+          {contrib?.kind === "result" && (
+            <>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Result</p>
+                <ResultRow label="Total contributions added" value={fmt(contrib.totalContrib)} />
+                <ResultRow label="New estimated portfolio value" value={fmt(contrib.newTotal)} sub="Contributions only — no expected return applied" />
+                <ResultRow label="Largest holding after" value={`${contrib.largestLabel} — ${pct(contrib.largestWeightAfter)}`} />
+                {holdings.length >= 3 && <ResultRow label="Top 3 concentration after" value={pct(contrib.top3WeightAfter)} />}
+                <ResultRow label="Biggest weight change" value={contrib.biggestChangeLabel} sub={`${pct(contrib.biggestChangePrev)} → ${pct(contrib.biggestChangeNew)}`} />
+              </div>
 
-                <div className="mb-4">
-                  <ResultRow label="Total contributions added" value={fmt(contrib.totalContrib)} />
-                  <ResultRow
-                    label="New estimated portfolio value"
-                    value={fmt(contrib.newTotal)}
-                    sub="Contributions only — no expected return applied"
-                  />
-                  <ResultRow
-                    label="Largest holding after"
-                    value={`${contrib.largestLabel} — ${pct(contrib.largestWeightAfter)}`}
-                  />
-                  {holdings.length >= 3 && (
-                    <ResultRow
-                      label="Top 3 concentration after"
-                      value={pct(contrib.top3WeightAfter)}
-                    />
-                  )}
-                  <ResultRow
-                    label="Biggest weight change"
-                    value={`${contrib.biggestChangeLabel}`}
-                    sub={`${pct(contrib.biggestChangePrev)} → ${pct(contrib.biggestChangeNew)}`}
-                  />
-                </div>
-
-                {/* Updated weights */}
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                  Updated weights
-                </p>
-                <div className="space-y-1.5 mb-4">
-                  {[...contrib.rows]
-                    .sort((a, b) => b.newValue - a.newValue)
-                    .map((r) => (
-                      <div key={r.id} className="flex items-center justify-between text-xs">
-                        <span className="text-slate-600 truncate mr-2">
-                          {r.ticker || r.name}
-                        </span>
-                        <div className="text-right shrink-0 flex items-center gap-2">
-                          <span className="text-slate-400">{pct(r.prevWeight)}</span>
-                          <span className="text-slate-300">→</span>
-                          <span className="text-slate-800 font-semibold">{pct(r.newWeight)}</span>
-                        </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Updated weights</p>
+                <div className="space-y-1.5">
+                  {[...contrib.rows].sort((a, b) => b.newValue - a.newValue).map((r) => (
+                    <div key={r.id} className="flex items-center justify-between text-xs">
+                      <span className="text-slate-600 truncate mr-2">{r.ticker || r.name}</span>
+                      <div className="shrink-0 flex items-center gap-2">
+                        <span className="text-slate-400">{pct(r.prevWeight)}</span>
+                        <span className="text-slate-300">→</span>
+                        <span className="text-slate-800 font-semibold">{pct(r.newWeight)}</span>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
+              </div>
 
-                {/* Asset type mix after */}
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-                  Asset type after
-                </p>
-                <div className="space-y-2 mb-2">
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Asset type after</p>
+                <div className="space-y-2">
                   {contrib.assetMixAfter.map((m) => (
                     <div key={m.assetType} className="flex items-center gap-3">
                       <span className="text-xs text-slate-600 w-24 shrink-0">{m.assetType}</span>
                       <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-blue-400"
-                          style={{ width: `${Math.min(m.weight, 100)}%` }}
-                        />
+                        <div className="h-full rounded-full bg-slate-400" style={{ width: `${Math.min(m.weight, 100)}%` }} />
                       </div>
-                      <span className="text-xs font-semibold text-slate-600 w-10 text-right shrink-0">
-                        {pct(m.weight)}
-                      </span>
+                      <span className="text-xs font-semibold text-slate-600 w-10 text-right shrink-0">{pct(m.weight)}</span>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                <WhatThisMeans>
-                  This scenario shows how future contributions could change portfolio weights.
-                  Adding proportionally keeps the mix similar to today, while adding to one
-                  holding increases its concentration over time. No expected return is applied —
-                  this models allocation only.
-                </WhatThisMeans>
+              <WhatThisMeans>
+                Adding proportionally keeps the mix similar to today; adding to one holding increases its concentration over time. No expected return is applied — this models allocation only.
+              </WhatThisMeans>
 
-                <EvidencePanel
-                  items={[
-                    { label: "Monthly contribution", value: fmt(contribAmount) },
-                    {
-                      label: "Contribution length",
-                      value: `${contribMonths} ${contribMonths === 1 ? "month" : "months"}`,
-                    },
-                    { label: "Target", value: CONTRIB_TARGET_LABELS[contribTarget] },
-                    { label: "Return assumption", value: "None — contributions only" },
-                    { label: "Source", value: "Manually entered holdings" },
-                  ]}
-                />
-              </>
-            )}
-          </Card>
+              <EvidencePanel items={[
+                { label: "Monthly contribution", value: fmt(contribAmount) },
+                { label: "Contribution length", value: `${contribMonths} ${contribMonths === 1 ? "month" : "months"}` },
+                { label: "Target", value: CONTRIB_TARGET_LABELS[contribTarget] },
+                { label: "Return assumption", value: "None — contributions only" },
+              ]} />
 
-          {/* ── Scenario 2: Holding drop ─────────────────────────────────── */}
-          <Card className="mb-4">
-            <p className="text-sm font-semibold text-slate-800 mb-0.5">
-              Scenario 2 — Holding drop
-            </p>
-            <p className="text-xs text-slate-500 mb-4">
-              What if one holding falls by a certain percentage?
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="col-span-2">
-                <label className={labelClass}>Select holding</label>
-                <select
-                  value={effectiveDropId}
-                  onChange={(e) => setDropHoldingId(e.target.value)}
-                  className={inputClass}
+              {onAskCoach && (
+                <button
+                  onClick={() => { onAskCoach("Explain what happens to portfolio weights when I contribute monthly. Why does proportional vs. concentrated contribution matter?"); setActiveScenario(null); }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
                 >
-                  {sortedByValue.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.ticker || h.name} — {fmt(h.marketValue)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className={labelClass}>Drop percentage (%)</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={99}
-                  value={dropPct}
-                  onChange={(e) =>
-                    setDropPct(Math.max(1, Math.min(99, parseFloat(e.target.value) || 1)))
-                  }
-                  className={inputClass}
-                />
-              </div>
-            </div>
-
-            {drop && (
-              <>
-                {/* Plain-English summary */}
-                <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3 mb-4">
-                  <p className="text-sm text-rose-800 leading-relaxed">
-                    If <strong>{drop.label}</strong> drops {pct(dropPct)}, its value would fall
-                    by approximately <strong>{fmt(drop.dollarLoss)}</strong> and the portfolio
-                    value would fall by approximately{" "}
-                    <strong>{pct(drop.portfolioDeclPct)}</strong>, based on the holdings entered.
-                  </p>
-                </div>
-
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                  Result
-                </p>
-                <div className="mb-4">
-                  <ResultRow label="Selected holding" value={drop.label} />
-                  <ResultRow label="Drop assumption" value={pct(dropPct)} />
-                  <ResultRow label="Estimated dollar impact" value={`−${fmt(drop.dollarLoss)}`} />
-                  <ResultRow
-                    label="Estimated portfolio impact"
-                    value={`−${pct(drop.portfolioDeclPct)}`}
-                  />
-                  <ResultRow label="New holding value" value={fmt(drop.newHoldingValue)} />
-                  <ResultRow label="New portfolio value" value={fmt(drop.newTotal)} />
-                  <ResultRow
-                    label="Holding weight after"
-                    value={pct(drop.newWeight)}
-                    sub={`was ${pct((drop.prevValue / totalValue) * 100)}`}
-                  />
-                  <ResultRow
-                    label="Remains largest holding"
-                    value={drop.remainsLargest ? "Yes" : "No"}
-                  />
-                </div>
-
-                <WhatThisMeans>
-                  This scenario helps you understand how much the portfolio depends on one
-                  holding. A larger position creates a larger portfolio impact when it moves
-                  sharply. This is an educational what-if — not a prediction.
-                </WhatThisMeans>
-
-                <EvidencePanel
-                  items={[
-                    { label: "Selected holding", value: drop.label },
-                    { label: "Holding value", value: fmt(drop.prevValue) },
-                    { label: "Drop assumption", value: `${pct(dropPct)} hypothetical decline` },
-                    { label: "Source", value: "Manually entered holdings" },
-                    { label: "Note", value: "What-if scenario only. Not a prediction." },
-                  ]}
-                />
-              </>
-            )}
-          </Card>
-
-          {/* ── Scenario 3: Sector drop ──────────────────────────────────── */}
-          <Card className="mb-4">
-            <p className="text-sm font-semibold text-slate-800 mb-0.5">
-              Scenario 3 — Sector drop
-            </p>
-            <p className="text-xs text-slate-500 mb-4">
-              What if a mapped sector falls by a certain percentage?
-            </p>
-
-            {mappedSectors.length === 0 ? (
-              <WarningNote message="No sector mapping is available for the holdings entered. Add holdings with local metadata to explore sector scenarios." />
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="col-span-2">
-                    <label className={labelClass}>Select sector</label>
-                    <select
-                      value={effectiveSector}
-                      onChange={(e) => setSectorName(e.target.value)}
-                      className={inputClass}
-                    >
-                      {mappedSectors.map((s) => (
-                        <option key={s.label} value={s.label}>
-                          {s.label} — {pct(s.weight)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <label className={labelClass}>Drop percentage (%)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={sectorDropPct}
-                      onChange={(e) =>
-                        setSectorDropPct(
-                          Math.max(1, Math.min(99, parseFloat(e.target.value) || 1))
-                        )
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-
-                {secDrop && (
-                  <>
-                    {/* Plain-English summary */}
-                    <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3 mb-4">
-                      <p className="text-sm text-rose-800 leading-relaxed">
-                        If <strong>{secDrop.sector}</strong> drops {pct(sectorDropPct)}, the
-                        mapped portfolio exposure would fall by approximately{" "}
-                        <strong>{fmt(secDrop.dollarLoss)}</strong>. This would reduce the total
-                        portfolio by approximately{" "}
-                        <strong>{pct(secDrop.portfolioDeclPct)}</strong>, based on simplified
-                        sector mapping.
-                      </p>
-                    </div>
-
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                      Result
-                    </p>
-                    <div className="mb-4">
-                      <ResultRow label="Selected sector" value={secDrop.sector} />
-                      <ResultRow label="Drop assumption" value={pct(sectorDropPct)} />
-                      <ResultRow
-                        label="Mapped sector exposure"
-                        value={`${pct(secDrop.mappedPct)} — ${fmt(secDrop.mappedValue)}`}
-                      />
-                      <ResultRow
-                        label="Estimated dollar impact"
-                        value={`−${fmt(secDrop.dollarLoss)}`}
-                      />
-                      <ResultRow
-                        label="Estimated portfolio impact"
-                        value={`−${pct(secDrop.portfolioDeclPct)}`}
-                      />
-                      <ResultRow label="New portfolio value" value={fmt(secDrop.newTotal)} />
-                    </div>
-
-                    <WhatThisMeans>
-                      This scenario helps you understand sector sensitivity. If a large share of
-                      the portfolio is mapped to one sector, a sector decline can affect the
-                      overall portfolio more. Sector exposure uses simplified metadata and may not
-                      reflect exact current fund holdings.
-                    </WhatThisMeans>
-
-                    <EvidencePanel
-                      items={[
-                        { label: "Selected sector", value: secDrop.sector },
-                        { label: "Mapped sector value", value: fmt(secDrop.mappedValue) },
-                        { label: "Drop assumption", value: `${pct(sectorDropPct)} hypothetical decline` },
-                        { label: "Sector mapping", value: "Static educational metadata" },
-                        {
-                          label: "Note",
-                          value:
-                            "Sector exposure may not reflect exact current fund holdings.",
-                        },
-                      ]}
-                    />
-                  </>
-                )}
-              </>
-            )}
-          </Card>
-
-          {onAskCoach && (
-            <button
-              onClick={() => onAskCoach("Explain this portfolio scenario in plain English. Focus on what changed, what the result means, and why this is a what-if estimate rather than a prediction.")}
-              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer mt-1 mb-4"
-            >
-              <span>✦</span> Explain this scenario
-            </button>
+                  <span>🪔</span> Ask Lantern to explain this
+                </button>
+              )}
+            </>
           )}
-
-          <Disclaimer extended="Educational only. Not financial advice. These are what-if scenarios based on the holdings entered. No expected returns are applied. Sector mapping uses simplified static metadata." />
-        </>
+        </ScenarioModal>
       )}
-    </div>
+
+      {activeScenario === "holding-drop" && (
+        <ScenarioModal
+          title="Holding drop"
+          description="What if one holding falls by a certain percentage?"
+          onClose={() => setActiveScenario(null)}
+        >
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className={labelClass}>Select holding</label>
+              <select
+                value={effectiveDropId}
+                onChange={(e) => setDropHoldingId(e.target.value)}
+                className={inputClass}
+              >
+                {sortedByValue.map((h) => (
+                  <option key={h.id} value={h.id}>{h.ticker || h.name} — {fmt(h.marketValue)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Drop percentage (%)</label>
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={dropPct}
+                onChange={(e) => setDropPct(Math.max(1, Math.min(99, parseFloat(e.target.value) || 1)))}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          {drop && (
+            <>
+              <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3">
+                <p className="text-sm text-rose-800 leading-relaxed">
+                  If <strong>{drop.label}</strong> drops {pct(dropPct)}, its value would fall by approximately <strong>{fmt(drop.dollarLoss)}</strong> and the portfolio would decline by approximately <strong>{pct(drop.portfolioDeclPct)}</strong>.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Result</p>
+                <ResultRow label="Estimated dollar impact" value={`−${fmt(drop.dollarLoss)}`} />
+                <ResultRow label="Estimated portfolio impact" value={`−${pct(drop.portfolioDeclPct)}`} />
+                <ResultRow label="New holding value" value={fmt(drop.newHoldingValue)} />
+                <ResultRow label="New portfolio value" value={fmt(drop.newTotal)} />
+                <ResultRow label="Holding weight after" value={pct(drop.newWeight)} sub={`was ${pct((drop.prevValue / totalValue) * 100)}`} />
+                <ResultRow label="Remains largest holding" value={drop.remainsLargest ? "Yes" : "No"} />
+              </div>
+
+              <WhatThisMeans>
+                A larger position creates a bigger portfolio impact when it moves sharply. This is an educational what-if — not a prediction of what will happen.
+              </WhatThisMeans>
+
+              <EvidencePanel items={[
+                { label: "Selected holding", value: drop.label },
+                { label: "Holding value", value: fmt(drop.prevValue) },
+                { label: "Drop assumption", value: `${pct(dropPct)} hypothetical decline` },
+                { label: "Note", value: "What-if scenario only. Not a prediction." },
+              ]} />
+
+              {onAskCoach && (
+                <button
+                  onClick={() => { onAskCoach(`Explain what it means if ${drop.label} drops ${pct(dropPct)} in value. Help me understand how a concentrated position affects the overall portfolio.`); setActiveScenario(null); }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                >
+                  <span>🪔</span> Ask Lantern to explain this
+                </button>
+              )}
+            </>
+          )}
+        </ScenarioModal>
+      )}
+
+      {activeScenario === "sector-drop" && (
+        <ScenarioModal
+          title="Sector drop"
+          description="What if a mapped sector falls by a certain percentage?"
+          onClose={() => setActiveScenario(null)}
+        >
+          {mappedSectors.length === 0 ? (
+            <WarningNote message="No sector mapping is available for the holdings entered. Add holdings with local metadata to explore sector scenarios." />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className={labelClass}>Select sector</label>
+                  <select
+                    value={effectiveSector}
+                    onChange={(e) => setSectorName(e.target.value)}
+                    className={inputClass}
+                  >
+                    {mappedSectors.map((s) => (
+                      <option key={s.label} value={s.label}>{s.label} — {pct(s.weight)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Drop percentage (%)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={sectorDropPct}
+                    onChange={(e) => setSectorDropPct(Math.max(1, Math.min(99, parseFloat(e.target.value) || 1)))}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              {secDrop && (
+                <>
+                  <div className="rounded-xl bg-rose-50 border border-rose-100 px-4 py-3">
+                    <p className="text-sm text-rose-800 leading-relaxed">
+                      If <strong>{secDrop.sector}</strong> drops {pct(sectorDropPct)}, the mapped exposure would fall by approximately <strong>{fmt(secDrop.dollarLoss)}</strong>, reducing the total portfolio by approximately <strong>{pct(secDrop.portfolioDeclPct)}</strong>.
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Result</p>
+                    <ResultRow label="Mapped sector exposure" value={`${pct(secDrop.mappedPct)} — ${fmt(secDrop.mappedValue)}`} />
+                    <ResultRow label="Estimated dollar impact" value={`−${fmt(secDrop.dollarLoss)}`} />
+                    <ResultRow label="Estimated portfolio impact" value={`−${pct(secDrop.portfolioDeclPct)}`} />
+                    <ResultRow label="New portfolio value" value={fmt(secDrop.newTotal)} />
+                  </div>
+
+                  <WhatThisMeans>
+                    If a large share of the portfolio is mapped to one sector, a sector pullback can affect the overall portfolio more than it might appear. Sector exposure uses simplified metadata and may not reflect exact current fund holdings.
+                  </WhatThisMeans>
+
+                  <EvidencePanel items={[
+                    { label: "Selected sector", value: secDrop.sector },
+                    { label: "Mapped sector value", value: fmt(secDrop.mappedValue) },
+                    { label: "Drop assumption", value: `${pct(sectorDropPct)} hypothetical decline` },
+                    { label: "Sector mapping", value: "Static educational metadata" },
+                  ]} />
+
+                  {onAskCoach && (
+                    <button
+                      onClick={() => { onAskCoach(`Explain what ${pct(secDrop.mappedPct)} exposure to ${secDrop.sector} means. How would a sector decline affect a portfolio with this concentration?`); setActiveScenario(null); }}
+                      className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                    >
+                      <span>🪔</span> Ask Lantern to explain this
+                    </button>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </ScenarioModal>
+      )}
+    </>
   );
 }
