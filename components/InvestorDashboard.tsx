@@ -7,12 +7,12 @@ import { deriveProfile } from "@/lib/etfs";
 import type { Profile } from "@/lib/etfs";
 import SavedReadinessPlans from "@/components/SavedReadinessPlans";
 import SavedPortfolioReports from "@/components/SavedPortfolioReports";
+import NavDrawer from "@/components/NavDrawer";
 import type { SharedPlanInputs } from "@/types/sharedPlanInputs";
 import type { Holding, PortfolioContext } from "@/types/portfolio";
 import type { PortfolioReportData } from "@/lib/portfolioReports";
 import PageLayout from "@/components/ui/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
-import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Disclaimer from "@/components/ui/Disclaimer";
 
@@ -85,12 +85,12 @@ export default function InvestorDashboard({
 }: Props) {
   const [savedPortfolioReportCount, setSavedPortfolioReportCount] = useState(0);
   const [showSavedReports, setShowSavedReports] = useState(false);
-  const [showMoreTools, setShowMoreTools] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const profileLabel = deriveProfile(answers) ?? "Balanced Beginner";
   const meta = profileMeta[profileLabel];
 
-  const moreTools = [
+  const tools = [
     { label: "Money Snapshot", action: onContribution },
     { label: "Asset Class Explorer", action: onAssetClasses },
     { label: "Lantern History", action: () => onAskCoach() },
@@ -98,9 +98,6 @@ export default function InvestorDashboard({
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
     { label: "Replay introduction", action: () => onViewOnboarding?.() },
-    ...(user
-      ? [{ label: `Sign out (${user.email})`, action: () => onSignOut?.() }]
-      : [{ label: "Sign in to sync across devices", action: () => onSignIn?.() }]),
   ];
 
   return (
@@ -108,7 +105,26 @@ export default function InvestorDashboard({
       <PageHeader
         title="Lantern"
         description="Understand what you actually own — overlap, concentration, and exposure in plain English."
+        action={
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer relative"
+            aria-label="Open menu"
+          >
+            {/* Hamburger icon */}
+            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden>
+              <rect x="0" y="0.5" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
+              <rect x="0" y="6.25" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
+              <rect x="0" y="12" width="16" height="1.5" rx="0.75" fill="currentColor" className="text-slate-600" />
+            </svg>
+            {/* Dot indicator when signed in */}
+            {user && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-teal-500" />
+            )}
+          </button>
+        }
       />
+
       {process.env.NEXT_PUBLIC_BETA_MODE === "true" && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-5">
           <div className="flex items-center gap-2">
@@ -146,24 +162,6 @@ export default function InvestorDashboard({
           <Button variant="secondary" size="sm" onClick={onRetakeQuiz}>
             Change profile
           </Button>
-          {user ? (
-            <span className="text-xs text-slate-500">
-              Signed in as {user.email} ·{" "}
-              <button
-                onClick={onSignOut}
-                className="underline underline-offset-2 hover:text-slate-700 transition-colors cursor-pointer"
-              >
-                Sign out
-              </button>
-            </span>
-          ) : (
-            <button
-              onClick={onSignIn}
-              className="text-xs text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors cursor-pointer"
-            >
-              Sign in to sync across devices
-            </button>
-          )}
         </div>
       </div>
 
@@ -226,33 +224,16 @@ export default function InvestorDashboard({
         </div>
       )}
 
-      {/* More tools */}
-      <div className="mb-8">
-        <button
-          onClick={() => setShowMoreTools((s) => !s)}
-          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer mb-2"
-        >
-          More tools <span className="text-xs">{showMoreTools ? "▲" : "▼"}</span>
-        </button>
-        {showMoreTools && (
-          <Card>
-            <div className="divide-y divide-slate-100">
-              {moreTools.map((tool) => (
-                <button
-                  key={tool.label}
-                  onClick={tool.action}
-                  className="flex items-center justify-between w-full py-3 text-sm text-slate-700 hover:text-blue-600 transition-colors cursor-pointer text-left"
-                >
-                  <span>{tool.label}</span>
-                  <span className="text-slate-300 text-xs">→</span>
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
-      </div>
-
       <Disclaimer extended="For educational use only. Nothing here is personalized financial advice — speak with a licensed advisor before making investment decisions." />
+
+      <NavDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        user={user}
+        onSignIn={onSignIn}
+        onSignOut={onSignOut}
+        tools={tools}
+      />
     </PageLayout>
   );
 }
