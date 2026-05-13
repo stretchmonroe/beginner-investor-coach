@@ -198,7 +198,7 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
 
   if (data.holdings.length === 0) {
     return (
-      <PageLayout maxWidth="lg">
+      <PageLayout maxWidth="xl">
         <div className="print:hidden flex items-center justify-between mb-6">
           <button
             onClick={onBack}

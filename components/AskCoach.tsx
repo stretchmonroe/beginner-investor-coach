@@ -391,7 +391,7 @@ export default function AskCoach({
   }
 
   return (
-    <PageLayout maxWidth="sm">
+    <PageLayout maxWidth="md">
       <PageHeader
         title="Ask Lantern"
         action={

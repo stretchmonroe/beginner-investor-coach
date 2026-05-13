@@ -722,7 +722,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <PageLayout maxWidth="lg">
+    <PageLayout maxWidth="xl">
       <PageHeader
         title="Portfolio X-Ray"
         action={
@@ -951,7 +951,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {/* 2. Portfolio snapshot */}
           <section>
             <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-5">Portfolio snapshot</h2>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-5">
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">Total value</p>
                 <p className="text-xl font-bold text-slate-800">{fmt(totalValue)}</p>
@@ -1163,88 +1163,92 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             )}
           </section>
 
-          {/* 6. Save snapshot */}
+          {/* 6. Portfolio actions */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Save snapshot</h2>
-              {onViewReport && (
-                <Button variant="secondary" size="sm" onClick={handleViewReport}>
-                  View Report
-                </Button>
-              )}
-            </div>
-            <div className="flex flex-col gap-3">
-                <div>
-                  <label className={labelClass}>
-                    Snapshot name <span className="font-normal text-slate-400">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={reportName}
-                    onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
-                    placeholder={`Portfolio X-Ray — ${new Date().toLocaleDateString("en-CA", { month: "long", year: "numeric" })}`}
-                    className={inputClass}
-                    maxLength={80}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>
-                    Notes <span className="font-normal text-slate-400">(optional)</span>
-                  </label>
-                  <textarea
-                    value={reportNotes}
-                    onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
-                    placeholder="e.g. After adding new ETF position…"
-                    rows={2}
-                    className="w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
-                  />
-                  <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button onClick={handleSave} disabled={saveState === "saving"}>
-                    {saveState === "saving" ? "Saving…" : "Save snapshot"}
-                  </Button>
-                  {saveState === "saved" && (
-                    <p className="text-xs text-teal-600 font-medium">Saved. View it in Saved Reports on the dashboard.</p>
-                  )}
-                  {saveState === "error" && (
-                    <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
+            <div className="sm:grid sm:grid-cols-[3fr_2fr] sm:gap-x-14 sm:items-start">
+
+              {/* Save snapshot */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">Save snapshot</h2>
+                  {onViewReport && (
+                    <Button variant="secondary" size="sm" onClick={handleViewReport}>
+                      View Report
+                    </Button>
                   )}
                 </div>
-                {!userId && onSignIn && (
-                  <p className="text-xs text-slate-400 mt-1">
-                    <button
-                      onClick={onSignIn}
-                      className="underline underline-offset-2 hover:text-slate-600 transition-colors cursor-pointer"
-                    >
-                      Sign in
-                    </button>{" "}
-                    to save across devices.
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className={labelClass}>
+                      Snapshot name <span className="font-normal text-slate-400">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={reportName}
+                      onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
+                      placeholder={`Portfolio X-Ray — ${new Date().toLocaleDateString("en-CA", { month: "long", year: "numeric" })}`}
+                      className={inputClass}
+                      maxLength={80}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>
+                      Notes <span className="font-normal text-slate-400">(optional)</span>
+                    </label>
+                    <textarea
+                      value={reportNotes}
+                      onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
+                      placeholder="e.g. After adding new ETF position…"
+                      rows={2}
+                      className="w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
+                    />
+                    <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button onClick={handleSave} disabled={saveState === "saving"}>
+                      {saveState === "saving" ? "Saving…" : "Save snapshot"}
+                    </Button>
+                    {saveState === "saved" && (
+                      <p className="text-xs text-teal-600 font-medium">Saved. View it in Saved Reports on the dashboard.</p>
+                    )}
+                    {saveState === "error" && (
+                      <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
+                    )}
+                  </div>
+                  {!userId && onSignIn && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      <button
+                        onClick={onSignIn}
+                        className="underline underline-offset-2 hover:text-slate-600 transition-colors cursor-pointer"
+                      >
+                        Sign in
+                      </button>{" "}
+                      to save across devices.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Ask Lantern */}
+              {onAskCoach && portfolioContext && (
+                <div className="mt-10 sm:mt-0">
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-3">Ask Lantern</h2>
+                  <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+                    Get a plain-English walkthrough — what stands out, what overlaps, what to think about.
                   </p>
-                )}
+                  <Button
+                    onClick={() => onAskCoach(
+                      "Explain my Portfolio X-Ray in plain English. Focus on concentration, exposure, overlap, and what may be worth understanding for a beginner investor.",
+                      portfolioContext
+                    )}
+                  >
+                    Explain my portfolio
+                  </Button>
+                </div>
+              )}
+
             </div>
           </section>
-
-          {/* 7. Ask Lantern */}
-          {onAskCoach && portfolioContext && (
-            <section className="flex items-start gap-3 pt-2">
-              <span className="text-lg shrink-0 mt-0.5">🪔</span>
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">Ask Lantern</p>
-                <p className="text-sm text-slate-500 mb-3 leading-relaxed">
-                  Get a plain-English walkthrough — what stands out, what overlaps, what to think about.
-                </p>
-                <Button
-                  onClick={() => onAskCoach(
-                    "Explain my Portfolio X-Ray in plain English. Focus on concentration, exposure, overlap, and what may be worth understanding for a beginner investor.",
-                    portfolioContext
-                  )}
-                >
-                  Explain my portfolio
-                </Button>
-              </div>
-            </section>
-          )}
 
           {/* 8. Explore scenarios */}
           <PortfolioScenarios
