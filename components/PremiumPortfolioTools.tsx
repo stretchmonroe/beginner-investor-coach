@@ -69,7 +69,28 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
         </ul>
       </Card>
 
-      {!isPremium ? (
+      {process.env.NEXT_PUBLIC_BETA_MODE === "true" ? (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-semibold text-amber-800">
+              Beta access — all features unlocked
+            </p>
+            <p className="text-xs text-slate-600">
+              You have full access to every feature during the beta period. Paid plans will be introduced after beta.
+            </p>
+            {process.env.NEXT_PUBLIC_FEEDBACK_URL && (
+              <a
+                href={process.env.NEXT_PUBLIC_FEEDBACK_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900 transition-colors mt-1 w-fit"
+              >
+                Share feedback →
+              </a>
+            )}
+          </div>
+        </Card>
+      ) : !isPremium ? (
         <Card className="mb-6 border-teal-200 bg-teal-50">
           <div className="flex flex-col gap-3">
             <div>
@@ -81,10 +102,7 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={openCheckout}
-                disabled={loading}
-              >
+              <Button onClick={openCheckout} disabled={loading}>
                 {loading ? "Loading…" : "Upgrade to Premium"}
               </Button>
               <Button variant="secondary" onClick={onBack}>

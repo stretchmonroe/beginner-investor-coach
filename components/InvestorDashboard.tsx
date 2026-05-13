@@ -117,10 +117,22 @@ export default function InvestorDashboard({
         description="For Canadian beginner investors — know what you own, what you’re exposed to, and what to consider next."
       />
       {process.env.NEXT_PUBLIC_BETA_MODE === "true" && (
-        <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 mb-4">
-          <span>Beta</span>
-          <span className="text-amber-400">·</span>
-          <span>All premium features unlocked</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Beta</span>
+            <span className="text-amber-300">·</span>
+            <span className="text-xs text-amber-700">All premium features unlocked</span>
+          </div>
+          {process.env.NEXT_PUBLIC_FEEDBACK_URL && (
+            <a
+              href={process.env.NEXT_PUBLIC_FEEDBACK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-900 transition-colors shrink-0"
+            >
+              Share feedback →
+            </a>
+          )}
         </div>
       )}
 

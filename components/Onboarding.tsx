@@ -28,7 +28,9 @@ const STEPS = [
   {
     icon: "🚀",
     title: "Start with your portfolio or explore a sample",
-    description: "",
+    description: process.env.NEXT_PUBLIC_BETA_MODE === "true"
+      ? "You're one of the first people trying this. All premium features are unlocked — your feedback helps shape what comes next."
+      : "",
   },
 ] as const;
 
