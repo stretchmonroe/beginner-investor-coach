@@ -269,6 +269,7 @@ export default function Home() {
       {screen === "landing" && (
         <Landing
           onSelectProfile={(profile) => { setProfileSelectionOrigin("landing"); handleProfileSelect(profile); }}
+          onSamplePortfolio={handleSamplePortfolio}
         />
       )}
       {screen === "quiz" && <OnboardingQuiz onComplete={handleQuizComplete} />}

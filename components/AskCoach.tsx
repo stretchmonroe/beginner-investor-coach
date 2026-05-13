@@ -391,7 +391,7 @@ export default function AskCoach({
   return (
     <PageLayout maxWidth="sm">
       <PageHeader
-        title="AI Portfolio Coach"
+        title="Ask Lantern"
         description="Ask about your holdings, concentration, exposure, overlap, or investing concepts. Educational only — not financial advice."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
@@ -481,9 +481,9 @@ export default function AskCoach({
       {(answer || loading) && (
         <div ref={answerRef} className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-3 bg-blue-100 border-b border-blue-200">
-            <span className="text-blue-600 text-sm">✦</span>
+            <span className="text-blue-600 text-sm">🪔</span>
             <span className="text-xs font-semibold text-blue-700 uppercase tracking-widest">
-              AI Portfolio Coach
+              Lantern
             </span>
             {hasPortfolioContext && !loading && (
               <span className="ml-auto text-xs text-blue-500 font-medium">Portfolio-aware</span>

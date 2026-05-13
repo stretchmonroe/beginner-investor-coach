@@ -20,8 +20,8 @@ const STEPS = [
       "Broad ETFs, technology holdings, Canadian banks, and U.S. equities can overlap more than many beginner investors realize.",
   },
   {
-    icon: "✦",
-    title: "Ask AI Portfolio Coach",
+    icon: "🪔",
+    title: "Ask Lantern",
     description:
       "Get beginner-friendly explanations about your portfolio without trading jargon or buy/sell recommendations.",
   },

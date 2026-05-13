@@ -495,16 +495,16 @@ export default function PortfolioReportView({ data, onBack, onAskCoach, onViewPr
 
       </div>{/* end reportRef */}
 
-      {/* H. AI Portfolio Coach — outside PDF capture, hidden from print */}
+      {/* H. Ask Lantern — outside PDF capture, hidden from print */}
       {onAskCoach && (
         <div className="mt-6 print:hidden">
           <Card variant="highlighted">
-            <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-2">AI Portfolio Coach</p>
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-2">Ask Lantern</p>
             <p className="text-sm text-blue-900 mb-3">
-              Get a plain-English explanation of this report from the AI Portfolio Coach.
+              Get a plain-English explanation of this report.
             </p>
             <Button onClick={() => onAskCoach(buildCoachQuestion(data))}>
-              ✦ Explain this report
+              🪔 Explain this report
             </Button>
           </Card>
         </div>

@@ -86,7 +86,7 @@ export default function InvestorDashboard({
   const moreTools = [
     { label: "Money Snapshot", action: onContribution },
     { label: "Asset Class Explorer", action: onAssetClasses },
-    { label: "Coach History", action: () => onAskCoach() },
+    { label: "Lantern History", action: () => onAskCoach() },
     { label: "Compare Reports", action: () => onCompareReports?.() },
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
@@ -96,8 +96,8 @@ export default function InvestorDashboard({
   return (
     <PageLayout maxWidth="lg">
       <PageHeader
-        title="AI Portfolio Coach"
-        description="For Canadian beginner investors — know what you own, what you’re exposed to, and what to consider next."
+        title="Lantern"
+        description="Understand what you actually own — overlap, concentration, and exposure in plain English."
       />
       {process.env.NEXT_PUBLIC_BETA_MODE === "true" && (
         <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-5">
@@ -153,9 +153,9 @@ export default function InvestorDashboard({
           onClick={() => onAskCoach()}
           className="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 text-left hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer"
         >
-          <span className="text-xl">✦</span>
-          <span className="text-sm font-semibold text-slate-800">AI Portfolio Coach</span>
-          <span className="text-xs text-slate-500 leading-snug">Ask anything about investing</span>
+          <span className="text-xl">🪔</span>
+          <span className="text-sm font-semibold text-slate-800">Ask Lantern</span>
+          <span className="text-xs text-slate-500 leading-snug">Ask anything about your portfolio</span>
         </button>
         <button
           onClick={onSimulator}

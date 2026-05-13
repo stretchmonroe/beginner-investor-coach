@@ -647,8 +647,8 @@ export default function ReportComparison({ sessionId, onBack, onAskCoach, onView
               }}
               className="w-full flex items-center justify-center gap-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-4 py-3 rounded-2xl cursor-pointer transition-colors"
             >
-              <span>✦</span>
-              Ask AI Portfolio Coach to explain this comparison
+              <span>🪔</span>
+              Ask Lantern to explain this comparison
             </button>
           </div>
         )}

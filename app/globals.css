@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-white text-slate-900;
 }
 
 @media print {

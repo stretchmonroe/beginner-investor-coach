@@ -4,15 +4,15 @@ import AppProviders from "@/components/AppProviders";
 import { PostHogProvider } from '@/components/PostHogProvider'
 
 export const metadata: Metadata = {
-  title: "AI Portfolio Coach · Canadian beginners",
+  title: "Lantern — Understand what you actually own",
   description:
-    "Know what you own, what you’re exposed to, and what to consider next — without pretending to be a day trader.",
+    "See portfolio overlap, concentration, and exposure explained in plain English. Educational insights for beginner investors.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 text-slate-900 antialiased">
+      <body className="bg-white text-slate-900 antialiased">
         <PostHogProvider>
           <AppProviders>{children}</AppProviders>
         </PostHogProvider>

@@ -22,7 +22,7 @@ const BENEFITS = [
   { label: "Unlimited Portfolio Reports", detail: "Save and revisit as many snapshots as you want" },
   { label: "PDF export", detail: "Download any report as a clean PDF" },
   { label: "Portfolio comparison over time", detail: "Compare two saved snapshots to see what changed" },
-  { label: "Expanded AI explanations", detail: "Deeper context when asking the AI Portfolio Coach" },
+  { label: "Expanded AI explanations", detail: "Deeper context when asking Lantern" },
   { label: "Advanced overlap insights", detail: "See which holdings duplicate each other across ETFs" },
 ] as const;
 
