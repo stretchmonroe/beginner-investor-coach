@@ -44,14 +44,10 @@ interface Props {
   quizSkipped: boolean;
   sessionId: string;
   onPortfolioXRay: () => void;
-  onExploreETFs: () => void;
   onAssetClasses: () => void;
   onSimulator: () => void;
-  onGoalPlanner: () => void;
   onAskCoach: (question?: string, context?: PortfolioContext) => void;
   onContribution: () => void;
-  onWatchlist: () => void;
-  onCompare: () => void;
   onChangeProfile: () => void;
   onRetakeQuiz: () => void;
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
@@ -68,14 +64,10 @@ export default function InvestorDashboard({
   quizSkipped,
   sessionId,
   onPortfolioXRay,
-  onExploreETFs,
   onAssetClasses,
   onSimulator,
-  onGoalPlanner,
   onAskCoach,
   onContribution,
-  onWatchlist,
-  onCompare,
   onChangeProfile,
   onRetakeQuiz,
   onRestorePlan,
@@ -95,16 +87,10 @@ export default function InvestorDashboard({
 
   const moreTools = [
     { label: "Money Snapshot", action: onContribution },
-    { label: "Goal Feasibility", action: onGoalPlanner },
-    { label: "Sample Learning Allocation", action: onSimulator },
     { label: "Asset Class Explorer", action: onAssetClasses },
-    { label: "ETF Explorer", action: onExploreETFs },
-    { label: "Compare ETFs", action: onCompare },
-    { label: "Watchlist", action: onWatchlist },
     { label: "Coach History", action: () => onAskCoach() },
-    { label: "Change Profile", action: onChangeProfile },
-    { label: "Change profile", action: onRetakeQuiz },
     { label: "Compare Reports", action: () => onCompareReports?.() },
+    { label: "Change profile", action: onRetakeQuiz },
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
     { label: "Replay introduction", action: () => onViewOnboarding?.() },

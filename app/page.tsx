@@ -299,19 +299,10 @@ export default function Home() {
           quizSkipped={quizSkipped}
           sessionId={sessionId}
           onPortfolioXRay={() => { setXrayInitialHoldings([]); setScreen("portfolioxray"); }}
-          onExploreETFs={() => setScreen("etfs")}
           onAssetClasses={() => { setAssetClassOrigin("dashboard"); setScreen("assetclasses"); }}
           onSimulator={goToSimulator}
-          onGoalPlanner={() => {
-            setGoalPlannerPrefillMonthly(null);
-            setGoalPlannerPrefillStarting(null);
-            setGoalPlannerOrigin("dashboard");
-            setScreen("goalplanner");
-          }}
           onAskCoach={(q) => goToCoach(q)}
           onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
-          onWatchlist={() => setScreen("watchlist")}
-          onCompare={() => setScreen("compare")}
           onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRetakeQuiz={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRestorePlan={updateSharedPlan}
