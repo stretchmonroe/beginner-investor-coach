@@ -4,7 +4,9 @@
 
 A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, Tailwind v4, and Supabase. The app helps beginners understand their investing capacity, set realistic goals, and learn about investment types — without providing financial advice.
 
-**Stack:** Next.js App Router · TypeScript · Tailwind v4 · Supabase (anonymous sessions) · Anthropic API (Claude Haiku)
+**Stack:** Next.js App Router · TypeScript · Tailwind v4 · Supabase (anonymous sessions) · Anthropic API (Claude Haiku) · Stripe (subscriptions) · PostHog (analytics) · Vercel (hosting)
+
+**Status:** Beta — deployed at https://beginner-investor-coach-9dgl.vercel.app · All premium features unlocked for beta users
 
 ---
 
@@ -234,6 +236,100 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 
 ---
 
+### Phase 12 — Portfolio X-Ray Enrichment + Saved Reports
+
+**`c74c0e6` Add holding metadata enrichment and portfolio reports**
+- `/api/holding-metadata`: server-side proxy to FMP company profiles; returns sector, geography, currency, exchange, description per ticker
+- Async enrichment: holdings are enriched in the background after X-Ray renders; enriched metadata cached in component state per session
+- `components/PortfolioCharts.tsx`: asset mix donut and top holdings bar chart using Recharts
+- `lib/portfolioReports.ts`: `savePortfolioReport`, `getPortfolioReports`, `deletePortfolioReport` using Supabase `portfolio_reports` table
+- `components/SavedPortfolioReports.tsx`: saved report cards with view, delete, and restore
+- `components/PortfolioReportView.tsx`: full read-only report view with PDF export (html2canvas + jsPDF)
+
+---
+
+### Phase 13 — Premium Feature Gating
+
+**`d009372` Add premium feature gating**
+- `lib/subscriptionFeatures.ts`: `FREE_LIMITS` (10 holdings, 2 saved reports, 5 AI messages/day), `PREMIUM_FEATURES`, `UPGRADE_COPY` per moment
+- `contexts/SubscriptionContext.tsx`: `SubscriptionProvider` with localStorage-backed tier state
+- `lib/usageTracking.ts`: daily AI coach message count tracked per session in localStorage (America/Toronto timezone)
+- Premium gates added: CSV upload, screenshot import, holdings limit, saved report limit, AI coach daily limit, PDF export, report comparison
+- Upgrade dialogs with per-feature copy throughout `PortfolioXRay`, `AskCoach`, `PortfolioReportView`, `ReportComparison`
+- `components/PremiumPortfolioTools.tsx`: premium features overview page
+
+---
+
+### Phase 14 — Onboarding + Sample Portfolio
+
+**`781201d` Add onboarding and sample portfolio flow**
+- `components/Onboarding.tsx`: 4-step modal shown on first visit, skip/back/next, persisted via `bic_onboarding_done` localStorage flag
+- `lib/samplePortfolio.ts`: 5-holding sample (XEQT, VFV, NVDA, TD, CASH) designed to trigger overlap and concentration insights
+- Sample portfolio banner in Portfolio X-Ray with "Start with my own" CTA
+- "Try sample portfolio" button on landing page
+- "Replay introduction" entry in dashboard More tools
+- `force-remount` pattern (`key` prop) to cleanly reset X-Ray state between sample and live portfolios
+
+---
+
+### Phase 15 — Analytics
+
+**`12eb0d4` Add analytics and product event tracking**
+- `lib/analytics.ts`: typed `EventName` union (30+ events), `trackEvent` with PostHog capture and dev console logging
+- Events across: onboarding, Portfolio X-Ray (manual, CSV, screenshot), AI Coach, reports, premium/upgrade, Stripe
+- `components/PostHogProvider.tsx` + `src/lib/analytics.ts`: PostHog React provider via `posthog-js/react`
+- Privacy disclosure added to `PrivacyDataControls.tsx`
+
+---
+
+### Phase 16 — Mobile Responsiveness
+
+**`5a6907c` Improve mobile responsiveness and UX across the app**
+- iOS Safari zoom fix: all inputs and textareas set to `text-base md:text-sm` (≥16px on mobile)
+- `touch-manipulation` on all buttons for faster tap response
+- `PageLayout`: `px-4 py-8 sm:px-6 sm:py-14`
+- `PageHeader`: `text-2xl sm:text-3xl`, responsive margins
+- Button min-heights: 36px (sm), 44px (md), 48px (lg)
+- Holdings form grid: `grid-cols-1 sm:grid-cols-2`
+- Chart Y-axis width reduced, tick labels truncated to 13 chars
+
+---
+
+### Phase 17 — Stripe Subscriptions
+
+**`cb223e1` Add Stripe subscription and premium access management**
+- `lib/stripe.ts`: Stripe SDK client (v22, API `2026-04-22.dahlia`)
+- `lib/supabaseAdmin.ts`: Supabase service-role client for server-side operations
+- `app/api/stripe/checkout`: creates Stripe Checkout session with anonymous `session_id` in metadata
+- `app/api/stripe/portal`: creates Customer Portal session for billing management
+- `app/api/webhooks/stripe`: handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- `app/api/subscription/status`: server-side tier verification by `session_id`
+- `SubscriptionContext` updated: server verification on mount overrides localStorage; `openCheckout`, `openPortal`, `refreshSubscription` added to context
+- `components/SubscriptionStatus.tsx`: plan badge + "Manage billing" link
+- Upgrade dialogs across app now call `openCheckout()` directly
+- `supabase/migrations/20260512_subscriptions.sql`: `subscriptions` table DDL
+
+**`b45042e` Persist quiz answers to localStorage to survive Stripe redirect**
+- Quiz answers and `quizSkipped` persisted to `bic_quiz_answers` / `bic_quiz_skipped` on every update
+- Restored on mount — fixes blank page after returning from Stripe Checkout
+- Falls back to `portfolioxray` screen if answers unavailable after checkout
+
+---
+
+### Phase 18 — Beta Launch
+
+**`d0bcacb` Add beta mode flag**
+- `NEXT_PUBLIC_BETA_MODE=true` env var skips server subscription verification and grants all users premium
+- Beta badge on dashboard: "Beta · All premium features unlocked"
+
+**`a99cb3a` Complete beta UX: feedback link, welcome note, hide Stripe checkout**
+- Dashboard beta banner includes "Share feedback →" link (driven by `NEXT_PUBLIC_FEEDBACK_URL`)
+- Onboarding last step updated with beta-specific welcome copy
+- `PremiumPortfolioTools`: Stripe checkout section replaced with amber "Beta access — all features unlocked" card during beta
+- Deployed to Vercel: https://beginner-investor-coach-9dgl.vercel.app
+
+---
+
 ## Supabase Tables
 
 | Table | Purpose |
@@ -243,8 +339,11 @@ A budget-aware investing readiness coach built with Next.js 16.2.4, TypeScript, 
 | `coach_conversations` | AI coach Q&A history per session |
 | `anonymous_learning_plans` | Legacy saved plans (kept, not modified) |
 | `anonymous_readiness_plans` | Full readiness journey snapshots (current) |
+| `portfolio_reports` | Saved Portfolio X-Ray snapshots per session |
+| `subscriptions` | Stripe subscription records linked to anonymous session IDs |
 
 > Note: `anonymous_readiness_plans` requires RLS disabled or anon insert/select/delete policies.
+> `subscriptions` uses RLS with service-role-only access (no client queries).
 
 ---
 
