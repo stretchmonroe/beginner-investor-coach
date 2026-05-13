@@ -112,13 +112,30 @@ export default function Home() {
       setShowOnboarding(true);
     }
 
+    // Restore quiz answers across page reloads (e.g. after Stripe redirect)
+    try {
+      const savedAnswers = localStorage.getItem("bic_quiz_answers");
+      const savedSkipped = localStorage.getItem("bic_quiz_skipped");
+      if (savedAnswers) {
+        setAnswers(JSON.parse(savedAnswers));
+        setQuizSkipped(savedSkipped === "true");
+      }
+    } catch {
+      /* ignore */
+    }
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout_success") === "1") {
       window.history.replaceState({}, "", "/");
       setCheckoutSuccess(true);
-      setScreen("dashboard");
       trackEvent("checkout_completed");
-      // Give the webhook a moment to land, then re-verify subscription status
+      // Restore answers before deciding screen — if none, fall back to portfolioxray
+      try {
+        const savedAnswers = localStorage.getItem("bic_quiz_answers");
+        setScreen(savedAnswers ? "dashboard" : "portfolioxray");
+      } catch {
+        setScreen("portfolioxray");
+      }
       if (!refreshCalledRef.current) {
         refreshCalledRef.current = true;
         setTimeout(() => refreshSubscription(), 2000);
@@ -130,6 +147,10 @@ export default function Home() {
   function handleQuizComplete(a: QuizAnswers) {
     setQuizSkipped(false);
     setAnswers(a);
+    try {
+      localStorage.setItem("bic_quiz_answers", JSON.stringify(a));
+      localStorage.setItem("bic_quiz_skipped", "false");
+    } catch { /* ignore */ }
     setScreen("dashboard");
     supabase.from("quiz_results").insert({
       session_id: sessionId,
@@ -148,6 +169,10 @@ export default function Home() {
     const synthetic = syntheticAnswersForProfile(profile);
     setQuizSkipped(true);
     setAnswers(synthetic);
+    try {
+      localStorage.setItem("bic_quiz_answers", JSON.stringify(synthetic));
+      localStorage.setItem("bic_quiz_skipped", "true");
+    } catch { /* ignore */ }
     setScreen("dashboard");
     supabase.from("quiz_results").insert({
       session_id: sessionId,
@@ -216,6 +241,10 @@ export default function Home() {
       const synthetic = syntheticAnswersForProfile("Balanced Beginner");
       setQuizSkipped(true);
       setAnswers(synthetic);
+      try {
+        localStorage.setItem("bic_quiz_answers", JSON.stringify(synthetic));
+        localStorage.setItem("bic_quiz_skipped", "true");
+      } catch { /* ignore */ }
     }
     setXrayInitialHoldings(SAMPLE_HOLDINGS);
     setIsSamplePortfolio(true);
@@ -225,6 +254,8 @@ export default function Home() {
 
   function handleClearSession() {
     localStorage.removeItem("bic_session_id");
+    localStorage.removeItem("bic_quiz_answers");
+    localStorage.removeItem("bic_quiz_skipped");
     const newId = crypto.randomUUID();
     localStorage.setItem("bic_session_id", newId);
     setSessionId(newId);
