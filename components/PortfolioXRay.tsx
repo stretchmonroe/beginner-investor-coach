@@ -281,9 +281,10 @@ interface Props {
   onAskCoach?: (question: string, context: PortfolioContext) => void;
   onViewReport?: (data: PortfolioReportData) => void;
   onViewPremiumTools?: () => void;
+  onSamplePortfolio?: () => void;
 }
 
-export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools }: Props) {
+export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, initialHoldings, isSample, onClearSample, onAskCoach, onViewReport, onViewPremiumTools, onSamplePortfolio }: Props) {
   const { tier, isPremium, openCheckout } = useSubscription();
   const [upgradeMoment, setUpgradeMoment] = useState<UpgradeMoment | null>(null);
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings ?? []);
@@ -820,6 +821,14 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             <Button variant="secondary" onClick={tryOpenScreenshot} fullWidth>
               Upload screenshot
             </Button>
+            {onSamplePortfolio && (
+              <button
+                onClick={onSamplePortfolio}
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer pt-1"
+              >
+                Try a sample portfolio →
+              </button>
+            )}
           </div>
         </Card>
       )}

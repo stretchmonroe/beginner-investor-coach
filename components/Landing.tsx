@@ -1,9 +1,7 @@
 import type { Profile } from "@/lib/etfs";
-import Button from "@/components/ui/Button";
 
 interface Props {
   onSelectProfile: (profile: Profile) => void;
-  onSamplePortfolio: () => void;
 }
 
 const PROFILES: {
@@ -59,7 +57,7 @@ const HOW_IT_WORKS = [
   },
 ];
 
-export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
+export default function Landing({ onSelectProfile }: Props) {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
       <div className="max-w-xl w-full text-center space-y-8">
@@ -110,23 +108,6 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
               </div>
             </button>
           ))}
-        </div>
-
-        {/* Sample portfolio */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-slate-100" />
-            <span className="text-xs text-slate-400">or</span>
-            <div className="flex-1 h-px bg-slate-100" />
-          </div>
-          <Button
-            variant="secondary"
-            onClick={onSamplePortfolio}
-            size="lg"
-            className="w-full sm:w-auto px-8"
-          >
-            Try sample portfolio
-          </Button>
         </div>
 
         {/* Trust note */}

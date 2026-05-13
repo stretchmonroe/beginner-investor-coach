@@ -269,7 +269,6 @@ export default function Home() {
       {screen === "landing" && (
         <Landing
           onSelectProfile={(profile) => { setProfileSelectionOrigin("landing"); handleProfileSelect(profile); }}
-          onSamplePortfolio={handleSamplePortfolio}
         />
       )}
       {screen === "quiz" && <OnboardingQuiz onComplete={handleQuizComplete} />}
@@ -358,6 +357,7 @@ export default function Home() {
           onAskCoach={goToCoach}
           onViewReport={(data) => viewPortfolioReport(data, "portfolioxray")}
           onViewPremiumTools={() => setScreen("premiumtools")}
+          onSamplePortfolio={handleSamplePortfolio}
         />
       )}
       {screen === "portfolioreport" && reportViewData && (
