@@ -195,6 +195,81 @@ function InsightCard({ insight }: { insight: PortfolioInsight }) {
   );
 }
 
+function KeyInsightCard({ insight }: { insight: PortfolioInsight }) {
+  const dot =
+    insight.severity === "warning"
+      ? "bg-rose-400"
+      : insight.severity === "caution"
+      ? "bg-amber-400"
+      : "bg-slate-300";
+  return (
+    <div className="flex gap-4 items-start py-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0">
+      <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
+        <p className="text-sm text-slate-500 leading-relaxed">{insight.description}</p>
+      </div>
+    </div>
+  );
+}
+
+interface HoldingRowProps {
+  holding: Holding;
+  weight: number;
+  isDuplicate: boolean;
+  onEdit: (h: Holding) => void;
+  onDelete: (id: string) => void;
+}
+
+function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: HoldingRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-baseline gap-2">
+            {h.ticker && <span className="text-sm font-bold text-slate-800">{h.ticker}</span>}
+            {h.name && <span className="text-sm text-slate-400 truncate max-w-[180px] sm:max-w-none">{h.name}</span>}
+          </div>
+          {isDuplicate && <p className="text-xs text-amber-500 mt-0.5">Appears more than once</p>}
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-sm font-semibold text-slate-700">{pct(weight)}</p>
+          <p className="text-xs text-slate-400">{fmt(h.marketValue)}</p>
+        </div>
+        <button
+          onClick={() => setExpanded((s) => !s)}
+          className="text-xs text-slate-300 hover:text-slate-500 transition-colors cursor-pointer ml-1 shrink-0"
+          aria-label={expanded ? "collapse" : "expand"}
+        >
+          {expanded ? "▲" : "▼"}
+        </button>
+      </div>
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="default">{h.assetType}</Badge>
+            <Badge variant="muted">{h.accountType}</Badge>
+            <Badge variant="muted">{h.currency}</Badge>
+          </div>
+          {(h.quantity !== null || h.marketPrice !== null) && (
+            <p className="text-xs text-slate-400">
+              {h.quantity !== null && <span>{h.quantity} units</span>}
+              {h.quantity !== null && h.marketPrice !== null && <span> × </span>}
+              {h.marketPrice !== null && <span>{fmt(h.marketPrice)}</span>}
+            </p>
+          )}
+          <div className="flex items-center gap-3">
+            <button onClick={() => onEdit(h)} className="text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors cursor-pointer">Edit</button>
+            <span className="text-slate-200">·</span>
+            <button onClick={() => onDelete(h.id)} className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer">Remove</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExposureRows({ items }: { items: ExposureItem[] }) {
   return (
     <div className="space-y-3">
@@ -235,7 +310,7 @@ function CoachBtn({
       onClick={() => onAskCoach(question, portfolioContext)}
       className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
     >
-      <span>✦</span> {label}
+      <span>🪔</span> {label}
     </button>
   );
 }
@@ -300,6 +375,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const [enrichedMetadata, setEnrichedMetadata] = useState<EnrichedMetadataMap>({});
   const [enrichmentStatus, setEnrichmentStatus] = useState<"idle" | "loading" | "done">("idle");
   const enrichingRef = useRef(false);
+  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
+  const [showAllHoldings, setShowAllHoldings] = useState(false);
+  const [showFullExposure, setShowFullExposure] = useState(false);
 
   // ── FMP enrichment for unknown tickers ───────────────────────────────────
 
@@ -633,13 +711,18 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
   const overlapToDisplay = showAdvancedOverlap ? overlapInsights : overlapInsights.slice(0, 1);
   const themeToDisplay = showAdvancedOverlap ? themeInsights : [];
 
+  const topSector = sectorExposure[0] ?? null;
+  const sortOrder = { warning: 0, caution: 1, info: 2 } as const;
+  const keyInsights = [...concentrationInsights, ...overlapToDisplay, ...themeToDisplay]
+    .sort((a, b) => (sortOrder[a.severity as keyof typeof sortOrder] ?? 2) - (sortOrder[b.severity as keyof typeof sortOrder] ?? 2))
+    .slice(0, 3);
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <PageLayout maxWidth="lg">
       <PageHeader
         title="Portfolio X-Ray"
-        description="Enter your holdings to see concentration, exposure, and beginner-friendly insights."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -806,14 +889,15 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
       {/* ── Empty state ── */}
       {holdings.length === 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
-        <Card className="mb-6">
-          <p className="text-sm font-semibold text-slate-800 mb-1">Add holdings to unlock your Portfolio X-Ray.</p>
-          <p className="text-sm text-slate-500 mb-4 leading-relaxed">
-            Add holdings manually to explore concentration and exposure on the free tier.{" "}
-            <span className="text-slate-600">CSV import and screenshot extraction</span> are part of{" "}
-            <span className="font-medium text-slate-700">Premium Portfolio Tools</span> when you are ready.
+        <div className="flex flex-col items-center text-center py-14">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-5">
+            <span className="text-2xl">🪔</span>
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Add your first holding</h2>
+          <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">
+            Enter your holdings to see what you own, where it&apos;s concentrated, and what overlaps.
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 w-full max-w-xs">
             <div className="grid grid-cols-2 gap-2">
               <Button onClick={openAddForm} fullWidth>+ Add manually</Button>
               <Button variant="secondary" onClick={tryOpenCsv} fullWidth>Upload CSV</Button>
@@ -824,397 +908,348 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
             {onSamplePortfolio && (
               <button
                 onClick={onSamplePortfolio}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer pt-1"
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer mt-1"
               >
                 Try a sample portfolio →
               </button>
             )}
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* ── A. Holdings list ── */}
+      {/* ── Main analysis ── */}
       {holdings.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <h2 className="text-base font-semibold text-slate-800 pt-0.5">Holdings</h2>
-            {!showForm && !showCsvImport && !showScreenshotUpload && (
-              <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add</Button>
-                <Button variant="ghost" size="sm" onClick={tryOpenCsv}>CSV</Button>
-                <Button variant="ghost" size="sm" onClick={tryOpenScreenshot}>Screenshot</Button>
+        <div className="space-y-10">
+
+          {/* 1. What stands out */}
+          {keyInsights.length > 0 && (
+            <section>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">What stands out</h2>
+                {onAskCoach && portfolioContext && (
+                  <button
+                    onClick={() => onAskCoach(
+                      "Explain the key insights from my Portfolio X-Ray in plain English for a beginner investor.",
+                      portfolioContext
+                    )}
+                    className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
+                  >
+                    <span>🪔</span> Ask Lantern
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-          <div className="space-y-3">
-            {holdings.map((h) => {
-              const weight = totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0;
-              return (
-                <Card key={h.id} padding="sm">
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        {h.ticker && <span className="text-sm font-bold text-slate-800">{h.ticker}</span>}
-                        {h.name && <span className="text-sm text-slate-500">{h.name}</span>}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <Badge variant="default">{h.assetType}</Badge>
-                        <Badge variant="muted">{h.accountType}</Badge>
-                        <Badge variant="muted">{h.currency}</Badge>
-                      </div>
-                      {h.ticker && duplicateTickerSet.has(normalizeTicker(h.ticker)) && (
-                        <p className="text-xs text-amber-600 mt-1.5">Duplicate ticker — this appears more than once.</p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-slate-800">{fmt(h.marketValue)}</p>
-                      <p className="text-xs font-semibold text-slate-400 mt-0.5">{pct(weight)}</p>
-                    </div>
-                  </div>
-                  {(h.quantity !== null || h.marketPrice !== null) && (
-                    <p className="text-xs text-slate-400 mb-2">
-                      {h.quantity !== null && <span>{h.quantity} units</span>}
-                      {h.quantity !== null && h.marketPrice !== null && <span> × </span>}
-                      {h.marketPrice !== null && <span>{fmt(h.marketPrice)}</span>}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEditForm(h)}
-                      className="text-xs font-medium text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                    >Edit</button>
-                    <span className="text-slate-200">·</span>
-                    <button
-                      onClick={() => deleteHolding(h.id)}
-                      className="text-xs font-medium text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                    >Delete</button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Mixed currency note ── */}
-      {hasMixedCurrencies && holdings.length > 0 && (
-        <div className="mb-4 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
-          <p className="text-xs font-semibold text-blue-700 mb-1">Mixed currencies detected</p>
-          <p className="text-xs text-blue-600 leading-relaxed">
-            Your holdings include both CAD and USD values. Total portfolio value is shown as a simple sum without currency conversion, so the combined total may not reflect a single-currency equivalent.
-          </p>
-        </div>
-      )}
-
-      {/* ── Summary ── */}
-      {holdings.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-3">Summary</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Card variant="muted" padding="sm">
-              <p className="text-xs text-slate-400 mb-0.5">Total value</p>
-              <p className="text-lg font-bold text-slate-800">{fmt(totalValue)}</p>
-            </Card>
-            <Card variant="muted" padding="sm">
-              <p className="text-xs text-slate-400 mb-0.5">Holdings</p>
-              <p className="text-lg font-bold text-slate-800">{holdings.length}</p>
-            </Card>
-            <Card variant="muted" padding="sm" className="col-span-2">
-              <p className="text-xs text-slate-400 mb-0.5">Largest holding</p>
-              <p className="text-sm font-bold text-slate-800">
-                {sortedByValue[0].ticker || sortedByValue[0].name}{" "}
-                <span className="text-slate-500 font-semibold">
-                  — {pct((sortedByValue[0].marketValue / totalValue) * 100)} of portfolio
-                </span>
-              </p>
-            </Card>
-            {holdings.length >= 3 && (
-              <Card variant="muted" padding="sm" className="col-span-2">
-                <p className="text-xs text-slate-400 mb-0.5">Top 3 holdings combined</p>
-                <p className="text-sm font-bold text-slate-800">{pct(top3Weight)} of portfolio</p>
-              </Card>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Primary actions row ── */}
-      {holdings.length > 0 && !showForm && !showCsvImport && !showScreenshotUpload && (
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <CoachBtn
-            label="✦ Explain my Portfolio X-Ray"
-            question="Explain my Portfolio X-Ray in plain English. Focus on total value, largest holdings, concentration, exposure, overlap notes, and what may be worth understanding."
-            onAskCoach={onAskCoach}
-            portfolioContext={portfolioContext}
-          />
-          {onViewReport && (
-            <Button variant="secondary" size="sm" onClick={handleViewReport}>
-              View Report
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* ── Visual charts ── */}
-      <PortfolioCharts
-        holdings={holdings}
-        totalValue={totalValue}
-        assetTypeItems={assetMix.map((m) => ({ label: m.assetType, value: m.value, weight: m.weight }))}
-        sectorExposure={sectorExposure}
-        geographyExposure={geographyExposure}
-        currencyExposure={currencyExposure}
-        hasUnmapped={hasUnmapped}
-      />
-
-      {/* ── B. Concentration insights ── */}
-      {concentrationInsights.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">Concentration</h2>
-          <p className="text-sm text-slate-500 mb-3">Based on holding weights. Educational only.</p>
-          <div className="space-y-4">
-            {concentrationInsights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {concentrationInsights.length > 0 && (
-        <div className="mb-6">
-          <CoachBtn
-            label="✦ Explain concentration"
-            question="Explain my portfolio concentration in plain English. Focus on largest holding weight, top 3 concentration, and why concentration matters for a beginner investor."
-            onAskCoach={onAskCoach}
-            portfolioContext={portfolioContext}
-          />
-        </div>
-      )}
-
-      {/* ── C. Exposure breakdown ── */}
-      {holdings.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">Exposure</h2>
-          <p className="text-sm text-slate-500 mb-4">
-            Simplified estimates based on static metadata. {METADATA_DISCLAIMER}
-          </p>
-
-          {/* Metadata quality bar */}
-          <div className="flex items-center gap-2 mb-4 text-xs text-slate-500">
-            <span>
-              Mapped: <span className="font-semibold text-slate-700">{mappedCount}</span> of{" "}
-              <span className="font-semibold text-slate-700">{holdings.length}</span> holdings
-            </span>
-            {Object.values(enrichedMetadata).some((v) => v !== null) && (
-              <span className="text-teal-600 font-medium">· includes FMP data</span>
-            )}
-          </div>
-
-          {/* Enrichment loading state */}
-          {enrichmentStatus === "loading" && (
-            <div className="mb-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5">
-              <p className="text-xs text-slate-500">Looking up holdings data…</p>
-            </div>
-          )}
-
-          {/* Unknown holdings detail (after enrichment attempt) */}
-          {enrichmentStatus === "done" && hasUnmapped && (
-            <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-              <p className="text-xs font-semibold text-amber-700 mb-2">
-                {unknownHoldings.length} holding{unknownHoldings.length === 1 ? "" : "s"} could not be mapped
-              </p>
-              <div className="space-y-1 mb-2">
-                {unknownHoldings.map((h) => (
-                  <div key={h.id} className="flex items-center justify-between text-xs">
-                    <span className="text-amber-800 font-medium">{h.ticker || h.name || "Unknown"}</span>
-                    <span className="text-amber-600">{fmt(h.marketValue)}</span>
-                  </div>
+              <Card>
+                {keyInsights.map((insight) => (
+                  <KeyInsightCard key={insight.id} insight={insight} />
                 ))}
-              </div>
-              <p className="text-xs text-amber-600">
-                These holdings are included in portfolio value but may not be fully reflected in sector, geography, or currency exposure estimates.
-              </p>
-            </div>
-          )}
-
-          {/* Asset type mix */}
-          {assetMix.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Asset type</p>
-              <Card padding="sm">
-                <ExposureRows items={assetMix.map((i) => ({ label: i.assetType, value: i.value, weight: i.weight }))} />
               </Card>
-            </div>
+            </section>
           )}
 
-          {/* Sector */}
-          {sectorExposure.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Sector</p>
-              <Card padding="sm">
-                <ExposureRows items={sectorExposure} />
+          {/* 2. Portfolio snapshot */}
+          <section>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Portfolio snapshot</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Card variant="muted" padding="sm">
+                <p className="text-xs text-slate-400 mb-1">Total value</p>
+                <p className="text-xl font-bold text-slate-800">{fmt(totalValue)}</p>
+                {hasMixedCurrencies && <p className="text-xs text-slate-400 mt-1">CAD + USD, not converted</p>}
               </Card>
-            </div>
-          )}
-
-          {/* Geography */}
-          {geographyExposure.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Geography</p>
-              <Card padding="sm">
-                <ExposureRows items={geographyExposure} />
+              <Card variant="muted" padding="sm">
+                <p className="text-xs text-slate-400 mb-1">Holdings</p>
+                <p className="text-xl font-bold text-slate-800">{holdings.length}</p>
               </Card>
-            </div>
-          )}
-
-          {/* Currency */}
-          {currencyExposure.length > 0 && (
-            <div className="mb-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Currency</p>
-              <Card padding="sm">
-                <ExposureRows items={currencyExposure} />
-                <p className="text-xs text-slate-400 mt-3">
-                  Currency exposure is simplified. A Canadian-listed ETF may still hold foreign assets.
+              <Card variant="muted" padding="sm">
+                <p className="text-xs text-slate-400 mb-1">Largest holding</p>
+                <p className="text-sm font-bold text-slate-800 truncate">
+                  {sortedByValue[0].ticker || sortedByValue[0].name}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {pct((sortedByValue[0].marketValue / totalValue) * 100)} of portfolio
                 </p>
               </Card>
+              <Card variant="muted" padding="sm">
+                <p className="text-xs text-slate-400 mb-1">Top sector</p>
+                {topSector ? (
+                  <>
+                    <p className="text-sm font-bold text-slate-800 truncate">{topSector.label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{pct(topSector.weight)} est.</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-400">—</p>
+                )}
+              </Card>
             </div>
-          )}
+          </section>
 
-          {/* Theme insights */}
-          {themeToDisplay.length > 0 && (
-            <div className="space-y-4">
-              {themeToDisplay.map((insight) => (
-                <InsightCard key={insight.id} insight={insight} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {holdings.length > 0 && (
-        <div className="mb-6">
-          <CoachBtn
-            label="✦ Explain exposure"
-            question="Explain my sector, geography, currency, and asset type exposure in plain English. Use cautious language and explain that exposure mappings are simplified estimates."
-            onAskCoach={onAskCoach}
-            portfolioContext={portfolioContext}
-          />
-        </div>
-      )}
-
-      {/* ── D. Overlap notes ── */}
-      {overlapToDisplay.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">Overlap notes</h2>
-          <p className="text-sm text-slate-500 mb-3">
-            Potential holding interactions based on simplified static mapping.
-          </p>
-          <div className="space-y-4">
-            {overlapToDisplay.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!showAdvancedOverlap && holdings.length > 0 && (overlapInsights.length > 1 || themeInsights.length > 0) && (
-        <Card variant="muted" className="mb-6">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
-            Advanced Portfolio Insights
-          </p>
-          <p className="text-sm text-slate-600 leading-relaxed mb-3">
-            Additional overlap notes and theme-level context are part of Premium Portfolio Tools — a calm
-            upgrade path when you want expanded analysis, not a requirement to get started.
-          </p>
-          {onViewPremiumTools && (
-            <Button variant="secondary" size="sm" onClick={onViewPremiumTools}>
-              Learn about Premium Portfolio Tools
-            </Button>
-          )}
-        </Card>
-      )}
-
-      {overlapToDisplay.length > 0 && (
-        <div className="mb-6">
-          <CoachBtn
-            label="✦ Explain overlap"
-            question="Explain the overlap notes in my portfolio in plain English. Focus on ETF overlap and individual stocks that may already be represented inside broad ETFs."
-            onAskCoach={onAskCoach}
-            portfolioContext={portfolioContext}
-          />
-        </div>
-      )}
-
-      {/* ── What this means ── */}
-      {holdings.length > 0 && (
-        <div className="mb-6">
-          <Card variant="highlighted">
-            <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-2">What this means</p>
-            <p className="text-sm text-blue-900 leading-relaxed">
-              Portfolio X-Ray helps you understand concentration, asset mix, and estimated exposure based
-              on the holdings you enter. It does not decide whether your portfolio is good or bad.
-              It highlights areas worth understanding before making future decisions.
-            </p>
-          </Card>
-        </div>
-      )}
-
-      {/* ── E. Portfolio Scenarios ── */}
-      <PortfolioScenarios
-        holdings={holdings}
-        totalValue={totalValue}
-        sectorExposure={sectorExposure}
-        defaultMonthlyContribution={monthlyContribution}
-        onAskCoach={onAskCoach && portfolioContext ? (q) => onAskCoach(q, portfolioContext) : undefined}
-      />
-
-      {/* ── Save snapshot ── */}
-      {holdings.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-800 mb-1">Save snapshot</h2>
-          <p className="text-sm text-slate-500 mb-3">
-            Saves a read-only snapshot of the current holdings and analysis. Editing holdings later will not affect saved snapshots.
-          </p>
-          <Card padding="sm">
-            <div className="flex flex-col gap-3">
-              <div>
-                <label className={labelClass}>
-                  Snapshot name <span className="font-normal text-slate-400">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={reportName}
-                  onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
-                  placeholder={`Portfolio X-Ray — ${new Date().toLocaleDateString("en-CA", { month: "long", year: "numeric" })}`}
-                  className={inputClass}
-                  maxLength={80}
-                />
+          {/* 3. Exposure */}
+          {(assetMix.length > 0 || sectorExposure.length > 0) && (
+            <section>
+              <div className="flex items-baseline justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">Exposure</h2>
+                {enrichmentStatus === "loading" && (
+                  <span className="text-xs text-slate-400">Looking up holdings…</span>
+                )}
               </div>
-              <div>
-                <label className={labelClass}>
-                  Notes <span className="font-normal text-slate-400">(optional)</span>
-                </label>
-                <textarea
-                  value={reportNotes}
-                  onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
-                  placeholder="e.g. After adding new ETF position, before rebalancing review…"
-                  rows={2}
-                  className="w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
-                />
-                <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
+              <Card>
+                {assetMix.length > 0 && (
+                  <div className={sectorExposure.length > 0 ? "mb-6" : ""}>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Asset mix</p>
+                    <ExposureRows items={assetMix.map((i) => ({ label: i.assetType, value: i.value, weight: i.weight }))} />
+                  </div>
+                )}
+                {sectorExposure.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Sector</p>
+                    <ExposureRows items={sectorExposure} />
+                  </div>
+                )}
+                {(geographyExposure.length > 0 || currencyExposure.length > 0) && (
+                  <div className="mt-5 pt-5 border-t border-slate-100">
+                    <button
+                      onClick={() => setShowFullExposure((s) => !s)}
+                      className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      {showFullExposure ? "Show less ▲" : "Geography & currency ▼"}
+                    </button>
+                    {showFullExposure && (
+                      <div className="mt-5 space-y-6">
+                        {geographyExposure.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Geography</p>
+                            <ExposureRows items={geographyExposure} />
+                          </div>
+                        )}
+                        {currencyExposure.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">Currency</p>
+                            <ExposureRows items={currencyExposure} />
+                            <p className="text-xs text-slate-400 mt-3">A Canadian-listed ETF may still hold foreign assets.</p>
+                          </div>
+                        )}
+                        {enrichmentStatus === "done" && hasUnmapped && (
+                          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                            <p className="text-xs font-semibold text-amber-700 mb-1">
+                              {unknownHoldings.length} holding{unknownHoldings.length === 1 ? "" : "s"} not fully mapped
+                            </p>
+                            <p className="text-xs text-amber-600">
+                              {unknownHoldings.map((h) => h.ticker || h.name).filter(Boolean).join(", ")} — included in total but may not appear in exposure estimates.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-slate-400 mt-5 pt-5 border-t border-slate-100">{METADATA_DISCLAIMER}</p>
+              </Card>
+              {onAskCoach && portfolioContext && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => onAskCoach(
+                      "Explain my sector, geography, and asset type exposure in plain English. Mention these are simplified estimates.",
+                      portfolioContext
+                    )}
+                    className="flex items-center gap-1.5 text-xs font-medium text-blue-500 hover:text-blue-700 transition-colors cursor-pointer"
+                  >
+                    <span>🪔</span> Ask Lantern about exposure
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 4. Holdings */}
+          {!showForm && !showCsvImport && !showScreenshotUpload && (
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">Holdings</h2>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add</Button>
+                  <Button variant="ghost" size="sm" onClick={tryOpenCsv}>CSV</Button>
+                  <Button variant="ghost" size="sm" onClick={tryOpenScreenshot}>Screenshot</Button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={handleSave} disabled={saveState === "saving"}>
-                  {saveState === "saving" ? "Saving…" : "Save snapshot"}
+              <div className="space-y-2">
+                {(showAllHoldings ? sortedByValue : sortedByValue.slice(0, 4)).map((h) => (
+                  <HoldingRow
+                    key={h.id}
+                    holding={h}
+                    weight={totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0}
+                    isDuplicate={duplicateTickerSet.has(normalizeTicker(h.ticker))}
+                    onEdit={openEditForm}
+                    onDelete={deleteHolding}
+                  />
+                ))}
+              </div>
+              {sortedByValue.length > 4 && (
+                <button
+                  onClick={() => setShowAllHoldings((s) => !s)}
+                  className="mt-3 text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                >
+                  {showAllHoldings ? "Show less ▲" : `View all ${sortedByValue.length} holdings ▼`}
+                </button>
+              )}
+            </section>
+          )}
+
+          {/* 5. Detailed analysis (collapsed) */}
+          <section>
+            <button
+              onClick={() => setShowDetailedAnalysis((s) => !s)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer mb-4"
+            >
+              View detailed analysis <span className="text-xs">{showDetailedAnalysis ? "▲" : "▼"}</span>
+            </button>
+            {showDetailedAnalysis && (
+              <div className="space-y-6">
+                <PortfolioCharts
+                  holdings={holdings}
+                  totalValue={totalValue}
+                  assetTypeItems={assetMix.map((m) => ({ label: m.assetType, value: m.value, weight: m.weight }))}
+                  sectorExposure={sectorExposure}
+                  geographyExposure={geographyExposure}
+                  currencyExposure={currencyExposure}
+                  hasUnmapped={hasUnmapped}
+                />
+                {concentrationInsights.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-600 mb-3">Concentration details</h3>
+                    <div className="space-y-4">
+                      {concentrationInsights.map((insight) => (
+                        <InsightCard key={insight.id} insight={insight} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {overlapToDisplay.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-600 mb-3">Overlap details</h3>
+                    <div className="space-y-4">
+                      {overlapToDisplay.map((insight) => (
+                        <InsightCard key={insight.id} insight={insight} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {themeToDisplay.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-600 mb-3">Theme insights</h3>
+                    <div className="space-y-4">
+                      {themeToDisplay.map((insight) => (
+                        <InsightCard key={insight.id} insight={insight} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!showAdvancedOverlap && (overlapInsights.length > 1 || themeInsights.length > 0) && (
+                  <Card variant="muted">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Advanced insights</p>
+                    <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                      Additional overlap and theme insights are part of Premium Portfolio Tools.
+                    </p>
+                    {onViewPremiumTools && (
+                      <Button variant="secondary" size="sm" onClick={onViewPremiumTools}>
+                        Learn about Premium Portfolio Tools
+                      </Button>
+                    )}
+                  </Card>
+                )}
+                <p className="text-xs text-slate-400">
+                  {mappedCount} of {holdings.length} holdings mapped
+                  {Object.values(enrichedMetadata).some((v) => v !== null) && " · includes FMP data"}
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* 6. Ask Lantern */}
+          {onAskCoach && portfolioContext && (
+            <section>
+              <Card variant="highlighted">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl shrink-0 mt-0.5">🪔</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Ask Lantern</p>
+                    <p className="text-sm text-blue-700 mb-4 leading-relaxed">
+                      Get a plain-English walkthrough of your portfolio — what stands out, what overlaps, and what to think about.
+                    </p>
+                    <Button
+                      onClick={() => onAskCoach(
+                        "Explain my Portfolio X-Ray in plain English. Focus on concentration, exposure, overlap, and what may be worth understanding for a beginner investor.",
+                        portfolioContext
+                      )}
+                    >
+                      Explain my portfolio
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </section>
+          )}
+
+          {/* Portfolio Scenarios */}
+          <PortfolioScenarios
+            holdings={holdings}
+            totalValue={totalValue}
+            sectorExposure={sectorExposure}
+            defaultMonthlyContribution={monthlyContribution}
+            onAskCoach={onAskCoach && portfolioContext ? (q) => onAskCoach(q, portfolioContext) : undefined}
+          />
+
+          {/* 7. Save snapshot */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Save snapshot</h2>
+              {onViewReport && (
+                <Button variant="secondary" size="sm" onClick={handleViewReport}>
+                  View Report
                 </Button>
-                {saveState === "saved" && (
-                  <p className="text-xs text-teal-600 font-medium">Snapshot saved. View it in Saved Reports on the dashboard.</p>
-                )}
-                {saveState === "error" && (
-                  <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
-                )}
-              </div>
+              )}
             </div>
-          </Card>
+            <Card padding="sm">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className={labelClass}>
+                    Snapshot name <span className="font-normal text-slate-400">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={reportName}
+                    onChange={(e) => { setReportName(e.target.value); setSaveState("idle"); }}
+                    placeholder={`Portfolio X-Ray — ${new Date().toLocaleDateString("en-CA", { month: "long", year: "numeric" })}`}
+                    className={inputClass}
+                    maxLength={80}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>
+                    Notes <span className="font-normal text-slate-400">(optional)</span>
+                  </label>
+                  <textarea
+                    value={reportNotes}
+                    onChange={(e) => { setReportNotes(e.target.value.slice(0, 300)); setSaveState("idle"); }}
+                    placeholder="e.g. After adding new ETF position…"
+                    rows={2}
+                    className="w-full text-base md:text-sm border border-slate-200 rounded-xl px-3 py-2.5 md:py-2 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white resize-none"
+                  />
+                  <p className="text-xs text-slate-400 mt-0.5">{reportNotes.length}/300</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button onClick={handleSave} disabled={saveState === "saving"}>
+                    {saveState === "saving" ? "Saving…" : "Save snapshot"}
+                  </Button>
+                  {saveState === "saved" && (
+                    <p className="text-xs text-teal-600 font-medium">Snapshot saved. View it in Saved Reports on the dashboard.</p>
+                  )}
+                  {saveState === "error" && (
+                    <p className="text-xs text-rose-500 font-medium">Could not save. Please try again.</p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </section>
+
         </div>
       )}
 
