@@ -37,8 +37,8 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
     <PageLayout maxWidth="md">
       <PageHeader
         eyebrow="Premium Portfolio Tools"
-        title="Advanced Portfolio Insights"
-        description="Know what you own, what you're exposed to, and what to consider next — without pretending to be a day trader."
+        title="See More of What You Own"
+        description="Deeper insights into your holdings, exposure, and overlap — explained in plain English, without trading jargon."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -164,7 +164,7 @@ export default function PremiumPortfolioTools({ onBack, onContinue }: Props) {
         </div>
       </Card>
 
-      <Disclaimer extended="Premium Portfolio Tools are for learning and organization. They do not predict returns, beat the market, or replace a licensed financial advisor." />
+      <Disclaimer extended="Premium Portfolio Tools are for learning and exploration. They do not predict returns or replace a licensed financial advisor." />
     </PageLayout>
   );
 }

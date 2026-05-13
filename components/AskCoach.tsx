@@ -264,6 +264,7 @@ export default function AskCoach({
   const canSubmit = question.trim().length > 0 && !loading;
   const hasPortfolioContext = !!(portfolioContext && (portfolioContext.holdings?.length ?? 0) > 0);
   const suggestedPrompts = buildPortfolioPrompts(portfolioContext);
+  const [showMorePrompts, setShowMorePrompts] = useState(false);
 
   // Loading phase animation
   useEffect(() => {
@@ -392,7 +393,6 @@ export default function AskCoach({
     <PageLayout maxWidth="sm">
       <PageHeader
         title="Ask Lantern"
-        description="Ask about your holdings, concentration, exposure, overlap, or investing concepts. Educational only — not financial advice."
         action={
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Back
@@ -401,8 +401,8 @@ export default function AskCoach({
       />
 
       {profile && (
-        <p className="text-xs text-blue-600 font-medium mb-4">
-          ✦ Answering with your {profile} profile in mind
+        <p className="text-xs text-slate-400 mb-4">
+          🪔 Answering with your {profile} profile in mind
         </p>
       )}
 
@@ -410,43 +410,61 @@ export default function AskCoach({
       {!hasPortfolioContext && (
         <div className="mb-5 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
           <p className="text-xs text-slate-500 leading-relaxed">
-            <span className="font-semibold text-slate-600">Add holdings in Portfolio X-Ray</span>{" "}
-            to receive portfolio-specific explanations. The coach can still answer general investing
-            questions without portfolio data.
+            <span className="font-semibold text-slate-600">Add your holdings in Portfolio X-Ray</span>{" "}
+            for portfolio-aware answers. Lantern can still help with any investing concept — no holdings needed to get started.
           </p>
         </div>
       )}
 
       {/* Suggested prompts */}
       <div className="mb-6">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-          {hasPortfolioContext ? "About your portfolio" : "Portfolio questions"}
-        </p>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {suggestedPrompts.map((p) => (
-            <button
-              key={p}
-              onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
-              className="text-xs px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer"
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
-          Investing concepts
-        </p>
         <div className="flex flex-wrap gap-2">
-          {CONCEPT_PROMPTS.map((p) => (
+          {suggestedPrompts.slice(0, 4).map((p) => (
             <button
               key={p}
               onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
-              className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-colors cursor-pointer"
+              className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
             >
               {p}
             </button>
           ))}
         </div>
+        {!showMorePrompts && (
+          <button
+            onClick={() => setShowMorePrompts(true)}
+            className="mt-2 text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          >
+            More questions ↓
+          </button>
+        )}
+        {showMorePrompts && (
+          <div className="mt-3 space-y-3">
+            {suggestedPrompts.length > 4 && (
+              <div className="flex flex-wrap gap-2">
+                {suggestedPrompts.slice(4).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
+                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {CONCEPT_PROMPTS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
+                  className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input */}
@@ -523,7 +541,7 @@ export default function AskCoach({
         </p>
       )}
 
-      <Disclaimer extended="Educational only. The AI Coach explains portfolio concepts and simplified exposure estimates. It does not provide personalized financial advice." />
+      <Disclaimer extended="Lantern explains concepts and patterns in plain English. All responses are educational — not personalized financial advice." />
 
       <Dialog
         open={aiLimitDialogOpen}

@@ -86,37 +86,37 @@ export const UPGRADE_COPY: Record<
 > = {
   csv: {
     title: "Premium Portfolio Tools",
-    body: "CSV upload is part of Premium Portfolio Tools. You can still add holdings manually and use the Portfolio X-Ray on the free tier.",
+    body: "CSV upload is part of Premium Portfolio Tools. You can still add holdings manually and explore the Portfolio X-Ray for free.",
     primaryCta: "Upgrade to Premium",
   },
   screenshot: {
     title: "Premium Portfolio Tools",
-    body: "Screenshot import is available with Premium. You can still enter holdings manually or use a CSV on Premium.",
+    body: "Screenshot import is a Premium feature. You can still enter holdings manually to get started.",
     primaryCta: "Upgrade to Premium",
   },
   holdings: {
-    title: "Free tier limit",
-    body: "You’ve reached the free holdings limit for Portfolio X-Ray. Premium includes room for a larger portfolio list, or remove a holding to stay within the free tier.",
+    title: "Need more holdings?",
+    body: "The free tier supports up to 10 holdings. Premium gives you room for a larger portfolio — or you can remove a holding to continue.",
     primaryCta: "Upgrade to Premium",
   },
   savedReports: {
-    title: "Free tier limit",
-    body: "You’ve reached the free saved report limit. Premium includes unlimited saved Portfolio Reports so you can track snapshots over time.",
+    title: "Need more snapshots?",
+    body: "Free accounts can save up to 2 portfolio reports. Premium unlocks unlimited snapshots so you can track how your portfolio changes over time.",
     primaryCta: "Upgrade to Premium",
   },
   aiCoach: {
-    title: "Free tier limit",
-    body: "You’ve reached today’s free AI Coach limit. Premium includes expanded AI explanations for your portfolio questions.",
+    title: "Daily questions used up",
+    body: "You’ve used today’s free questions. Premium gives you more daily questions and expanded explanations from Lantern.",
     primaryCta: "Upgrade to Premium",
   },
   pdf: {
     title: "Premium Portfolio Tools",
-    body: "PDF export is available with Premium. You can still use Print / Save as PDF from your browser on the free tier.",
+    body: "PDF export is a Premium feature. You can still use Print / Save as PDF from your browser at any time.",
     primaryCta: "Upgrade to Premium",
   },
   reportComparison: {
-    title: "Advanced Portfolio Insights",
-    body: "Portfolio Report comparison is part of Premium Portfolio Tools. Save another snapshot when you’re ready, and compare changes over time with Premium.",
+    title: "Compare your snapshots",
+    body: "Comparing two saved reports is a Premium feature. Save a few snapshots over time, then compare them to see how your portfolio has shifted.",
     primaryCta: "Upgrade to Premium",
   },
 };

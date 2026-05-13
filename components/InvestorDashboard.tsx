@@ -155,7 +155,7 @@ export default function InvestorDashboard({
         >
           <span className="text-xl">🪔</span>
           <span className="text-sm font-semibold text-slate-800">Ask Lantern</span>
-          <span className="text-xs text-slate-500 leading-snug">Ask anything about your portfolio</span>
+          <span className="text-xs text-slate-500 leading-snug">Get plain-English explanations about your holdings</span>
         </button>
         <button
           onClick={onSimulator}
@@ -223,7 +223,7 @@ export default function InvestorDashboard({
         )}
       </div>
 
-      <Disclaimer extended="Always consult a licensed financial advisor before making investment decisions." />
+      <Disclaimer extended="For educational use only. Nothing here is personalized financial advice — speak with a licensed advisor before making investment decisions." />
     </PageLayout>
   );
 }

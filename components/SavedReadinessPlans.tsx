@@ -384,7 +384,7 @@ export default function SavedReadinessPlans({ sessionId, onCountChange, onRestor
                     }}
                     className="w-full text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
                   >
-                    ✦ Explain this readiness plan
+                    🪔 Ask Lantern to explain this
                   </button>
                 )}
               </div>

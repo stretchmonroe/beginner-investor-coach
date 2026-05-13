@@ -18,21 +18,21 @@ const PROFILES: {
   {
     label: "Conservative Beginner",
     badge: "🛡️",
-    description: "I want to reduce volatility and keep things emotionally manageable.",
+    description: "I prefer stability and want to keep things emotionally manageable.",
     cardStyle: "border-violet-200 bg-violet-50 hover:border-violet-300 hover:shadow-sm",
     badgeStyle: "bg-violet-100 text-violet-700",
   },
   {
     label: "Balanced Beginner",
     badge: "⚖️",
-    description: "I want a mix of growth and stability.",
+    description: "I want a mix of growth and stability — still learning what that means.",
     cardStyle: "border-blue-200 bg-blue-50 hover:border-blue-300 hover:shadow-sm",
     badgeStyle: "bg-blue-100 text-blue-700",
   },
   {
     label: "Growth Beginner",
     badge: "📈",
-    description: "I have a longer timeline and can handle larger market swings.",
+    description: "I have a longer timeline and can sit with more market movement.",
     cardStyle: "border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:shadow-sm",
     badgeStyle: "bg-emerald-100 text-emerald-700",
   },
@@ -63,10 +63,10 @@ const PREVIEW_INSIGHTS = [
 ];
 
 const TRUST_POINTS = [
-  { icon: "🔒", label: "No brokerage connection" },
-  { icon: "📋", label: "Upload manually or by screenshot" },
+  { icon: "🔒", label: "No brokerage connection required" },
+  { icon: "🛡️", label: "Your portfolio stays private" },
   { icon: "🎓", label: "Educational insights only" },
-  { icon: "🇨🇦", label: "Built for beginner investors" },
+  { icon: "🇨🇦", label: "Built for Canadian beginners" },
 ];
 
 export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
@@ -103,7 +103,7 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
               onClick={scrollToProfiles}
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition-colors cursor-pointer"
             >
-              Analyze My Portfolio
+              Explore My Portfolio
             </button>
             <button
               onClick={onSamplePortfolio}
@@ -188,7 +188,7 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
             Choose your investor style
           </h2>
           <p className="text-sm text-slate-500 text-center mb-8">
-            Lantern tailors its explanations to your comfort level. You can change this anytime.
+            Lantern tailors its explanations to your comfort level. There are no wrong answers — you can change this anytime.
           </p>
           <div className="space-y-3">
             {PROFILES.map((p) => (
@@ -211,7 +211,7 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
             ))}
           </div>
           <p className="text-xs text-slate-400 text-center mt-6">
-            No account needed · Educational only · Not financial advice
+            No account needed · No trading required · Not financial advice
           </p>
         </div>
       </section>

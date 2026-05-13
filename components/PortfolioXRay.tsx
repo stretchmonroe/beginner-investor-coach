@@ -146,7 +146,7 @@ function computeConcentrationInsights(holdings: Holding[], totalValue: number): 
       severity: "info",
       title: "No cash-like holdings entered",
       description:
-        "No cash holdings were entered. This may be fine, but beginners may want to separately think about emergency savings and short-term money outside their investment portfolio.",
+        "No cash holdings were entered. This is often fine — many investors keep emergency savings and short-term money in a separate account outside their investment portfolio.",
       evidence: [
         { sourceType: "manually-entered", label: "Cash holdings", value: "None entered" },
         { sourceType: "manually-entered", label: "Source", value: "Manually entered holdings" },
@@ -893,9 +893,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mb-5">
             <span className="text-2xl">🪔</span>
           </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Add your first holding</h2>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Start exploring your portfolio</h2>
           <p className="text-sm text-slate-500 mb-8 max-w-sm leading-relaxed">
-            Enter your holdings to see what you own, where it&apos;s concentrated, and what overlaps.
+            Enter your holdings to see what you own, where it&apos;s concentrated, and what overlaps. Not sure where to start? Try the sample portfolio.
           </p>
           <div className="flex flex-col gap-2 w-full max-w-xs">
             <div className="grid grid-cols-2 gap-2">
@@ -1144,9 +1144,9 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
                 )}
                 {!showAdvancedOverlap && (overlapInsights.length > 1 || themeInsights.length > 0) && (
                   <Card variant="muted">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Advanced insights</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">More depth available</p>
                     <p className="text-sm text-slate-600 leading-relaxed mb-3">
-                      Additional overlap and theme insights are part of Premium Portfolio Tools.
+                      Additional overlap patterns and theme insights are available with Premium Portfolio Tools.
                     </p>
                     {onViewPremiumTools && (
                       <Button variant="secondary" size="sm" onClick={onViewPremiumTools}>

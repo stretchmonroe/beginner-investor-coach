@@ -11,13 +11,13 @@ const STEPS = [
     icon: "🔍",
     title: "Understand your portfolio in plain English",
     description:
-      "Upload holdings or enter them manually to see concentration, overlap, sector exposure, geography exposure, and simplified portfolio insights.",
+      "Enter your holdings to see what you own, what overlaps, and where your money is concentrated.",
   },
   {
     icon: "📊",
     title: "See what you're really exposed to",
     description:
-      "Broad ETFs, technology holdings, Canadian banks, and U.S. equities can overlap more than many beginner investors realize.",
+      "ETFs often contain the same companies — your portfolio may be less diversified than it looks.",
   },
   {
     icon: "🪔",
@@ -83,9 +83,9 @@ export default function Onboarding({ open, onDismiss, onAddHoldings, onSamplePor
               key={i}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === step
-                  ? "w-5 bg-blue-600"
+                  ? "w-5 bg-amber-400"
                   : i < step
-                  ? "w-1.5 bg-blue-300"
+                  ? "w-1.5 bg-amber-200"
                   : "w-1.5 bg-slate-200"
               }`}
             />
