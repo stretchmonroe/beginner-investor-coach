@@ -56,6 +56,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function init() {
+      // Beta mode: grant premium to everyone, skip server verification
+      if (process.env.NEXT_PUBLIC_BETA_MODE === "true") {
+        setTierState("premium");
+        setHydrated(true);
+        return;
+      }
+
       // Optimistic read from localStorage
       try {
         const raw = window.localStorage.getItem(STORAGE_TIER_KEY);

@@ -116,6 +116,13 @@ export default function InvestorDashboard({
         title="AI Portfolio Coach"
         description="For Canadian beginner investors — know what you own, what you’re exposed to, and what to consider next."
       />
+      {process.env.NEXT_PUBLIC_BETA_MODE === "true" && (
+        <div className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 mb-4">
+          <span>Beta</span>
+          <span className="text-amber-400">·</span>
+          <span>All premium features unlocked</span>
+        </div>
+      )}
 
       {/* Profile card */}
       <div className={`rounded-2xl border ${meta.bgColor} ${meta.borderColor} p-5 mb-6`}>
