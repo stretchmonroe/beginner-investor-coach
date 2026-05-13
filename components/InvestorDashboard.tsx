@@ -48,7 +48,6 @@ interface Props {
   onSimulator: () => void;
   onAskCoach: (question?: string, context?: PortfolioContext) => void;
   onContribution: () => void;
-  onChangeProfile: () => void;
   onRetakeQuiz: () => void;
   onRestorePlan?: (inputs: SharedPlanInputs) => void;
   onRestoreReport?: (holdings: Holding[]) => void;
@@ -68,7 +67,6 @@ export default function InvestorDashboard({
   onSimulator,
   onAskCoach,
   onContribution,
-  onChangeProfile,
   onRetakeQuiz,
   onRestorePlan,
   onRestoreReport,
@@ -90,7 +88,6 @@ export default function InvestorDashboard({
     { label: "Asset Class Explorer", action: onAssetClasses },
     { label: "Coach History", action: () => onAskCoach() },
     { label: "Compare Reports", action: () => onCompareReports?.() },
-    { label: "Change profile", action: onRetakeQuiz },
     { label: "Premium Portfolio Tools", action: () => onPremiumTools?.() },
     { label: "Privacy & Data", action: () => onPrivacy?.() },
     { label: "Replay introduction", action: () => onViewOnboarding?.() },
@@ -136,15 +133,9 @@ export default function InvestorDashboard({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" size="sm" onClick={onChangeProfile}>
+          <Button variant="secondary" size="sm" onClick={onRetakeQuiz}>
             Change profile
           </Button>
-          <button
-            onClick={onRetakeQuiz}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-          >
-            Change profile →
-          </button>
         </div>
       </div>
 

@@ -303,7 +303,6 @@ export default function Home() {
           onSimulator={goToSimulator}
           onAskCoach={(q) => goToCoach(q)}
           onContribution={() => { setContributionOrigin("dashboard"); setScreen("contribution"); }}
-          onChangeProfile={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRetakeQuiz={() => { setProfileSelectionOrigin("dashboard"); setScreen("profileselection"); }}
           onRestorePlan={updateSharedPlan}
           onRestoreReport={restorePortfolioReport}
