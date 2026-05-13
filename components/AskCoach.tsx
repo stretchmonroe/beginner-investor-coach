@@ -422,7 +422,7 @@ export default function AskCoach({
             <button
               key={p}
               onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
-              className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
+              className="text-xs px-3 py-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
             >
               {p}
             </button>
@@ -444,7 +444,7 @@ export default function AskCoach({
                   <button
                     key={p}
                     onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
-                    className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
+                    className="text-xs px-3 py-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
                   >
                     {p}
                   </button>
@@ -456,7 +456,7 @@ export default function AskCoach({
                 <button
                   key={p}
                   onClick={() => { trackEvent("ai_prompt_clicked"); setQuestion(p); }}
-                  className="text-xs px-3 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
+                  className="text-xs px-3 py-2 rounded-full border border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-800 transition-colors cursor-pointer"
                 >
                   {p}
                 </button>

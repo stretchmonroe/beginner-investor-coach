@@ -125,7 +125,7 @@ export default function Landing({ onSelectProfile, onSamplePortfolio }: Props) {
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest text-center mb-10">
             How Lantern works
           </p>
-          <div className="space-y-8">
+          <div className="space-y-10">
             {STEPS.map((step) => (
               <div key={step.number} className="flex gap-5 items-start">
                 <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-sm font-bold flex items-center justify-center shrink-0 mt-0.5">

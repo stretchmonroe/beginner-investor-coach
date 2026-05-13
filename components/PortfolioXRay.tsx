@@ -176,7 +176,7 @@ function InsightCard({ insight }: { insight: PortfolioInsight }) {
     : insight.severity === "caution" ? "bg-amber-400"
     : "bg-slate-300";
   return (
-    <div className="flex items-start gap-3 py-4 border-b border-slate-100 last:border-0">
+    <div className="flex items-start gap-3 py-5 border-b border-slate-100 last:border-0">
       <span className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${dot}`} />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
@@ -203,7 +203,7 @@ function KeyInsightCard({ insight }: { insight: PortfolioInsight }) {
       ? "bg-amber-400"
       : "bg-slate-300";
   return (
-    <div className="flex gap-4 items-start py-4 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0">
+    <div className="flex gap-4 items-start py-5 first:pt-0 last:pb-0 border-b border-slate-100 last:border-0">
       <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${dot}`} />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-slate-800 mb-1">{insight.title}</p>
@@ -224,7 +224,7 @@ interface HoldingRowProps {
 function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: HoldingRowProps) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="py-3">
+    <div className="py-4">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-baseline gap-2">
@@ -921,12 +921,12 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
 
       {/* ── Main analysis ── */}
       {holdings.length > 0 && (
-        <div className="space-y-10">
+        <div className="space-y-14">
 
           {/* 1. What stands out */}
           {keyInsights.length > 0 && (
             <section>
-              <div className="flex items-baseline justify-between mb-4">
+              <div className="flex items-baseline justify-between mb-6">
                 <h2 className="text-lg font-semibold text-slate-900">What stands out</h2>
                 {onAskCoach && portfolioContext && (
                   <button
@@ -987,7 +987,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {/* 3. Exposure */}
           {(assetMix.length > 0 || sectorExposure.length > 0) && (
             <section>
-              <div className="flex items-baseline justify-between mb-4">
+              <div className="flex items-baseline justify-between mb-6">
                 <h2 className="text-lg font-semibold text-slate-900">Exposure</h2>
                 {enrichmentStatus === "loading" && (
                   <span className="text-xs text-slate-400">Looking up holdings…</span>
@@ -1060,7 +1060,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           {/* 4. Holdings */}
           {!showForm && !showCsvImport && !showScreenshotUpload && (
             <section>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-slate-900">Holdings</h2>
                 <div className="flex items-center gap-1.5">
                   <Button variant="secondary" size="sm" onClick={openAddForm}>+ Add</Button>
@@ -1095,7 +1095,7 @@ export default function PortfolioXRay({ onBack, monthlyContribution, sessionId, 
           <section>
             <button
               onClick={() => setShowDetailedAnalysis((s) => !s)}
-              className="flex items-center gap-2 text-lg font-semibold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer mb-4"
+              className="flex items-center gap-2 text-lg font-semibold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer mb-6"
             >
               View detailed analysis <span className="text-sm text-slate-400">{showDetailedAnalysis ? "▲" : "▼"}</span>
             </button>

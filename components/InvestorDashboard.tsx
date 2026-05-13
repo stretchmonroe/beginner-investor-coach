@@ -132,42 +132,50 @@ export default function InvestorDashboard({
       </div>
 
       {/* Primary navigation grid */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-2 mb-8">
         <button
           onClick={onPortfolioXRay}
-          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+          className="flex flex-col gap-2.5 rounded-2xl p-5 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
-          <span className="text-xl">🔍</span>
-          <span className="text-sm font-semibold text-slate-800">Portfolio X-Ray</span>
-          <span className="text-xs text-slate-500 leading-snug">Understand what you own</span>
+          <span className="text-2xl">🔍</span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-0.5">Portfolio X-Ray</p>
+            <p className="text-xs text-slate-400 leading-snug">Understand what you own</p>
+          </div>
         </button>
         <button
           onClick={() => onAskCoach()}
-          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+          className="flex flex-col gap-2.5 rounded-2xl p-5 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
-          <span className="text-xl">🪔</span>
-          <span className="text-sm font-semibold text-slate-800">Ask Lantern</span>
-          <span className="text-xs text-slate-500 leading-snug">Get plain-English explanations about your holdings</span>
+          <span className="text-2xl">🪔</span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-0.5">Ask Lantern</p>
+            <p className="text-xs text-slate-400 leading-snug">Plain-English answers about your holdings</p>
+          </div>
         </button>
         <button
           onClick={onSimulator}
-          className="flex flex-col gap-1.5 rounded-2xl p-4 text-left hover:bg-slate-50 transition-colors cursor-pointer"
+          className="flex flex-col gap-2.5 rounded-2xl p-5 text-left hover:bg-slate-50 transition-colors cursor-pointer"
         >
-          <span className="text-xl">📊</span>
-          <span className="text-sm font-semibold text-slate-800">Contribution Scenarios</span>
-          <span className="text-xs text-slate-500 leading-snug">Model your monthly investing plan</span>
+          <span className="text-2xl">📊</span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-0.5">Contribution Scenarios</p>
+            <p className="text-xs text-slate-400 leading-snug">Model your monthly investing plan</p>
+          </div>
         </button>
         <button
           onClick={() => setShowSavedReports((s) => !s)}
-          className={`flex flex-col gap-1.5 rounded-2xl p-4 text-left transition-colors cursor-pointer ${showSavedReports ? "bg-slate-100" : "hover:bg-slate-50"}`}
+          className={`flex flex-col gap-2.5 rounded-2xl p-5 text-left transition-colors cursor-pointer ${showSavedReports ? "bg-slate-100" : "hover:bg-slate-50"}`}
         >
-          <span className="text-xl">📋</span>
-          <span className="text-sm font-semibold text-slate-800">Saved Reports</span>
-          <span className="text-xs text-slate-500 leading-snug">
-            {savedPortfolioReportCount > 0
-              ? `${savedPortfolioReportCount} portfolio report${savedPortfolioReportCount === 1 ? "" : "s"} saved`
-              : "Your saved snapshots"}
-          </span>
+          <span className="text-2xl">📋</span>
+          <div>
+            <p className="text-sm font-semibold text-slate-800 mb-0.5">Saved Reports</p>
+            <p className="text-xs text-slate-400 leading-snug">
+              {savedPortfolioReportCount > 0
+                ? `${savedPortfolioReportCount} snapshot${savedPortfolioReportCount === 1 ? "" : "s"} saved`
+                : "Your saved snapshots"}
+            </p>
+          </div>
         </button>
       </div>
 
