@@ -19,8 +19,8 @@ const paddingMap: Record<Padding, string> = {
 };
 
 const variantMap: Record<Variant, string> = {
-  default: "bg-white border border-slate-100 shadow-sm",
-  muted: "bg-slate-50 border border-slate-100",
+  default: "bg-white border border-slate-100",
+  muted: "bg-slate-50/80 border border-slate-100",
   highlighted: "bg-blue-50 border border-blue-100",
 };
 

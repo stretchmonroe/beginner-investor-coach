@@ -272,17 +272,17 @@ function HoldingRow({ holding: h, weight, isDuplicate, onEdit, onDelete }: Holdi
 
 function ExposureRows({ items }: { items: ExposureItem[] }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-3">
-          <span className="text-sm text-slate-700 w-32 shrink-0">{item.label}</span>
+          <span className="text-sm text-slate-600 w-32 shrink-0">{item.label}</span>
           <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-blue-400"
+              className="h-full rounded-full bg-slate-400"
               style={{ width: `${Math.min(item.weight, 100)}%` }}
             />
           </div>
-          <span className="text-sm font-semibold text-slate-600 w-10 text-right shrink-0">
+          <span className="text-sm font-medium text-slate-500 w-10 text-right shrink-0 tabular-nums">
             {pct(item.weight)}
           </span>
         </div>

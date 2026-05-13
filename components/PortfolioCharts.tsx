@@ -5,12 +5,14 @@ import {
   BarChart, Bar, XAxis, YAxis, LabelList,
   ResponsiveContainer,
 } from "recharts";
+// Cell is used only for the donut chart slices
 import type { Holding } from "@/types/portfolio";
 import type { ExposureItem } from "@/lib/portfolioMetadata";
 import Card from "@/components/ui/Card";
 
-const COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
-const MUTED_COLOR = "#94a3b8";
+const DONUT_COLORS = ["#334155", "#3b82f6", "#14b8a6", "#f59e0b", "#8b5cf6"];
+const DONUT_OVERFLOW = "#e2e8f0";
+const BAR_COLOR = "#94a3b8";
 
 interface Props {
   holdings: Holding[];
@@ -34,13 +36,13 @@ interface PieEntry {
 function buildPieData(holdings: Holding[], totalValue: number): PieEntry[] {
   if (totalValue === 0) return [];
   const sorted = [...holdings].sort((a, b) => b.marketValue - a.marketValue);
-  const top8 = sorted.slice(0, 8);
-  const rest = sorted.slice(8);
-  const entries: PieEntry[] = top8.map((h, i) => ({
+  const top5 = sorted.slice(0, 5);
+  const rest = sorted.slice(5);
+  const entries: PieEntry[] = top5.map((h, i) => ({
     name: h.ticker || h.name || `Holding ${i + 1}`,
     value: h.marketValue,
     weight: (h.marketValue / totalValue) * 100,
-    color: COLORS[i % COLORS.length],
+    color: DONUT_COLORS[i % DONUT_COLORS.length],
   }));
   if (rest.length > 0) {
     const restValue = rest.reduce((s, h) => s + h.marketValue, 0);
@@ -48,7 +50,7 @@ function buildPieData(holdings: Holding[], totalValue: number): PieEntry[] {
       name: "Other",
       value: restValue,
       weight: (restValue / totalValue) * 100,
-      color: MUTED_COLOR,
+      color: DONUT_OVERFLOW,
     });
   }
   return entries;
@@ -107,33 +109,30 @@ function HoldingWeightsChart({ holdings, totalValue }: { holdings: Holding[]; to
 
 function ExposureBarChart({ title, items }: { title: string; items: ExposureItem[] }) {
   if (items.length === 0) return null;
-  const data = items.slice(0, 8);
-  const chartHeight = data.length * 30 + 12;
+  const data = items.slice(0, 7);
+  const chartHeight = data.length * 34 + 8;
 
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">{title}</p>
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">{title}</p>
       <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart data={data} layout="vertical" margin={{ left: 0, right: 40, top: 0, bottom: 0 }} barSize={14}>
+        <BarChart data={data} layout="vertical" margin={{ left: 0, right: 44, top: 0, bottom: 0 }} barSize={12}>
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis
             type="category"
             dataKey="label"
-            width={90}
-            tick={{ fontSize: 11, fill: "#64748b" }}
-            tickFormatter={(v: string) => v.length > 13 ? `${v.slice(0, 12)}…` : v}
+            width={96}
+            tick={{ fontSize: 11, fill: "#94a3b8" }}
+            tickFormatter={(v: string) => v.length > 14 ? `${v.slice(0, 13)}…` : v}
             axisLine={false}
             tickLine={false}
           />
-          <Bar dataKey="weight" radius={[0, 4, 4, 0]} isAnimationActive={false}>
-            {data.map((entry, i) => (
-              <Cell key={entry.label} fill={COLORS[i % COLORS.length]} />
-            ))}
+          <Bar dataKey="weight" fill={BAR_COLOR} radius={[0, 3, 3, 0]} isAnimationActive={false}>
             <LabelList
               dataKey="weight"
               position="right"
               formatter={(v: string | number | boolean | null | undefined) => typeof v === "number" ? `${v.toFixed(1)}%` : ""}
-              style={{ fontSize: 11, fill: "#64748b" }}
+              style={{ fontSize: 11, fill: "#94a3b8" }}
             />
           </Bar>
         </BarChart>
@@ -153,34 +152,22 @@ export default function PortfolioCharts({
   currencyExposure,
   hasUnmapped,
 }: Props) {
-  if (holdings.length === 0) {
-    return (
-      <div className="mb-6">
-        <h2 className="text-base font-semibold text-slate-800 mb-3">Visual Portfolio Summary</h2>
-        <Card variant="muted" padding="sm">
-          <p className="text-sm text-slate-400">Add holdings to unlock portfolio charts.</p>
-        </Card>
-      </div>
-    );
-  }
+  if (holdings.length === 0) return null;
 
   return (
-    <div className="mb-6">
-      <h2 className="text-base font-semibold text-slate-800 mb-3">Visual Portfolio Summary</h2>
+    <Card padding="sm">
       {hasUnmapped && (
-        <p className="text-xs text-amber-600 mb-3">
+        <p className="text-xs text-slate-400 mb-4">
           Some holdings could not be mapped — charts may not reflect the full portfolio.
         </p>
       )}
-      <Card padding="sm">
-        <div className="space-y-7">
-          <HoldingWeightsChart holdings={holdings} totalValue={totalValue} />
-          {assetTypeItems.length > 0 && <ExposureBarChart title="Asset type" items={assetTypeItems} />}
-          {sectorExposure.length > 0 && <ExposureBarChart title="Sector" items={sectorExposure} />}
-          {geographyExposure.length > 0 && <ExposureBarChart title="Geography" items={geographyExposure} />}
-          {currencyExposure.length > 0 && <ExposureBarChart title="Currency" items={currencyExposure} />}
-        </div>
-      </Card>
-    </div>
+      <div className="space-y-8">
+        <HoldingWeightsChart holdings={holdings} totalValue={totalValue} />
+        {assetTypeItems.length > 0 && <ExposureBarChart title="Asset type" items={assetTypeItems} />}
+        {sectorExposure.length > 0 && <ExposureBarChart title="Sector" items={sectorExposure} />}
+        {geographyExposure.length > 0 && <ExposureBarChart title="Geography" items={geographyExposure} />}
+        {currencyExposure.length > 0 && <ExposureBarChart title="Currency" items={currencyExposure} />}
+      </div>
+    </Card>
   );
 }

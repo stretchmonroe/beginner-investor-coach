@@ -16,11 +16,11 @@ interface Props {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold border border-transparent disabled:opacity-50 disabled:cursor-not-allowed",
+    "bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-semibold border border-transparent disabled:opacity-40 disabled:cursor-not-allowed",
   secondary:
-    "bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-semibold border border-slate-200 hover:border-slate-300",
+    "bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 font-medium border border-slate-200 hover:border-slate-300",
   ghost:
-    "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-800 font-medium border border-transparent",
+    "bg-transparent hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium border border-transparent",
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -44,7 +44,7 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center transition-colors cursor-pointer touch-manipulation ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 select-none transition-colors cursor-pointer touch-manipulation ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} ${className}`}
     >
       {children}
     </button>
